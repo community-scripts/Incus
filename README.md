@@ -57,15 +57,14 @@ arrives here on its own.
 | Folder | Contents | Source |
 | ------ | -------- | ------ |
 | `ct/` | 577 application scripts | mirrored from ProxmoxVE |
-| `ct/headers/` | ASCII banners shown during install | mirrored from ProxmoxVE |
+| — | ASCII banners | served from [core](https://github.com/community-scripts/core), generated for all repos at once |
 | `install/` | in-container install scripts | mirrored from ProxmoxVE |
 | `tools/incus/` | Incus host management | maintained here |
 | `json/` | Incus-only metadata | maintained here |
 
 Folder names deliberately match ProxmoxVE. The engine resolves
-`install/<app>-install.sh` and `ct/headers/<app>` by those exact paths, so
-renaming them would mean making the engine's paths platform-dependent — new
-divergence for a cosmetic gain.
+`install/<app>-install.sh` by that exact path, so renaming it would mean making
+the engine's paths platform-dependent — new divergence for a cosmetic gain.
 
 ### What is not here, and why
 
@@ -75,6 +74,7 @@ divergence for a cosmetic gain.
 | `turnkey/` | TurnKey Linux templates are a Proxmox VE feature. |
 | `tools/pve/` | Host management through `pve*` binaries. The Incus counterpart is `tools/incus/`. |
 | `misc/` | The old in-repo engine. It lives in [core](https://github.com/community-scripts/core) now. |
+| `ct/headers/` | Headers are generated artifacts derived from each script's `APP=` line, and identical on both platforms. core generates them once for every script repo. |
 
 ---
 

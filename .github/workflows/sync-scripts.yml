@@ -7,8 +7,9 @@ name: Sync scripts from ProxmoxVE
 #
 # Only ct/ and install/ are mirrored. vm/ calls qm and pvesm directly, turnkey/
 # is a Proxmox feature, and tools/pve/ is Proxmox host management -- none of
-# them are portable. tools/incus/ and json/ are maintained in this repository
-# and are never touched by this workflow.
+# them are portable. Headers are excluded: they are generated into core, which
+# serves them to every script repo. tools/incus/ and json/ are maintained in
+# this repository and are never touched by this workflow.
 
 on:
   schedule:
@@ -48,6 +49,8 @@ jobs:
           rm -rf ct install
           cp -r .upstream/ct ct
           cp -r .upstream/install install
+          # Headers live in core, generated for every script repo at once.
+          rm -rf ct/headers
           rm -rf .upstream
 
       - name: Point the bootstrap at core
@@ -119,3 +122,17 @@ jobs:
             Application fixes belong upstream — anything committed here by hand is
             overwritten by the next run.
           delete-branch: true
+
+      - name: Ask core to regenerate headers
+        if: success()
+        continue-on-error: true
+        env:
+          TOKEN: ${{ secrets.CORE_DISPATCH_TOKEN }}
+        run: |
+          # Optional: core polls every 6h anyway. With a token set, a new
+          # script gets its header in seconds instead of hours.
+          if [ -z "$TOKEN" ]; then
+            echo "CORE_DISPATCH_TOKEN not set - core picks this up on its next poll"
+            exit 0
+          fi
+          curl -fsS -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/community-scripts/core/dispatches -d '{"event_type":"scripts-changed"}'
