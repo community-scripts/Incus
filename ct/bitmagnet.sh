@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
+_cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/shared/build.func"
+source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/shared/build.func")
+# Copyright (c) 2021-2026 community-scripts ORG
+# Author: Slaviša Arežina (tremor021)
+# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# Source: https://github.com/bitmagnet-io/bitmagnet
+
+APP="Bitmagnet"
+var_tags="${var_tags:-os}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-2048}"
+var_disk="${var_disk:-4}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-13}"
+var_arm64="${var_arm64:-yes}"
+var_unprivileged="${var_unprivileged:-1}"
+
+header_info "$APP"
+variables
+color
+catch_errors
+
+function update_script() {
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/bitmagnet ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "bitmagnet" "bitmagnet-io/bitmagnet"; then
+    msg_info "Stopping Service"
+    systemctl stop bitmagnet-web
+    msg_ok "Stopped Service"
+
+    msg_info "Backing up data"
+    rm -f /tmp/backup.sql
+    $STD sudo -u postgres pg_dump \
+      --column-inserts \
+      --data-only \
+      --on-conflict-do-nothing \
+      --rows-per-insert=1000 \
+      --table=metadata_sources \
+      --table=content \
+      --table=content_attributes \
+      --table=content_collections \
+      --table=content_collections_content \
+      --table=torrent_sources \
+      --table=torrents \
+      --table=torrent_files \
+      --table=torrent_hints \
+      --table=torrent_contents \
+      --table=torrent_tags \
+      --table=torrents_torrent_sources \
+      --table=key_values \
+      bitmagnet \
+      >/tmp/backup.sql
+    mv /tmp/backup.sql /opt/
+    create_backup /opt/bitmagnet/.env \
+      /opt/bitmagnet/config.yml
+    msg_ok "Data backed up"
+
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "bitmagnet" "bitmagnet-io/bitmagnet" "tarball"
+    restore_backup
+
+    msg_info "Configuring Bitmagnet"
+    cd /opt/bitmagnet
+    VREL=v$(curl -fsSL https://api.github.com/repos/bitmagnet-io/bitmagnet/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+    $STD go build -ldflags "-s -w -X github.com/bitmagnet-io/bitmagnet/internal/version.GitTag=$VREL"
+    chmod +x bitmagnet
+    msg_ok "Configured Bitmagnet"
+
+    msg_info "Starting Service"
+    systemctl start bitmagnet-web
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
+}
+
+start
+build_container
+description
+
+msg_ok "Completed successfully!\n"
+echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
+echo -e "${INFO}${YW}Access it using the following URL:${CL}"
+echo -e "${GATEWAY}${BGN}http://${IP}:3333${CL}"

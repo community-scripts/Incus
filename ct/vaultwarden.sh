@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
+_cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/shared/build.func"
+source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/shared/build.func")
+# Copyright (c) 2021-2026 tteck
+# Author: tteck (tteckster)
+# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# Source: https://github.com/dani-garcia/vaultwarden
+
+APP="Vaultwarden"
+var_tags="${var_tags:-password-manager}"
+var_cpu="${var_cpu:-4}"
+var_ram="${var_ram:-6144}"
+var_disk="${var_disk:-20}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-13}"
+var_arm64="${var_arm64:-yes}"
+var_unprivileged="${var_unprivileged:-1}"
+
+header_info "$APP"
+variables
+color
+catch_errors
+
+function update_script() {
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/systemd/system/vaultwarden.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+
+  VAULT=$(get_latest_github_release "dani-garcia/vaultwarden")
+  WVRELEASE=$(get_latest_github_release "dani-garcia/bw_web_builds")
+
+  UPD=$(msg_menu "Vaultwarden Update Options" \
+    "1" "Update VaultWarden + Web-Vault" \
+    "2" "Set Admin Token")
+
+  if [ "$UPD" == "1" ]; then
+    INSTALLED_VERSION="$(/opt/vaultwarden/bin/vaultwarden --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+    if [[ -n "$INSTALLED_VERSION" ]] &&
+      ! grep -qxF "$INSTALLED_VERSION" "$HOME/.vaultwarden" 2>/dev/null; then
+      printf '%s\n' "$INSTALLED_VERSION" >"$HOME/.vaultwarden"
+    fi
+    if check_for_gh_release "vaultwarden" "dani-garcia/vaultwarden"; then
+      msg_info "Stopping Service"
+      systemctl stop vaultwarden
+      msg_ok "Stopped Service"
+
+      fetch_and_deploy_gh_release "vaultwarden" "dani-garcia/vaultwarden" "tarball" "latest" "/tmp/vaultwarden-src"
+
+      msg_info "Updating VaultWarden to $VAULT (Patience)"
+      cd /tmp/vaultwarden-src
+      VW_VERSION="$VAULT"
+      export VW_VERSION
+      $STD cargo build --features "sqlite,mysql,postgresql" --release
+      if [[ -f /usr/bin/vaultwarden ]]; then
+        cp target/release/vaultwarden /usr/bin/
+      else
+        cp target/release/vaultwarden /opt/vaultwarden/bin/
+      fi
+      cd ~ && rm -rf /tmp/vaultwarden-src
+      msg_ok "Updated VaultWarden to ${VAULT}"
+
+      msg_info "Starting Service"
+      systemctl start vaultwarden
+      msg_ok "Started Service"
+    else
+      msg_ok "VaultWarden is already up-to-date"
+    fi
+
+    if check_for_gh_release "vaultwarden_webvault" "dani-garcia/bw_web_builds"; then
+      msg_info "Stopping Service"
+      systemctl stop vaultwarden
+      msg_ok "Stopped Service"
+
+      msg_info "Updating Web-Vault to $WVRELEASE"
+      rm -rf /opt/vaultwarden/web-vault
+      mkdir -p /opt/vaultwarden/web-vault
+
+      fetch_and_deploy_gh_release "vaultwarden_webvault" "dani-garcia/bw_web_builds" "prebuild" "latest" "/opt/vaultwarden/web-vault" "bw_web_*.tar.gz"
+
+      chown -R root:root /opt/vaultwarden/web-vault/
+      msg_ok "Updated Web-Vault to ${WVRELEASE}"
+
+      msg_info "Starting Service"
+      systemctl start vaultwarden
+      msg_ok "Started Service"
+    else
+      msg_ok "Web-Vault is already up-to-date"
+    fi
+
+    msg_ok "Updated successfully!"
+    exit
+  fi
+
+  if [ "$UPD" == "2" ]; then
+    if [[ "${PHS_SILENT:-0}" == "1" ]]; then
+      msg_warn "Set Admin Token requires interactive mode, skipping."
+      exit
+    fi
+    read -r -s -p "Set the ADMIN_TOKEN: " NEWTOKEN
+    echo ""
+    if [[ -n "$NEWTOKEN" ]]; then
+      ensure_dependencies argon2
+      TOKEN=$(echo -n "${NEWTOKEN}" | argon2 "$(openssl rand -base64 32)" -t 2 -m 16 -p 4 -l 64 -e)
+      sed -i "s|ADMIN_TOKEN=.*|ADMIN_TOKEN='${TOKEN}'|" /opt/vaultwarden/.env
+      if [[ -f /opt/vaultwarden/data/config.json ]]; then
+        sed -i "s|\"admin_token\":.*|\"admin_token\": \"${TOKEN}\"|" /opt/vaultwarden/data/config.json
+      fi
+      systemctl restart vaultwarden
+      msg_ok "Admin token updated"
+    fi
+    exit
+  fi
+}
+
+start
+build_container
+description
+
+msg_ok "Completed successfully!\n"
+echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
+echo -e "${INFO}${YW}Access it using the following URL:${CL}"
+echo -e "${GATEWAY}${BGN}https://${IP}:8000${CL}"

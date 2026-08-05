@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
+_cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/shared/build.func"
+source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/shared/build.func")
+# Copyright (c) 2021-2026 tteck
+# Author: tteck (tteckster)
+# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# Source: https://www.docker.com/
+
+APP="Docker"
+var_tags="${var_tags:-docker}"
+var_cpu="${var_cpu:-2}"
+var_ram="${var_ram:-2048}"
+var_disk="${var_disk:-4}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-13}"
+var_arm64="${var_arm64:-yes}"
+var_unprivileged="${var_unprivileged:-1}"
+
+header_info "$APP"
+variables
+color
+catch_errors
+
+function update_script() {
+  header_info
+  check_container_storage
+  check_container_resources
+
+  msg_info "Updating base system"
+  $STD apt update
+  $STD apt upgrade -y
+  msg_ok "Base system updated"
+
+  if dpkg-query -W -f='${Status}' docker-ce 2>/dev/null | grep -q "ok installed"; then
+    USE_DOCKER_REPO="true" setup_docker
+  else
+    setup_docker
+  fi
+
+  if docker ps -a --format '{{.Image}}' | grep -q '^portainer/portainer-ce:latest$'; then
+    msg_warn "Portainer is now managed by a dedicated addon script and is no longer updated here."
+    echo -e "${TAB}Update/migrate it with:"
+    echo -e "${TAB}${TAB}${GN}bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/addon/portainer.sh)\"${CL}"
+  fi
+
+  if docker ps -a --format '{{.Names}}' | grep -q '^portainer_agent$'; then
+    msg_info "Updating Portainer Agent"
+    $STD docker pull portainer/agent:latest
+    $STD docker stop portainer_agent
+    $STD docker rm portainer_agent
+    $STD docker run -d \
+      -p 9001:9001 \
+      --name=portainer_agent \
+      --restart=always \
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/lib/docker/volumes:/var/lib/docker/volumes \
+      portainer/agent
+    msg_ok "Updated Portainer Agent"
+  fi
+  msg_ok "Updated successfully!"
+  exit
+}
+
+start
+build_container
+description
+
+msg_ok "Completed successfully!\n"
+echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
+echo -e "${INFO}${YW} Portainer is available as a separate addon. Install it with:${CL}"
+echo -e "${GATEWAY}${BGN}bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/addon/portainer.sh)\"${CL}"

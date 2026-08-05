@@ -1,0 +1,121 @@
+name: Sync scripts from ProxmoxVE
+
+# The application scripts are platform-agnostic and canonical in ProxmoxVE.
+# This mirrors them here and rewrites the one line that differs: the bootstrap,
+# which must load the engine from core (ProxmoxVE's own misc/build.func is a
+# monolith with no Incus backend, so an unmodified copy would not run here).
+#
+# Only ct/ and install/ are mirrored. vm/ calls qm and pvesm directly, turnkey/
+# is a Proxmox feature, and tools/pve/ is Proxmox host management -- none of
+# them are portable. tools/incus/ and json/ are maintained in this repository
+# and are never touched by this workflow.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "ProxmoxVE ref to sync from"
+        required: false
+        default: "main"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-scripts
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Incus
+        uses: actions/checkout@v4
+
+      - name: Checkout ProxmoxVE
+        uses: actions/checkout@v4
+        with:
+          repository: community-scripts/ProxmoxVE
+          ref: ${{ github.event.inputs.ref || 'main' }}
+          path: .upstream
+
+      - name: Mirror ct/ and install/
+        run: |
+          set -euo pipefail
+          rm -rf ct install
+          cp -r .upstream/ct ct
+          cp -r .upstream/install install
+          rm -rf .upstream
+
+      - name: Point the bootstrap at core
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob, re, sys
+
+          NEW = '''# Engine comes from community-scripts/core; this repo only ships the scripts.
+          # A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+          # so a fork or branch of core can be tested without editing this file.
+          _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/shared/build.func"
+          source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/shared/build.func")'''
+
+          # Upstream uses several spellings: raw.githubusercontent or the Gitea
+          # mirror, curl -fsSL or curl -s.
+          pat = re.compile(r'source <\(curl -[a-zA-Z]* ?https?://[^)]*/misc/build\.func\)')
+
+          scripts = sorted(glob.glob("ct/*.sh"))
+          done, miss = 0, []
+          for p in scripts:
+              s = open(p, encoding="utf-8", newline="").read()
+              s2, n = pat.subn(NEW, s, count=1)
+              if n:
+                  open(p, "w", encoding="utf-8", newline="").write(s2)
+                  done += 1
+              else:
+                  miss.append(p)
+
+          print(f"rewritten {done}/{len(scripts)}")
+          if miss:
+              # A script we cannot rewrite would silently load ProxmoxVE's
+              # monolith and fail on an Incus host. Fail loudly instead.
+              print("::error::bootstrap not recognised in:", ", ".join(miss))
+              sys.exit(1)
+          PY
+
+      - name: Verify no script still loads the ProxmoxVE engine
+        run: |
+          set -euo pipefail
+          if grep -rln "ProxmoxVE.*/misc/build\.func" ct/ install/; then
+            echo "::error::scripts above still point at the ProxmoxVE engine"
+            exit 1
+          fi
+          fail=0
+          for f in ct/*.sh install/*.sh; do
+            bash -n "$f" || { echo "::error::syntax error in $f"; fail=1; }
+          done
+          exit $fail
+
+      - name: Open a pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: sync/proxmoxve-scripts
+          title: "Sync scripts from ProxmoxVE"
+          commit-message: |
+            Sync ct/ and install/ from ProxmoxVE
+
+            Mirrored automatically. The bootstrap line is rewritten to load the
+            engine from core, which is the only difference to upstream.
+          body: |
+            Automated mirror of `ct/` and `install/` from
+            [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE).
+
+            The only change applied on top is the bootstrap line, which loads the
+            engine from [core](https://github.com/community-scripts/core) so the
+            host backend is detected at runtime.
+
+            Application fixes belong upstream — anything committed here by hand is
+            overwritten by the next run.
+          delete-branch: true

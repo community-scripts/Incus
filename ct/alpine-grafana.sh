@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
+_cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/shared/build.func"
+source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/shared/build.func")
+# Copyright (c) 2021-2026 tteck
+# Author: tteck (tteckster)
+# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
+# Source: https://grafana.com/
+
+APP="Alpine-Grafana"
+var_tags="${var_tags:-alpine;monitoring}"
+var_cpu="${var_cpu:-1}"
+var_ram="${var_ram:-512}"
+var_disk="${var_disk:-2}"
+var_os="${var_os:-alpine}"
+var_version="${var_version:-3.24}"
+var_arm64="${var_arm64:-yes}"
+var_unprivileged="${var_unprivileged:-1}"
+
+header_info "$APP"
+variables
+color
+catch_errors
+
+function update_script() {
+  LXCIP=$(ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
+
+  CHOICE=$(msg_menu "Grafana Update Options" \
+    "1" "Check for Grafana Updates" \
+    "2" "Allow 0.0.0.0 for listening" \
+    "3" "Allow only ${LXCIP} for listening")
+
+  case $CHOICE in
+  1)
+    $STD apk -U upgrade
+    msg_ok "Updated successfully!"
+    exit
+    ;;
+  2)
+    sed -i -e "s/cfg:server.http_addr=.*/cfg:server.http_addr=0.0.0.0/g" /etc/conf.d/grafana
+    service grafana restart
+    msg_ok "Allowed listening on all interfaces!"
+    exit
+    ;;
+  3)
+    sed -i -e "s/cfg:server.http_addr=.*/cfg:server.http_addr=$LXCIP/g" /etc/conf.d/grafana
+    service grafana restart
+    msg_ok "Allowed listening only on ${LXCIP}!"
+    exit
+    ;;
+  esac
+  exit 0
+}
+
+start
+build_container
+description
+
+msg_ok "Completed successfully!\n"
+echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
+echo -e "${INFO}${YW}Access it using the following URL:${CL}"
+echo -e "${GATEWAY}${BGN}http://${IP}:3000${CL}"
