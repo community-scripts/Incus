@@ -33,6 +33,9 @@ header_info
 check_root
 pve_check
 arch_check
+# Before any prompting: without KVM this host cannot run a VM at all, and
+# answering a dozen questions first only wastes the user's time.
+kvm_check
 
 function default_settings() {
   HN="${var_hostname:-debian}"
@@ -43,7 +46,20 @@ function default_settings() {
   MAC=""
   VLAN=""
   MTU=""
+  NIC_IPV4=""
+  DISK_BUS="virtio-blk"
+  DISK_CACHE="none"
+  EXTRA_DISK_SIZE=""
   SECUREBOOT="no"
+  CSM="no"
+  VTPM="no"
+  GPU_PASSTHROUGH="no"
+  GPU_PCI=""
+  AUTOSTART="no"
+  SNAPSHOT_SCHEDULE=""
+  PROFILES=""
+  CLUSTER_TARGET=""
+  VM_DESCRIPTION="${APP} - community-scripts.org"
   USE_CLOUD_INIT="no"
   START_VM="yes"
   STORAGE="${var_storage:-default}"
@@ -57,16 +73,40 @@ function default_settings() {
 }
 
 function advanced_settings() {
+  # Identity and sizing
   vm_prompt_hostname "debian"
+  vm_prompt_description
   vm_prompt_cpu_cores "$var_cpu"
   vm_prompt_ram "$var_ram"
-  vm_prompt_disk_size "$var_disk"
+
+  # Storage
   vm_select_storage
+  vm_prompt_disk_size "$var_disk"
+  vm_prompt_disk_bus
+  vm_prompt_disk_cache
+  vm_prompt_extra_disk
+
+  # Network
   vm_prompt_bridge "$var_bridge"
   vm_prompt_mac
   vm_prompt_vlan
   vm_prompt_mtu
-  vm_prompt_secureboot
+  vm_prompt_static_lease
+
+  # Firmware and passthrough
+  vm_prompt_csm
+  # Guarded: a false test would abort the function under set -e.
+  if [[ "${CSM:-no}" == "no" ]]; then vm_prompt_secureboot; fi
+  vm_prompt_vtpm
+  vm_prompt_gpu
+
+  # Placement and lifecycle
+  vm_prompt_profiles
+  vm_prompt_cluster_target
+  vm_prompt_autostart
+  vm_prompt_snapshots
+
+  # Guest configuration
   vm_prompt_cloud_init "debian"
   vm_prompt_start_vm "yes"
 
