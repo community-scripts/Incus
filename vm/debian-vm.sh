@@ -71,10 +71,6 @@ function default_settings() {
   PCI_DEVICES=""
   BIND_MOUNTS=""
   PROXY_PORTS=""
-  CPU_ALLOWANCE=""
-  CPU_PRIORITY=""
-  MEMORY_SWAP=""
-  KERNEL_MODULES=""
   STATEFUL="no"
   AUTOSTART_DELAY=""
   SNAPSHOT_PATTERN=""
@@ -99,8 +95,6 @@ function advanced_settings() {
   vm_prompt_cpu_cores "$var_cpu"
   vm_prompt_ram "$var_ram"
   vm_prompt_instance_type
-  vm_prompt_cpu_limits
-  vm_prompt_memory_swap
 
   # Storage
   vm_select_storage
@@ -134,7 +128,6 @@ function advanced_settings() {
   vm_prompt_autostart
   vm_prompt_snapshots
   vm_prompt_stateful
-  vm_prompt_kernel_modules
   vm_prompt_delete_protection
   vm_prompt_extra_config
 
