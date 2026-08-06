@@ -67,6 +67,18 @@ function default_settings() {
   INSTANCE_TYPE=""
   DELETE_PROTECTION="no"
   CLOUDINIT_VENDOR_DATA=""
+  USB_DEVICES=""
+  PCI_DEVICES=""
+  BIND_MOUNTS=""
+  PROXY_PORTS=""
+  CPU_ALLOWANCE=""
+  CPU_PRIORITY=""
+  MEMORY_SWAP=""
+  KERNEL_MODULES=""
+  STATEFUL="no"
+  AUTOSTART_DELAY=""
+  SNAPSHOT_PATTERN=""
+  EXTRA_CONFIG=""
   USE_CLOUD_INIT="no"
   START_VM="yes"
   STORAGE="${var_storage:-default}"
@@ -87,6 +99,8 @@ function advanced_settings() {
   vm_prompt_cpu_cores "$var_cpu"
   vm_prompt_ram "$var_ram"
   vm_prompt_instance_type
+  vm_prompt_cpu_limits
+  vm_prompt_memory_swap
 
   # Storage
   vm_select_storage
@@ -94,6 +108,7 @@ function advanced_settings() {
   vm_prompt_disk_bus
   vm_prompt_disk_cache
   vm_prompt_extra_disk
+  vm_prompt_bind_mounts
 
   # Network
   vm_prompt_bridge "$var_bridge"
@@ -101,6 +116,7 @@ function advanced_settings() {
   vm_prompt_vlan
   vm_prompt_mtu
   vm_prompt_static_lease
+  vm_prompt_proxy
 
   # Firmware and passthrough
   vm_prompt_csm
@@ -108,6 +124,8 @@ function advanced_settings() {
   if [[ "${CSM:-no}" == "no" ]]; then vm_prompt_secureboot; fi
   vm_prompt_vtpm
   vm_prompt_gpu
+  vm_prompt_usb
+  vm_prompt_pci
   vm_prompt_agent_disk
 
   # Placement and lifecycle
@@ -115,7 +133,10 @@ function advanced_settings() {
   vm_prompt_cluster_target
   vm_prompt_autostart
   vm_prompt_snapshots
+  vm_prompt_stateful
+  vm_prompt_kernel_modules
   vm_prompt_delete_protection
+  vm_prompt_extra_config
 
   # Guest configuration
   vm_prompt_cloud_init "debian"
