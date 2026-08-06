@@ -25,6 +25,8 @@ var_version="${var_version:-13}"
 var_cpu="${var_cpu:-2}"
 var_ram="${var_ram:-2048}"
 var_disk="${var_disk:-10G}"
+# Plain images:debian/13 has no cloud-init. incus_vm_create switches to the
+# /cloud variant automatically when cloud-init is enabled.
 var_image="${var_image:-images:debian/13}"
 var_bridge="${var_bridge:-incusbr0}"
 
@@ -60,6 +62,11 @@ function default_settings() {
   PROFILES=""
   CLUSTER_TARGET=""
   VM_DESCRIPTION="${APP} - community-scripts.org"
+  GUEST_OS="Linux"
+  AGENT_DISK="no"
+  INSTANCE_TYPE=""
+  DELETE_PROTECTION="no"
+  CLOUDINIT_VENDOR_DATA=""
   USE_CLOUD_INIT="no"
   START_VM="yes"
   STORAGE="${var_storage:-default}"
@@ -76,8 +83,10 @@ function advanced_settings() {
   # Identity and sizing
   vm_prompt_hostname "debian"
   vm_prompt_description
+  vm_prompt_guest_os
   vm_prompt_cpu_cores "$var_cpu"
   vm_prompt_ram "$var_ram"
+  vm_prompt_instance_type
 
   # Storage
   vm_select_storage
@@ -99,15 +108,18 @@ function advanced_settings() {
   if [[ "${CSM:-no}" == "no" ]]; then vm_prompt_secureboot; fi
   vm_prompt_vtpm
   vm_prompt_gpu
+  vm_prompt_agent_disk
 
   # Placement and lifecycle
   vm_prompt_profiles
   vm_prompt_cluster_target
   vm_prompt_autostart
   vm_prompt_snapshots
+  vm_prompt_delete_protection
 
   # Guest configuration
   vm_prompt_cloud_init "debian"
+  vm_prompt_vendor_data
   vm_prompt_start_vm "yes"
 
   vm_confirm_advanced_settings "Ready to create ${APP} VM?" || advanced_settings
