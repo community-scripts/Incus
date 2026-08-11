@@ -41,7 +41,7 @@ the bootstrap line loads the engine from core instead of ProxmoxVE's own `misc/`
 
 ```
 ProxmoxVE/ct/debian.sh   →  source .../ProxmoxVE/main/misc/build.func   (monolith, PVE only)
-Incus/ct/debian.sh       →  source .../core/main/shared/build.func      (detects the host)
+Incus/ct/debian.sh       →  source .../core/main/core/build.func      (detects the host)
 ```
 
 They are kept in sync automatically — see [`.github/workflows/sync-scripts.yml`](.github/workflows/sync-scripts.yml).
