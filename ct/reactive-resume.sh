@@ -7,7 +7,7 @@ source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_
 # Copyright (c) 2021-2026 community-scripts ORG
 # Author: vhsdream | MickLesk (CanbiZ)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
-# Source: https://rxresume.org | Github: https://github.com/amruthpillai/reactive-resume
+# Source: https://rxresu.me/ | Github: https://github.com/amruthpillai/reactive-resume
 
 APP="Reactive-Resume"
 var_tags="${var_tags:-documents}"
@@ -49,7 +49,6 @@ function update_script() {
     msg_info "Updating Reactive Resume (Patience)"
     cd /opt/reactive-resume
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-
     corepack prepare --activate
     export CI="true"
     export NODE_ENV="production"

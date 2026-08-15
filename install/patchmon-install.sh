@@ -60,6 +60,7 @@ REDIS_PORT=6379
 # OIDC_ENFORCE_HTTPS=true
 
 AGENT_BINARIES_DIR=/opt/patchmon/agents
+SSG_CONTENT_DIR=/opt/patchmon/ssg-content
 EOF
 msg_ok "Configured PatchMon"
 
@@ -84,6 +85,8 @@ for arch in "${AGENT_NAME[@]}"; do
   [[ "${arch}" != *.exe ]] && chmod 755 "/opt/patchmon/agents/patchmon-agent-${arch}"
 done
 msg_ok "Fetched PatchMon agent binaries"
+
+fetch_and_deploy_gh_release "ssg-content" "ComplianceAsCode/content" "prebuild" "latest" "/opt/patchmon/ssg-content" "scap-security-guide-*.tar.gz"
 
 msg_info "Creating service"
 cat <<EOF >/etc/systemd/system/patchmon-server.service
