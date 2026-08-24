@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,86 +22,86 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/romm ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/romm ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if [[ ! -x /usr/bin/7zz || ! -x /usr/bin/bsdtar ]]; then
-    msg_info "Installing Archive Tools"
-    $STD apt install -y 7zip-standalone libarchive-tools
-    msg_ok "Installed Archive Tools"
-  fi
+	if [[ ! -x /usr/bin/7zz || ! -x /usr/bin/bsdtar ]]; then
+		msg_info "Installing Archive Tools"
+		$STD apt install -y 7zip-standalone libarchive-tools
+		msg_ok "Installed Archive Tools"
+	fi
 
-  NODE_VERSION="24" setup_nodejs
+	NODE_VERSION="24" setup_nodejs
 
-  if check_for_gh_release "romm" "rommapp/romm"; then
-    msg_info "Stopping Services"
-    systemctl stop romm-backend romm-worker romm-scheduler romm-watcher
-    msg_ok "Stopped Services"
+	if check_for_gh_release "romm" "rommapp/romm"; then
+		msg_info "Stopping Services"
+		systemctl stop romm-backend romm-worker romm-scheduler romm-watcher
+		msg_ok "Stopped Services"
 
-    create_backup /opt/romm/.env
-    BACKUP_DIR=/opt/romm-players.backup create_backup \
-      /opt/romm/frontend/dist/assets/emulatorjs \
-      /opt/romm/frontend/dist/assets/ruffle
+		create_backup /opt/romm/.env
+		BACKUP_DIR=/opt/romm-players.backup create_backup \
+			/opt/romm/frontend/dist/assets/emulatorjs \
+			/opt/romm/frontend/dist/assets/ruffle
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "romm" "rommapp/romm" "tarball" "latest" "/opt/romm"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "romm" "rommapp/romm" "tarball" "latest" "/opt/romm"
 
-    find /opt/romm/backend/alembic/versions -maxdepth 1 -type f -name '1.*.py' -delete 2>/dev/null || true
-    find /opt/romm/backend/alembic/versions -maxdepth 1 -type f -name '2.0.0_.py' -delete 2>/dev/null || true
-    find /opt/romm/backend -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
+		find /opt/romm/backend/alembic/versions -maxdepth 1 -type f -name '1.*.py' -delete 2>/dev/null || true
+		find /opt/romm/backend/alembic/versions -maxdepth 1 -type f -name '2.0.0_.py' -delete 2>/dev/null || true
+		find /opt/romm/backend -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating ROMM"
-    cd /opt/romm
-    $STD uv sync --all-extras
-    cd /opt/romm/backend
-    $STD uv run alembic upgrade head
-    if [[ -f /opt/romm/backend/utils/rom_patcher/package.json ]]; then
-      cd /opt/romm/backend/utils/rom_patcher
-      $STD npm install --ignore-scripts --no-audit --no-fund
-      if [[ -d node_modules/rom-patcher/rom-patcher-js ]]; then
-        rm -rf rom-patcher-js
-        cp -r node_modules/rom-patcher/rom-patcher-js ./rom-patcher-js
-      fi
-      rm -rf node_modules
-    fi
-    cd /opt/romm/frontend
-    $STD npm install
-    $STD npm run build
-    # Merge static assets into dist folder
-    cp -rf /opt/romm/frontend/assets/* /opt/romm/frontend/dist/assets/
-    mkdir -p /opt/romm/frontend/dist/assets/romm
-    ROMM_BASE=$(grep '^ROMM_BASE_PATH=' /opt/romm/.env | cut -d'=' -f2)
-    ROMM_BASE=${ROMM_BASE:-/var/lib/romm}
-    ln -sfn "$ROMM_BASE"/resources /opt/romm/frontend/dist/assets/romm/resources
-    ln -sfn "$ROMM_BASE"/assets /opt/romm/frontend/dist/assets/romm/assets
-    if [[ -f /etc/angie/http.d/romm.conf ]]; then
-      sed -i "s|alias .*/library/;|alias ${ROMM_BASE}/library/;|" /etc/angie/http.d/romm.conf
-      systemctl reload angie
-    elif [[ -f /etc/nginx/sites-available/romm ]]; then
-      sed -i "s|alias .*/library/;|alias ${ROMM_BASE}/library/;|" /etc/nginx/sites-available/romm
-      nginx_enable_site romm
-    fi
-    msg_ok "Updated ROMM"
+		msg_info "Updating ROMM"
+		cd /opt/romm
+		$STD uv sync --all-extras
+		cd /opt/romm/backend
+		$STD uv run alembic upgrade head
+		if [[ -f /opt/romm/backend/utils/rom_patcher/package.json ]]; then
+			cd /opt/romm/backend/utils/rom_patcher
+			$STD npm install --ignore-scripts --no-audit --no-fund
+			if [[ -d node_modules/rom-patcher/rom-patcher-js ]]; then
+				rm -rf rom-patcher-js
+				cp -r node_modules/rom-patcher/rom-patcher-js ./rom-patcher-js
+			fi
+			rm -rf node_modules
+		fi
+		cd /opt/romm/frontend
+		$STD npm install
+		$STD npm run build
+		# Merge static assets into dist folder
+		cp -rf /opt/romm/frontend/assets/* /opt/romm/frontend/dist/assets/
+		mkdir -p /opt/romm/frontend/dist/assets/romm
+		ROMM_BASE=$(grep '^ROMM_BASE_PATH=' /opt/romm/.env | cut -d'=' -f2)
+		ROMM_BASE=${ROMM_BASE:-/var/lib/romm}
+		ln -sfn "$ROMM_BASE"/resources /opt/romm/frontend/dist/assets/romm/resources
+		ln -sfn "$ROMM_BASE"/assets /opt/romm/frontend/dist/assets/romm/assets
+		if [[ -f /etc/angie/http.d/romm.conf ]]; then
+			sed -i "s|alias .*/library/;|alias ${ROMM_BASE}/library/;|" /etc/angie/http.d/romm.conf
+			systemctl reload angie
+		elif [[ -f /etc/nginx/sites-available/romm ]]; then
+			sed -i "s|alias .*/library/;|alias ${ROMM_BASE}/library/;|" /etc/nginx/sites-available/romm
+			nginx_enable_site romm
+		fi
+		msg_ok "Updated ROMM"
 
-    msg_info "Starting Services"
-    systemctl start romm-backend romm-worker romm-scheduler romm-watcher
-    msg_ok "Started Services"
-    msg_ok "Updated successfully"
-  fi
+		msg_info "Starting Services"
+		systemctl start romm-backend romm-worker romm-scheduler romm-watcher
+		msg_ok "Started Services"
+		msg_ok "Updated successfully"
+	fi
 
-  if check_for_gh_release "EmulatorJS" "EmulatorJS/EmulatorJS" "v4.2.3"; then
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "EmulatorJS" "EmulatorJS/EmulatorJS" "prebuild" "v4.2.3" "/opt/romm/frontend/dist/assets/emulatorjs" "4.2.3.7z"
-    systemctl restart romm-backend romm-worker romm-scheduler romm-watcher
-    msg_ok "Updated EmulatorJS successfully"
-  fi
-  exit
+	if check_for_gh_release "EmulatorJS" "EmulatorJS/EmulatorJS" "v4.2.3"; then
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "EmulatorJS" "EmulatorJS/EmulatorJS" "prebuild" "v4.2.3" "/opt/romm/frontend/dist/assets/emulatorjs" "4.2.3.7z"
+		systemctl restart romm-backend romm-worker romm-scheduler romm-watcher
+		msg_ok "Updated EmulatorJS successfully"
+	fi
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,42 +22,42 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/mmdl ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  setup_mariadb
-  if check_for_gh_release "mmdl" "intri-in/manage-my-damn-life-nextjs"; then
-    msg_info "Stopping service"
-    systemctl stop mmdl
-    msg_ok "Stopped service"
+	if [[ ! -d /opt/mmdl ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	setup_mariadb
+	if check_for_gh_release "mmdl" "intri-in/manage-my-damn-life-nextjs"; then
+		msg_info "Stopping service"
+		systemctl stop mmdl
+		msg_ok "Stopped service"
 
-    msg_info "Creating Backup"
-    cp /opt/mmdl/.env /opt/mmdl.env
-    rm -rf /opt/mmdl
-    msg_ok "Backup Created"
+		msg_info "Creating Backup"
+		cp /opt/mmdl/.env /opt/mmdl.env
+		rm -rf /opt/mmdl
+		msg_ok "Backup Created"
 
-    fetch_and_deploy_gh_release "mmdl" "intri-in/manage-my-damn-life-nextjs" "tarball"
-    NODE_VERSION="22" setup_nodejs
+		fetch_and_deploy_gh_release "mmdl" "intri-in/manage-my-damn-life-nextjs" "tarball"
+		NODE_VERSION="22" setup_nodejs
 
-    msg_info "Configuring ${APP}"
-    cd /opt/mmdl
-    export NEXT_TELEMETRY_DISABLED=1
-    $STD npm install
-    $STD npm run migrate
-    $STD npm run build
-    msg_ok "Configured ${APP}"
+		msg_info "Configuring ${APP}"
+		cd /opt/mmdl
+		export NEXT_TELEMETRY_DISABLED=1
+		$STD npm install
+		$STD npm run migrate
+		$STD npm run build
+		msg_ok "Configured ${APP}"
 
-    msg_info "Starting service"
-    systemctl start mmdl
-    msg_ok "Started service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting service"
+		systemctl start mmdl
+		msg_ok "Started service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

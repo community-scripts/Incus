@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,18 +22,18 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  if [[ ! -d /opt/mylar3 ]]; then
-    msg_error "No Mylar3 Installation Found!"
-    exit
-  fi
+	header_info
+	if [[ ! -d /opt/mylar3 ]]; then
+		msg_error "No Mylar3 Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "mylar3" "MylarComics/mylar3"; then
-    fetch_and_deploy_gh_release "mylar3" "MylarComics/mylar3" "tarball"
-    systemctl restart mylar3
-    msg_ok "Updated successfully!"
-  fi
-  exit
+	if check_for_gh_release "mylar3" "MylarComics/mylar3"; then
+		fetch_and_deploy_gh_release "mylar3" "MylarComics/mylar3" "tarball"
+		systemctl restart mylar3
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

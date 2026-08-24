@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,48 +22,48 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/baserow ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/baserow ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "baserow" "baserow/baserow"; then
-    msg_info "Stopping Services"
-    systemctl stop baserow-backend baserow-celery baserow-celery-beat baserow-celery-export baserow-frontend
-    msg_ok "Stopped Services"
+	if check_for_gh_release "baserow" "baserow/baserow"; then
+		msg_info "Stopping Services"
+		systemctl stop baserow-backend baserow-celery baserow-celery-beat baserow-celery-export baserow-frontend
+		msg_ok "Stopped Services"
 
-    create_backup /opt/baserow/.env
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "baserow" "baserow/baserow" "tarball"
-    restore_backup
+		create_backup /opt/baserow/.env
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "baserow" "baserow/baserow" "tarball"
+		restore_backup
 
-    msg_info "Configuring Baserow"
-    cd /opt/baserow/backend
-    $STD uv sync --frozen --no-dev
-    msg_ok "Configured Baserow"
+		msg_info "Configuring Baserow"
+		cd /opt/baserow/backend
+		$STD uv sync --frozen --no-dev
+		msg_ok "Configured Baserow"
 
-    msg_info "Rebuilding Frontend"
-    cd /opt/baserow/web-frontend
-    $STD npm install
-    $STD npm run build
-    msg_ok "Rebuilt Frontend"
+		msg_info "Rebuilding Frontend"
+		cd /opt/baserow/web-frontend
+		$STD npm install
+		$STD npm run build
+		msg_ok "Rebuilt Frontend"
 
-    msg_info "Running Migrations"
-    cd /opt/baserow/backend
-    set -a && source /opt/baserow/.env && set +a
-    export PYTHONPATH="/opt/baserow/backend/src:/opt/baserow/premium/backend/src:/opt/baserow/enterprise/backend/src"
-    $STD /opt/baserow/backend/.venv/bin/python src/baserow/manage.py migrate
-    msg_ok "Ran Migrations"
+		msg_info "Running Migrations"
+		cd /opt/baserow/backend
+		set -a && source /opt/baserow/.env && set +a
+		export PYTHONPATH="/opt/baserow/backend/src:/opt/baserow/premium/backend/src:/opt/baserow/enterprise/backend/src"
+		$STD /opt/baserow/backend/.venv/bin/python src/baserow/manage.py migrate
+		msg_ok "Ran Migrations"
 
-    msg_info "Starting Services"
-    systemctl start baserow-backend baserow-celery baserow-celery-beat baserow-celery-export baserow-frontend
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start baserow-backend baserow-celery baserow-celery-beat baserow-celery-export baserow-frontend
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

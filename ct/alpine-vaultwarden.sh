@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,38 +22,38 @@ color
 catch_errors
 
 function update_script() {
-  CHOICE=$(msg_menu "Vaultwarden Update Options" \
-    "1" "Update Vaultwarden" \
-    "2" "Reset ADMIN_TOKEN")
+	CHOICE=$(msg_menu "Vaultwarden Update Options" \
+		"1" "Update Vaultwarden" \
+		"2" "Reset ADMIN_TOKEN")
 
-  case $CHOICE in
-  1)
-    $STD apk -U upgrade
-    rc-service vaultwarden restart -q
-    msg_ok "Updated successfully!"
-    exit
-    ;;
-  2)
-    if [[ "${PHS_SILENT:-0}" == "1" ]]; then
-      msg_warn "Reset ADMIN_TOKEN requires interactive mode, skipping."
-      exit
-    fi
-    read -r -s -p "Setup your ADMIN_TOKEN (make it strong): " NEWTOKEN
-    echo ""
-    if [[ -n "$NEWTOKEN" ]]; then
-      if ! command -v argon2 >/dev/null 2>&1; then apk add argon2 &>/dev/null; fi
-      TOKEN=$(echo -n "${NEWTOKEN}" | argon2 "$(openssl rand -base64 32)" -e -id -k 19456 -t 2 -p 1)
-      if [[ ! -f /var/lib/vaultwarden/config.json ]]; then
-        sed -i "s|export ADMIN_TOKEN=.*|export ADMIN_TOKEN='${TOKEN}'|" /etc/conf.d/vaultwarden
-      else
-        sed -i "s|\"admin_token\": .*|\"admin_token\": \"${TOKEN}\",|" /var/lib/vaultwarden/config.json
-      fi
-      rc-service vaultwarden restart -q
-      msg_ok "Admin token updated"
-    fi
-    exit
-    ;;
-  esac
+	case $CHOICE in
+	1)
+		$STD apk -U upgrade
+		rc-service vaultwarden restart -q
+		msg_ok "Updated successfully!"
+		exit
+		;;
+	2)
+		if [[ "${PHS_SILENT:-0}" == "1" ]]; then
+			msg_warn "Reset ADMIN_TOKEN requires interactive mode, skipping."
+			exit
+		fi
+		read -r -s -p "Setup your ADMIN_TOKEN (make it strong): " NEWTOKEN
+		echo ""
+		if [[ -n "$NEWTOKEN" ]]; then
+			if ! command -v argon2 >/dev/null 2>&1; then apk add argon2 &>/dev/null; fi
+			TOKEN=$(echo -n "${NEWTOKEN}" | argon2 "$(openssl rand -base64 32)" -e -id -k 19456 -t 2 -p 1)
+			if [[ ! -f /var/lib/vaultwarden/config.json ]]; then
+				sed -i "s|export ADMIN_TOKEN=.*|export ADMIN_TOKEN='${TOKEN}'|" /etc/conf.d/vaultwarden
+			else
+				sed -i "s|\"admin_token\": .*|\"admin_token\": \"${TOKEN}\",|" /var/lib/vaultwarden/config.json
+			fi
+			rc-service vaultwarden restart -q
+			msg_ok "Admin token updated"
+		fi
+		exit
+		;;
+	esac
 }
 
 start

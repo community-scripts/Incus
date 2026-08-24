@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,51 +22,51 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/tplink ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/tplink ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  msg_info "Updating MongoDB"
-  if [[ "$(arch_resolve)" == "arm64" ]] || lscpu | grep -q 'avx'; then
-    MONGO_VERSION="8.0"
-  else
-    msg_error "No AVX detected (CPU-Flag)! We have discontinued support for this. You are welcome to try it manually with a Debian LXC, but due to the many issues with Omada, we currently only support AVX CPUs."
-    exit 10
-  fi
+	msg_info "Updating MongoDB"
+	if [[ "$(arch_resolve)" == "arm64" ]] || lscpu | grep -q 'avx'; then
+		MONGO_VERSION="8.0"
+	else
+		msg_error "No AVX detected (CPU-Flag)! We have discontinued support for this. You are welcome to try it manually with a Debian LXC, but due to the many issues with Omada, we currently only support AVX CPUs."
+		exit 10
+	fi
 
-  JAVA_VERSION="21" setup_java
+	JAVA_VERSION="21" setup_java
 
-  OMADA_URL=$(curl -fsSL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15" "https://support.omadanetworks.com/en/download/software/omada-controller/" |
-    grep -o 'https://static\.tp-link\.com/upload/software/[^"]*linux_x64[^"]*\.deb' |
-    head -n1)
-  OMADA_PKG=$(basename "${OMADA_URL}")
-  VERSION=$(sed -n 's/.*_v\([0-9.]*\)_linux.*/\1/p' <<<"${OMADA_PKG}")
+	OMADA_URL=$(curl -fsSL -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Safari/605.1.15" "https://support.omadanetworks.com/en/download/software/omada-controller/" |
+		grep -o 'https://static\.tp-link\.com/upload/software/[^"]*linux_x64[^"]*\.deb' |
+		head -n1)
+	OMADA_PKG=$(basename "${OMADA_URL}")
+	VERSION=$(sed -n 's/.*_v\([0-9.]*\)_linux.*/\1/p' <<<"${OMADA_PKG}")
 
-  CURRENT_VERSION=$(cat $HOME/.omada 2>/dev/null || echo "0")
+	CURRENT_VERSION=$(cat $HOME/.omada 2>/dev/null || echo "0")
 
-  if dpkg --compare-versions "${VERSION}" gt "${CURRENT_VERSION}"; then
+	if dpkg --compare-versions "${VERSION}" gt "${CURRENT_VERSION}"; then
 
-    msg_info "Updating Omada Controller"
+		msg_info "Updating Omada Controller"
 
-    if [ -z "${OMADA_PKG}" ]; then
-      msg_error "Could not retrieve Omada package – server may be down."
-      exit
-    fi
-    curl -fsSL "${OMADA_URL}" -o "${OMADA_PKG}"
-    export DEBIAN_FRONTEND=noninteractive
-    $STD dpkg -i "${OMADA_PKG}"
-    rm -f "${OMADA_PKG}"
-    echo "${VERSION}" >$HOME/.omada
-    msg_ok "Updated Omada Controller to ${VERSION}"
-    msg_ok "Updated successfully!"
-  else
-    msg_ok "No update available: ${APP} (${CURRENT_VERSION})"
-  fi
-  exit
+		if [ -z "${OMADA_PKG}" ]; then
+			msg_error "Could not retrieve Omada package – server may be down."
+			exit
+		fi
+		curl -fsSL "${OMADA_URL}" -o "${OMADA_PKG}"
+		export DEBIAN_FRONTEND=noninteractive
+		$STD dpkg -i "${OMADA_PKG}"
+		rm -f "${OMADA_PKG}"
+		echo "${VERSION}" >$HOME/.omada
+		msg_ok "Updated Omada Controller to ${VERSION}"
+		msg_ok "Updated successfully!"
+	else
+		msg_ok "No update available: ${APP} (${CURRENT_VERSION})"
+	fi
+	exit
 }
 
 start

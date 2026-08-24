@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -26,32 +23,32 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f /lib/systemd/system/lyrionmusicserver.service ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -f /lib/systemd/system/lyrionmusicserver.service ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  DEB_ARCH=$(arch_resolve "amd64" "arm")
-  DEB_URL=$(curl_with_retry 'https://lyrion.org/getting-started/' | grep -oP "<a\s[^>]*href=\"\K[^\"]*${DEB_ARCH}\.deb(?=\"[^>]*>)" | head -n 1)
-  RELEASE=$(echo "$DEB_URL" | grep -oP "lyrionmusicserver_\K[0-9.]+(?=_${DEB_ARCH}\.deb)")
-  DEB_FILE="/tmp/lyrionmusicserver_${RELEASE}_${DEB_ARCH}.deb"
-  if [[ ! -f /opt/lyrion_version.txt ]] || [[ ${RELEASE} != "$(cat /opt/lyrion_version.txt)" ]]; then
-    msg_info "Updating $APP to ${RELEASE}"
-    curl_with_retry "$DEB_URL" "$DEB_FILE"
-    $STD apt install "$DEB_FILE" -y
-    systemctl restart lyrionmusicserver
-    rm -f "$DEB_FILE"
-    echo "${RELEASE}" >/opt/lyrion_version.txt
-    msg_ok "Updated $APP to ${RELEASE}"
-    msg_ok "Updated successfully!"
-  else
-    msg_ok "$APP is already up to date (${RELEASE})"
-  fi
-  exit
+	DEB_ARCH=$(arch_resolve "amd64" "arm")
+	DEB_URL=$(curl_with_retry 'https://lyrion.org/getting-started/' | grep -oP "<a\s[^>]*href=\"\K[^\"]*${DEB_ARCH}\.deb(?=\"[^>]*>)" | head -n 1)
+	RELEASE=$(echo "$DEB_URL" | grep -oP "lyrionmusicserver_\K[0-9.]+(?=_${DEB_ARCH}\.deb)")
+	DEB_FILE="/tmp/lyrionmusicserver_${RELEASE}_${DEB_ARCH}.deb"
+	if [[ ! -f /opt/lyrion_version.txt ]] || [[ ${RELEASE} != "$(cat /opt/lyrion_version.txt)" ]]; then
+		msg_info "Updating $APP to ${RELEASE}"
+		curl_with_retry "$DEB_URL" "$DEB_FILE"
+		$STD apt install "$DEB_FILE" -y
+		systemctl restart lyrionmusicserver
+		rm -f "$DEB_FILE"
+		echo "${RELEASE}" >/opt/lyrion_version.txt
+		msg_ok "Updated $APP to ${RELEASE}"
+		msg_ok "Updated successfully!"
+	else
+		msg_ok "$APP is already up to date (${RELEASE})"
+	fi
+	exit
 }
 
 start

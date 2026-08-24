@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,54 +22,54 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/babybuddy ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/babybuddy ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "babybuddy" "babybuddy/babybuddy"; then
-    setup_uv
+	if check_for_gh_release "babybuddy" "babybuddy/babybuddy"; then
+		setup_uv
 
-    msg_info "Stopping Services"
-    systemctl stop nginx
-    systemctl stop uwsgi
-    msg_ok "Services Stopped"
+		msg_info "Stopping Services"
+		systemctl stop nginx
+		systemctl stop uwsgi
+		msg_ok "Services Stopped"
 
-    create_backup /opt/babybuddy/babybuddy/settings/production.py
+		create_backup /opt/babybuddy/babybuddy/settings/production.py
 
-    msg_info "Cleaning old files"
-    cd /opt/babybuddy || exit
-    find . -mindepth 1 -maxdepth 1 ! -name '.venv' -exec rm -rf -- {} +
-    msg_ok "Cleaned old files"
+		msg_info "Cleaning old files"
+		cd /opt/babybuddy || exit
+		find . -mindepth 1 -maxdepth 1 ! -name '.venv' -exec rm -rf -- {} +
+		msg_ok "Cleaned old files"
 
-    fetch_and_deploy_gh_release "babybuddy" "babybuddy/babybuddy" "tarball"
-    restore_backup
+		fetch_and_deploy_gh_release "babybuddy" "babybuddy/babybuddy" "tarball"
+		restore_backup
 
-    msg_info "Updating ${APP}"
-    cd /opt/babybuddy
-    source .venv/bin/activate
-    $STD uv pip install -r requirements.txt
-    export DJANGO_SETTINGS_MODULE=babybuddy.settings.production
-    $STD python manage.py makemigrations
-    $STD python manage.py migrate
-    msg_ok "Updated ${APP}"
+		msg_info "Updating ${APP}"
+		cd /opt/babybuddy
+		source .venv/bin/activate
+		$STD uv pip install -r requirements.txt
+		export DJANGO_SETTINGS_MODULE=babybuddy.settings.production
+		$STD python manage.py makemigrations
+		$STD python manage.py migrate
+		msg_ok "Updated ${APP}"
 
-    msg_info "Fixing permissions"
-    chown -R www-data:www-data /opt/data
-    chmod 640 /opt/data/db.sqlite3
-    chmod 750 /opt/data
-    msg_ok "Permissions fixed"
+		msg_info "Fixing permissions"
+		chown -R www-data:www-data /opt/data
+		chmod 640 /opt/data/db.sqlite3
+		chmod 750 /opt/data
+		msg_ok "Permissions fixed"
 
-    msg_info "Starting Services"
-    systemctl start uwsgi
-    systemctl start nginx
-    msg_ok "Services Started"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start uwsgi
+		systemctl start nginx
+		msg_ok "Services Started"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 start
 build_container

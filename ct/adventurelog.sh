@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
+
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,57 +23,57 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/adventurelog ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  ensure_dependencies memcached libmemcached-tools
-  if check_for_gh_release "adventurelog" "seanmorley15/adventurelog"; then
-    msg_info "Stopping Services"
-    systemctl stop adventurelog-backend
-    systemctl stop adventurelog-frontend
-    msg_ok "Services Stopped"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/adventurelog ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	ensure_dependencies memcached libmemcached-tools
+	if check_for_gh_release "adventurelog" "seanmorley15/adventurelog"; then
+		msg_info "Stopping Services"
+		systemctl stop adventurelog-backend
+		systemctl stop adventurelog-frontend
+		msg_ok "Services Stopped"
 
-    create_backup /opt/adventurelog/backend/server/.env \
-      /opt/adventurelog/backend/server/media
+		create_backup /opt/adventurelog/backend/server/.env \
+			/opt/adventurelog/backend/server/media
 
-    fetch_and_deploy_gh_release "adventurelog" "seanmorley15/adventurelog" "tarball"
-    PYTHON_VERSION="3.13" setup_uv
+		fetch_and_deploy_gh_release "adventurelog" "seanmorley15/adventurelog" "tarball"
+		PYTHON_VERSION="3.13" setup_uv
 
-    msg_info "Ensuring PostgreSQL Extensions"
-    $STD sudo -u postgres psql -d adventurelog_db -c "CREATE EXTENSION IF NOT EXISTS postgis;"
-    msg_ok "PostgreSQL Extensions Ready"
+		msg_info "Ensuring PostgreSQL Extensions"
+		$STD sudo -u postgres psql -d adventurelog_db -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+		msg_ok "PostgreSQL Extensions Ready"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating AdventureLog"
-    cd /opt/adventurelog/backend/server
-    if [[ ! -x .venv/bin/python ]]; then
-      $STD uv venv --clear .venv
-      $STD .venv/bin/python -m ensurepip --upgrade
-    fi
-    $STD .venv/bin/python -m pip install --upgrade pip
-    $STD .venv/bin/python -m pip install -r requirements.txt
-    $STD .venv/bin/python -m pip install 'djangorestframework<3.15'
-    $STD .venv/bin/python -m manage collectstatic --noinput
-    $STD .venv/bin/python -m manage migrate
+		msg_info "Updating AdventureLog"
+		cd /opt/adventurelog/backend/server
+		if [[ ! -x .venv/bin/python ]]; then
+			$STD uv venv --clear .venv
+			$STD .venv/bin/python -m ensurepip --upgrade
+		fi
+		$STD .venv/bin/python -m pip install --upgrade pip
+		$STD .venv/bin/python -m pip install -r requirements.txt
+		$STD .venv/bin/python -m pip install 'djangorestframework<3.15'
+		$STD .venv/bin/python -m manage collectstatic --noinput
+		$STD .venv/bin/python -m manage migrate
 
-    cd /opt/adventurelog/frontend
-    $STD pnpm i
-    $STD pnpm build
-    msg_ok "Updated AdventureLog"
+		cd /opt/adventurelog/frontend
+		$STD pnpm i
+		$STD pnpm build
+		msg_ok "Updated AdventureLog"
 
-    msg_info "Starting Services"
-    systemctl daemon-reexec
-    systemctl start adventurelog-backend
-    systemctl start adventurelog-frontend
-    msg_ok "Services Started"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl daemon-reexec
+		systemctl start adventurelog-backend
+		systemctl start adventurelog-frontend
+		msg_ok "Services Started"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

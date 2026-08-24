@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,32 +22,32 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -f /usr/bin/zot ]]; then
-    msg_error "No ${APP} installation found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -f /usr/bin/zot ]]; then
+		msg_error "No ${APP} installation found!"
+		exit
+	fi
 
-  if check_for_gh_release "zot" "project-zot/zot"; then
-    msg_info "Stopping Zot service"
-    systemctl stop zot
-    msg_ok "Stopped Zot service"
+	if check_for_gh_release "zot" "project-zot/zot"; then
+		msg_info "Stopping Zot service"
+		systemctl stop zot
+		msg_ok "Stopped Zot service"
 
-    rm -f /usr/bin/zot
-    fetch_and_deploy_gh_release "zot" "project-zot/zot" "singlefile" "latest" "/usr/bin" "zot-linux-$(arch_resolve)"
+		rm -f /usr/bin/zot
+		fetch_and_deploy_gh_release "zot" "project-zot/zot" "singlefile" "latest" "/usr/bin" "zot-linux-$(arch_resolve)"
 
-    msg_info "Configuring Zot Registry"
-    chown root:root /usr/bin/zot
-    msg_ok "Configured Zot Registry"
+		msg_info "Configuring Zot Registry"
+		chown root:root /usr/bin/zot
+		msg_ok "Configured Zot Registry"
 
-    msg_info "Starting service"
-    systemctl start zot
-    msg_ok "Service started"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting service"
+		systemctl start zot
+		msg_ok "Service started"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

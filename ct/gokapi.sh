@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,35 +22,35 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/gokapi ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "gokapi" "Forceu/Gokapi"; then
-    msg_info "Stopping Service"
-    systemctl stop gokapi
-    msg_ok "Stopped Service"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/gokapi ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "gokapi" "Forceu/Gokapi"; then
+		msg_info "Stopping Service"
+		systemctl stop gokapi
+		msg_ok "Stopped Service"
 
-    fetch_and_deploy_gh_release "gokapi" "Forceu/Gokapi" "prebuild" "latest" "/opt/gokapi" "*linux*$(arch_resolve).zip"
+		fetch_and_deploy_gh_release "gokapi" "Forceu/Gokapi" "prebuild" "latest" "/opt/gokapi" "*linux*$(arch_resolve).zip"
 
-    # Migrate from pre-v2.2.4 binary name (gokapi-linux_amd64 -> gokapi)
-    if [[ -f /opt/gokapi/gokapi-linux_amd64 ]]; then
-      rm -f /opt/gokapi/gokapi-linux_amd64
-    fi
-    if grep -q "gokapi-linux_amd64" /etc/systemd/system/gokapi.service 2>/dev/null; then
-      sed -i 's|gokapi-linux_amd64|gokapi|g' /etc/systemd/system/gokapi.service
-      systemctl daemon-reload
-    fi
+		# Migrate from pre-v2.2.4 binary name (gokapi-linux_amd64 -> gokapi)
+		if [[ -f /opt/gokapi/gokapi-linux_amd64 ]]; then
+			rm -f /opt/gokapi/gokapi-linux_amd64
+		fi
+		if grep -q "gokapi-linux_amd64" /etc/systemd/system/gokapi.service 2>/dev/null; then
+			sed -i 's|gokapi-linux_amd64|gokapi|g' /etc/systemd/system/gokapi.service
+			systemctl daemon-reload
+		fi
 
-    msg_info "Starting Service"
-    systemctl start gokapi
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start gokapi
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

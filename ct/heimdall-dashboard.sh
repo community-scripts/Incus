@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,57 +22,57 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/Heimdall ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/Heimdall ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "Heimdall" "linuxserver/Heimdall"; then
-    msg_info "Stopping Service"
-    systemctl stop heimdall
-    sleep 1
-    msg_ok "Stopped Service"
+	if check_for_gh_release "Heimdall" "linuxserver/Heimdall"; then
+		msg_info "Stopping Service"
+		systemctl stop heimdall
+		sleep 1
+		msg_ok "Stopped Service"
 
-    msg_info "Backing up Data"
-    cp -R /opt/Heimdall/database database-backup
-    cp -R /opt/Heimdall/public public-backup
-    sleep 1
-    msg_ok "Backed up Data"
+		msg_info "Backing up Data"
+		cp -R /opt/Heimdall/database database-backup
+		cp -R /opt/Heimdall/public public-backup
+		sleep 1
+		msg_ok "Backed up Data"
 
-    setup_composer
-    fetch_and_deploy_gh_release "Heimdall" "linuxserver/Heimdall" "tarball"
+		setup_composer
+		fetch_and_deploy_gh_release "Heimdall" "linuxserver/Heimdall" "tarball"
 
-    msg_info "Updating Heimdall-Dashboard"
-    cd /opt/Heimdall
-    sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
-    rm -f bootstrap/cache/*.php
-    export COMPOSER_ALLOW_SUPERUSER=1
-    $STD composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-    $STD php artisan optimize:clear
-    msg_ok "Updated Heimdall-Dashboard"
+		msg_info "Updating Heimdall-Dashboard"
+		cd /opt/Heimdall
+		sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
+		rm -f bootstrap/cache/*.php
+		export COMPOSER_ALLOW_SUPERUSER=1
+		$STD composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+		$STD php artisan optimize:clear
+		msg_ok "Updated Heimdall-Dashboard"
 
-    msg_info "Restoring Data"
-    cd ~
-    cp -R database-backup/* /opt/Heimdall/database
-    cp -R public-backup/* /opt/Heimdall/public
-    sleep 1
-    msg_ok "Restored Data"
+		msg_info "Restoring Data"
+		cd ~
+		cp -R database-backup/* /opt/Heimdall/database
+		cp -R public-backup/* /opt/Heimdall/public
+		sleep 1
+		msg_ok "Restored Data"
 
-    msg_info "Cleaning Up"
-    rm -rf {public-backup,database-backup}
-    sleep 1
-    msg_ok "Cleaned Up"
+		msg_info "Cleaning Up"
+		rm -rf {public-backup,database-backup}
+		sleep 1
+		msg_ok "Cleaned Up"
 
-    msg_info "Starting Service"
-    systemctl start heimdall.service
-    sleep 2
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start heimdall.service
+		sleep 2
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

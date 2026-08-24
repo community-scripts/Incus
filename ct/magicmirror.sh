@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,48 +22,48 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/magicmirror ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "magicmirror" "MagicMirrorOrg/MagicMirror"; then
-    msg_info "Stopping Service"
-    systemctl stop magicmirror
-    msg_ok "Stopped Service"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/magicmirror ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "magicmirror" "MagicMirrorOrg/MagicMirror"; then
+		msg_info "Stopping Service"
+		systemctl stop magicmirror
+		msg_ok "Stopped Service"
 
-    NODE_VERSION="24" setup_nodejs
+		NODE_VERSION="24" setup_nodejs
 
-    msg_info "Backing up data"
-    rm -rf /opt/magicmirror-backup
-    mkdir /opt/magicmirror-backup
-    cp /opt/magicmirror/config/config.js /opt/magicmirror-backup
-    if [[ -f /opt/magicmirror/css/custom.css ]]; then
-      cp /opt/magicmirror/css/custom.css /opt/magicmirror-backup
-    fi
-    cp -r /opt/magicmirror/modules /opt/magicmirror-backup
-    msg_ok "Backed up data"
+		msg_info "Backing up data"
+		rm -rf /opt/magicmirror-backup
+		mkdir /opt/magicmirror-backup
+		cp /opt/magicmirror/config/config.js /opt/magicmirror-backup
+		if [[ -f /opt/magicmirror/css/custom.css ]]; then
+			cp /opt/magicmirror/css/custom.css /opt/magicmirror-backup
+		fi
+		cp -r /opt/magicmirror/modules /opt/magicmirror-backup
+		msg_ok "Backed up data"
 
-    fetch_and_deploy_gh_release "magicmirror" "MagicMirrorOrg/MagicMirror" "tarball"
+		fetch_and_deploy_gh_release "magicmirror" "MagicMirrorOrg/MagicMirror" "tarball"
 
-    msg_info "Configuring MagicMirror"
-    cd /opt/magicmirror
-    sed -i -E 's/("postinstall": )".*"/\1""/; s/("prepare": )".*"/\1""/' package.json
-    $STD npm run install-mm
-    cp /opt/magicmirror-backup/config.js /opt/magicmirror/config/
-    if [[ -f /opt/magicmirror-backup/custom.css ]]; then
-      cp /opt/magicmirror-backup/custom.css /opt/magicmirror/css/
-    fi
-    msg_ok "Configured MagicMirror"
+		msg_info "Configuring MagicMirror"
+		cd /opt/magicmirror
+		sed -i -E 's/("postinstall": )".*"/\1""/; s/("prepare": )".*"/\1""/' package.json
+		$STD npm run install-mm
+		cp /opt/magicmirror-backup/config.js /opt/magicmirror/config/
+		if [[ -f /opt/magicmirror-backup/custom.css ]]; then
+			cp /opt/magicmirror-backup/custom.css /opt/magicmirror/css/
+		fi
+		msg_ok "Configured MagicMirror"
 
-    msg_info "Starting Service"
-    systemctl start magicmirror
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start magicmirror
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

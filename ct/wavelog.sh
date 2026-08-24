@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,51 +22,51 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/wavelog ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  setup_mariadb
-  if check_for_gh_release "wavelog" "wavelog/wavelog"; then
-    msg_info "Stopping Services"
-    systemctl stop apache2
-    msg_ok "Services Stopped"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/wavelog ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	setup_mariadb
+	if check_for_gh_release "wavelog" "wavelog/wavelog"; then
+		msg_info "Stopping Services"
+		systemctl stop apache2
+		msg_ok "Services Stopped"
 
-    msg_info "Creating backup"
-    cp /opt/wavelog/application/config/config.php /opt/config.php
-    cp /opt/wavelog/application/config/database.php /opt/database.php
-    cp -r /opt/wavelog/userdata /opt/userdata
-    if [[ -f /opt/wavelog/assets/js/sections/custom.js ]]; then
-      cp /opt/wavelog/assets/js/sections/custom.js /opt/custom.js
-    fi
-    msg_ok "Backup created"
+		msg_info "Creating backup"
+		cp /opt/wavelog/application/config/config.php /opt/config.php
+		cp /opt/wavelog/application/config/database.php /opt/database.php
+		cp -r /opt/wavelog/userdata /opt/userdata
+		if [[ -f /opt/wavelog/assets/js/sections/custom.js ]]; then
+			cp /opt/wavelog/assets/js/sections/custom.js /opt/custom.js
+		fi
+		msg_ok "Backup created"
 
-    rm -rf /opt/wavelog
-    fetch_and_deploy_gh_release "wavelog" "wavelog/wavelog" "tarball"
+		rm -rf /opt/wavelog
+		fetch_and_deploy_gh_release "wavelog" "wavelog/wavelog" "tarball"
 
-    msg_info "Updating Wavelog"
-    rm -rf /opt/wavelog/install
-    mv /opt/config.php /opt/wavelog/application/config/config.php
-    mv /opt/database.php /opt/wavelog/application/config/database.php
-    cp -r /opt/userdata/* /opt/wavelog/userdata
-    rm -rf /opt/userdata
-    if [[ -f /opt/custom.js ]]; then
-      mv /opt/custom.js /opt/wavelog/assets/js/sections/custom.js
-    fi
-    chown -R www-data:www-data /opt/wavelog/
-    find /opt/wavelog/ -type d -exec chmod 755 {} \;
-    find /opt/wavelog/ -type f -exec chmod 664 {} \;
-    msg_ok "Updated Wavelog"
+		msg_info "Updating Wavelog"
+		rm -rf /opt/wavelog/install
+		mv /opt/config.php /opt/wavelog/application/config/config.php
+		mv /opt/database.php /opt/wavelog/application/config/database.php
+		cp -r /opt/userdata/* /opt/wavelog/userdata
+		rm -rf /opt/userdata
+		if [[ -f /opt/custom.js ]]; then
+			mv /opt/custom.js /opt/wavelog/assets/js/sections/custom.js
+		fi
+		chown -R www-data:www-data /opt/wavelog/
+		find /opt/wavelog/ -type d -exec chmod 755 {} \;
+		find /opt/wavelog/ -type f -exec chmod 664 {} \;
+		msg_ok "Updated Wavelog"
 
-    msg_info "Starting Services"
-    systemctl start apache2
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start apache2
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

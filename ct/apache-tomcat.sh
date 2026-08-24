@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,75 +22,75 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  TOMCAT_DIR=$(ls -d /opt/tomcat-* 2>/dev/null | head -n1)
-  if [[ -z $TOMCAT_DIR || ! -d $TOMCAT_DIR ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	TOMCAT_DIR=$(ls -d /opt/tomcat-* 2>/dev/null | head -n1)
+	if [[ -z $TOMCAT_DIR || ! -d $TOMCAT_DIR ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  # Detect major version and current version from install path (e.g., /opt/tomcat-11 -> 11)
-  TOMCAT_MAJOR=$(basename "$TOMCAT_DIR" | grep -oP 'tomcat-\K[0-9]+')
-  if [[ -z $TOMCAT_MAJOR ]]; then
-    msg_error "Cannot determine Tomcat major version from path: $TOMCAT_DIR"
-    exit
-  fi
-  CURRENT_VERSION=$(grep -oP 'Apache Tomcat Version \K[0-9.]+' "$TOMCAT_DIR/RELEASE-NOTES" 2>/dev/null || echo "unknown")
-  LATEST_VERSION=$(curl -fsSL "https://dlcdn.apache.org/tomcat/tomcat-${TOMCAT_MAJOR}/" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(-M[0-9]+)?/' | sort -V | tail -n1 | sed 's/\/$//; s/v//')
+	# Detect major version and current version from install path (e.g., /opt/tomcat-11 -> 11)
+	TOMCAT_MAJOR=$(basename "$TOMCAT_DIR" | grep -oP 'tomcat-\K[0-9]+')
+	if [[ -z $TOMCAT_MAJOR ]]; then
+		msg_error "Cannot determine Tomcat major version from path: $TOMCAT_DIR"
+		exit
+	fi
+	CURRENT_VERSION=$(grep -oP 'Apache Tomcat Version \K[0-9.]+' "$TOMCAT_DIR/RELEASE-NOTES" 2>/dev/null || echo "unknown")
+	LATEST_VERSION=$(curl -fsSL "https://dlcdn.apache.org/tomcat/tomcat-${TOMCAT_MAJOR}/" | grep -oP 'v[0-9]+\.[0-9]+\.[0-9]+(-M[0-9]+)?/' | sort -V | tail -n1 | sed 's/\/$//; s/v//')
 
-  if [[ -z $LATEST_VERSION ]]; then
-    msg_error "Failed to fetch latest version for Tomcat ${TOMCAT_MAJOR}"
-    exit
-  fi
+	if [[ -z $LATEST_VERSION ]]; then
+		msg_error "Failed to fetch latest version for Tomcat ${TOMCAT_MAJOR}"
+		exit
+	fi
 
-  if [[ $CURRENT_VERSION == "$LATEST_VERSION" ]]; then
-    msg_ok "${APP} ${CURRENT_VERSION} is already up to date"
-    exit
-  fi
+	if [[ $CURRENT_VERSION == "$LATEST_VERSION" ]]; then
+		msg_ok "${APP} ${CURRENT_VERSION} is already up to date"
+		exit
+	fi
 
-  msg_info "Stopping Tomcat service"
-  systemctl stop tomcat
-  msg_ok "Stopped Tomcat service"
+	msg_info "Stopping Tomcat service"
+	systemctl stop tomcat
+	msg_ok "Stopped Tomcat service"
 
-  create_backup $TOMCAT_DIR/conf
-  [[ -d $TOMCAT_DIR/webapps ]] && create_backup $TOMCAT_DIR/webapps
-  [[ -d $TOMCAT_DIR/lib ]] && create_backup $TOMCAT_DIR/lib
+	create_backup $TOMCAT_DIR/conf
+	[[ -d $TOMCAT_DIR/webapps ]] && create_backup $TOMCAT_DIR/webapps
+	[[ -d $TOMCAT_DIR/lib ]] && create_backup $TOMCAT_DIR/lib
 
-  msg_info "Downloading Tomcat ${LATEST_VERSION}"
-  TOMCAT_URL="https://dlcdn.apache.org/tomcat/tomcat-${TOMCAT_MAJOR}/v${LATEST_VERSION}/bin/apache-tomcat-${LATEST_VERSION}.tar.gz"
-  curl -fsSL "$TOMCAT_URL" -o /tmp/tomcat-update.tar.gz
-  msg_ok "Downloaded Tomcat ${LATEST_VERSION}"
+	msg_info "Downloading Tomcat ${LATEST_VERSION}"
+	TOMCAT_URL="https://dlcdn.apache.org/tomcat/tomcat-${TOMCAT_MAJOR}/v${LATEST_VERSION}/bin/apache-tomcat-${LATEST_VERSION}.tar.gz"
+	curl -fsSL "$TOMCAT_URL" -o /tmp/tomcat-update.tar.gz
+	msg_ok "Downloaded Tomcat ${LATEST_VERSION}"
 
-  msg_info "Installing update"
-  rm -rf "${TOMCAT_DIR:?}"/*
-  tar --strip-components=1 -xzf /tmp/tomcat-update.tar.gz -C "$TOMCAT_DIR"
-  rm -f /tmp/tomcat-update.tar.gz
-  msg_ok "Installed update"
+	msg_info "Installing update"
+	rm -rf "${TOMCAT_DIR:?}"/*
+	tar --strip-components=1 -xzf /tmp/tomcat-update.tar.gz -C "$TOMCAT_DIR"
+	rm -f /tmp/tomcat-update.tar.gz
+	msg_ok "Installed update"
 
-  msg_info "Restoring configuration and applications"
-  cp -a "$BACKUP_DIR/conf"/* "$TOMCAT_DIR/conf/"
-  cp -a "$BACKUP_DIR/webapps"/* "$TOMCAT_DIR/webapps/" 2>/dev/null || true
-  if [[ -d "$BACKUP_DIR/lib" ]]; then
-    for jar in "$BACKUP_DIR/lib"/*.jar; do
-      [[ -f $jar ]] || continue
-      jar_name=$(basename "$jar")
-      if [[ ! -f "$TOMCAT_DIR/lib/$jar_name" ]]; then
-        cp "$jar" "$TOMCAT_DIR/lib/"
-      fi
-    done
-  fi
-  rm -rf "$BACKUP_DIR"
-  chown -R root:root "$TOMCAT_DIR"
-  msg_ok "Restored configuration and applications"
+	msg_info "Restoring configuration and applications"
+	cp -a "$BACKUP_DIR/conf"/* "$TOMCAT_DIR/conf/"
+	cp -a "$BACKUP_DIR/webapps"/* "$TOMCAT_DIR/webapps/" 2>/dev/null || true
+	if [[ -d "$BACKUP_DIR/lib" ]]; then
+		for jar in "$BACKUP_DIR/lib"/*.jar; do
+			[[ -f $jar ]] || continue
+			jar_name=$(basename "$jar")
+			if [[ ! -f "$TOMCAT_DIR/lib/$jar_name" ]]; then
+				cp "$jar" "$TOMCAT_DIR/lib/"
+			fi
+		done
+	fi
+	rm -rf "$BACKUP_DIR"
+	chown -R root:root "$TOMCAT_DIR"
+	msg_ok "Restored configuration and applications"
 
-  msg_info "Starting Tomcat service"
-  systemctl start tomcat
-  msg_ok "Started Tomcat service"
-  msg_ok "Updated successfully!"
-  exit
+	msg_info "Starting Tomcat service"
+	systemctl start tomcat
+	msg_ok "Started Tomcat service"
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

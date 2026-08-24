@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,47 +22,47 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  UPD=$(msg_menu "Cronicle Update Options" \
-    "1" "Update ${APP}" \
-    "2" "Install ${APP} Worker")
+	header_info
+	check_container_storage
+	check_container_resources
+	UPD=$(msg_menu "Cronicle Update Options" \
+		"1" "Update ${APP}" \
+		"2" "Install ${APP} Worker")
 
-  if [ "$UPD" == "1" ]; then
-    if [[ ! -d /opt/cronicle ]]; then
-      msg_error "No ${APP} Installation Found!"
-      exit
-    fi
-    NODE_VERSION="22" setup_nodejs
+	if [ "$UPD" == "1" ]; then
+		if [[ ! -d /opt/cronicle ]]; then
+			msg_error "No ${APP} Installation Found!"
+			exit
+		fi
+		NODE_VERSION="22" setup_nodejs
 
-    msg_info "Updating Cronicle"
-    $STD /opt/cronicle/bin/control.sh upgrade
-    msg_ok "Updated Cronicle"
-    exit
-  fi
-  if [ "$UPD" == "2" ]; then
-    NODE_VERSION="22" setup_nodejs
-    if check_for_gh_release "cronicle" "jhuckaby/Cronicle"; then
-      msg_info "Installing Dependencies"
-      ensure_dependencies git build-essential ca-certificates
-      msg_ok "Installed Dependencies"
+		msg_info "Updating Cronicle"
+		$STD /opt/cronicle/bin/control.sh upgrade
+		msg_ok "Updated Cronicle"
+		exit
+	fi
+	if [ "$UPD" == "2" ]; then
+		NODE_VERSION="22" setup_nodejs
+		if check_for_gh_release "cronicle" "jhuckaby/Cronicle"; then
+			msg_info "Installing Dependencies"
+			ensure_dependencies git build-essential ca-certificates
+			msg_ok "Installed Dependencies"
 
-      NODE_VERSION="22" setup_nodejs
-      fetch_and_deploy_gh_release "cronicle" "jhuckaby/Cronicle" "tarball"
+			NODE_VERSION="22" setup_nodejs
+			fetch_and_deploy_gh_release "cronicle" "jhuckaby/Cronicle" "tarball"
 
-      msg_info "Configuring Cronicle Worker"
-      cd /opt/cronicle
-      $STD npm install
-      $STD node bin/build.js dist
-      sed -i "s/localhost:3012/${LOCAL_IP}:3012/g" /opt/cronicle/conf/config.json
-      $STD /opt/cronicle/bin/control.sh start
-      msg_ok "Installed Cronicle Worker"
-      echo -e "\n Add Masters secret key to /opt/cronicle/conf/config.json \n"
-      msg_ok "Updated successfully!"
-      exit
-    fi
-  fi
+			msg_info "Configuring Cronicle Worker"
+			cd /opt/cronicle
+			$STD npm install
+			$STD node bin/build.js dist
+			sed -i "s/localhost:3012/${LOCAL_IP}:3012/g" /opt/cronicle/conf/config.json
+			$STD /opt/cronicle/bin/control.sh start
+			msg_ok "Installed Cronicle Worker"
+			echo -e "\n Add Masters secret key to /opt/cronicle/conf/config.json \n"
+			msg_ok "Updated successfully!"
+			exit
+		fi
+	fi
 }
 
 start

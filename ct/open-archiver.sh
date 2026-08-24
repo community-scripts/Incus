@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,45 +22,45 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/openarchiver ]]; then
-    msg_error "No Open Archiver Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/openarchiver ]]; then
+		msg_error "No Open Archiver Installation Found!"
+		exit
+	fi
 
-  setup_meilisearch
+	setup_meilisearch
 
-  if check_for_gh_release "openarchiver" "LogicLabs-OU/OpenArchiver"; then
-    msg_info "Stopping Services"
-    systemctl stop openarchiver
-    msg_ok "Stopped Services"
+	if check_for_gh_release "openarchiver" "LogicLabs-OU/OpenArchiver"; then
+		msg_info "Stopping Services"
+		systemctl stop openarchiver
+		msg_ok "Stopped Services"
 
-    cp /opt/openarchiver/.env /opt/openarchiver.env
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "openarchiver" "LogicLabs-OU/OpenArchiver" "tarball"
-    mv /opt/openarchiver.env /opt/openarchiver/.env
+		cp /opt/openarchiver/.env /opt/openarchiver.env
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "openarchiver" "LogicLabs-OU/OpenArchiver" "tarball"
+		mv /opt/openarchiver.env /opt/openarchiver/.env
 
-    msg_info "Updating Open Archiver"
-    cd /opt/openarchiver
-    $STD pnpm install --shamefully-hoist --frozen-lockfile --prod=false
-    $STD pnpm rebuild
-    $STD pnpm run build:oss
-    $STD pnpm db:migrate
-    msg_ok "Updated Open Archiver"
+		msg_info "Updating Open Archiver"
+		cd /opt/openarchiver
+		$STD pnpm install --shamefully-hoist --frozen-lockfile --prod=false
+		$STD pnpm rebuild
+		$STD pnpm run build:oss
+		$STD pnpm db:migrate
+		msg_ok "Updated Open Archiver"
 
-    if grep -q '^ExecStart=/usr/bin/pnpm docker-start$' /etc/systemd/system/openarchiver.service; then
-      sed -i 's|^ExecStart=/usr/bin/pnpm docker-start$|ExecStart=/usr/bin/pnpm docker-start:oss|' /etc/systemd/system/openarchiver.service
-      systemctl daemon-reload
-    fi
+		if grep -q '^ExecStart=/usr/bin/pnpm docker-start$' /etc/systemd/system/openarchiver.service; then
+			sed -i 's|^ExecStart=/usr/bin/pnpm docker-start$|ExecStart=/usr/bin/pnpm docker-start:oss|' /etc/systemd/system/openarchiver.service
+			systemctl daemon-reload
+		fi
 
-    msg_info "Starting Services"
-    systemctl start openarchiver
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
+		msg_info "Starting Services"
+		systemctl start openarchiver
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
 
-  exit
+	exit
 }
 
 start

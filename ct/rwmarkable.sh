@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,51 +22,51 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/rwmarkable ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/rwmarkable ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  msg_info "Stopping service"
-  systemctl -q disable --now rwmarkable
-  msg_ok "Stopped Service"
+	msg_info "Stopping service"
+	systemctl -q disable --now rwmarkable
+	msg_ok "Stopped Service"
 
-  NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
-  CLEAN_INSTALL=1 fetch_and_deploy_gh_release "jotty" "fccview/jotty" "tarball" "latest" "/opt/jotty"
+	NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
+	CLEAN_INSTALL=1 fetch_and_deploy_gh_release "jotty" "fccview/jotty" "tarball" "latest" "/opt/jotty"
 
-  msg_info "Updating app"
-  cd /opt/jotty
-  $STD yarn --frozen-lockfile
-  $STD yarn next telemetry disable
-  $STD yarn build
-  msg_ok "Updated app"
+	msg_info "Updating app"
+	cd /opt/jotty
+	$STD yarn --frozen-lockfile
+	$STD yarn next telemetry disable
+	$STD yarn build
+	msg_ok "Updated app"
 
-  msg_info "Migrating configuration & data"
-  cp /opt/rwmarkable/.env /opt/jotty/.env
-  mkdir -p /opt/jotty/data
-  cp -r /opt/rwmarkable/data/* /opt/jotty/data
-  cp -r /opt/rwmarkable/config/* /opt/jotty/config
-  msg_ok "Migrated configuration & data"
+	msg_info "Migrating configuration & data"
+	cp /opt/rwmarkable/.env /opt/jotty/.env
+	mkdir -p /opt/jotty/data
+	cp -r /opt/rwmarkable/data/* /opt/jotty/data
+	cp -r /opt/rwmarkable/config/* /opt/jotty/config
+	msg_ok "Migrated configuration & data"
 
-  msg_info "Patching systemd service file"
-  sed -i 's/rw[M|m]arkable/jotty/g' /etc/systemd/system/rwmarkable.service
-  mv /etc/systemd/system/rwmarkable.service /etc/systemd/system/jotty.service
-  systemctl daemon-reload
-  msg_ok "Patched systemd service file"
+	msg_info "Patching systemd service file"
+	sed -i 's/rw[M|m]arkable/jotty/g' /etc/systemd/system/rwmarkable.service
+	mv /etc/systemd/system/rwmarkable.service /etc/systemd/system/jotty.service
+	systemctl daemon-reload
+	msg_ok "Patched systemd service file"
 
-  msg_info "Patching update script"
-  sed -i 's/rwmarkable/jotty/g' /usr/bin/update
-  msg_ok "Patched update script"
+	msg_info "Patching update script"
+	sed -i 's/rwmarkable/jotty/g' /usr/bin/update
+	msg_ok "Patched update script"
 
-  msg_info "Starting jotty service"
-  systemctl -q enable --now jotty
-  msg_ok "Started jotty service"
-  msg_ok "Migrated Successfully!"
-  exit
+	msg_info "Starting jotty service"
+	systemctl -q enable --now jotty
+	msg_ok "Started jotty service"
+	msg_ok "Migrated Successfully!"
+	exit
 }
 
 start

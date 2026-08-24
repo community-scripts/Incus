@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,65 +22,65 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/koillection ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "koillection" "benjaminjonard/koillection"; then
-    msg_info "Stopping Service"
-    systemctl stop apache2
-    msg_ok "Stopped Service"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/koillection ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "koillection" "benjaminjonard/koillection"; then
+		msg_info "Stopping Service"
+		systemctl stop apache2
+		msg_ok "Stopped Service"
 
-    PHP_VERSION="8.5" PHP_APACHE="YES" setup_php
-    setup_composer
+		PHP_VERSION="8.5" PHP_APACHE="YES" setup_php
+		setup_composer
 
-    msg_info "Creating a backup"
-    mv /opt/koillection/ /opt/koillection-backup
-    msg_ok "Backup created"
+		msg_info "Creating a backup"
+		mv /opt/koillection/ /opt/koillection-backup
+		msg_ok "Backup created"
 
-    fetch_and_deploy_gh_release "koillection" "benjaminjonard/koillection" "tarball"
+		fetch_and_deploy_gh_release "koillection" "benjaminjonard/koillection" "tarball"
 
-    msg_info "Updating Koillection"
-    cp -r /opt/koillection-backup/.env.local /opt/koillection
-    cp -r /opt/koillection-backup/public/uploads/. /opt/koillection/public/uploads/
+		msg_info "Updating Koillection"
+		cp -r /opt/koillection-backup/.env.local /opt/koillection
+		cp -r /opt/koillection-backup/public/uploads/. /opt/koillection/public/uploads/
 
-    # Ensure APP_RUNTIME is in .env.local for CLI commands (upgrades from older versions)
-    if ! grep -q "APP_RUNTIME" /opt/koillection/.env.local 2>/dev/null; then
-      # Ensure file ends with newline before appending to avoid concatenation
-      [[ -s /opt/koillection/.env.local && -n "$(tail -c 1 /opt/koillection/.env.local)" ]] && echo "" >>/opt/koillection/.env.local
-      echo 'APP_RUNTIME="Symfony\Component\Runtime\SymfonyRuntime"' >>/opt/koillection/.env.local
-    fi
-    NODE_VERSION="26" NODE_MODULE="yarn" setup_nodejs
-    cd /opt/koillection
-    export COMPOSER_ALLOW_SUPERUSER=1
-    export APP_RUNTIME='Symfony\Component\Runtime\SymfonyRuntime'
-    $STD composer install --no-dev -o --no-interaction --classmap-authoritative
-    $STD php bin/console doctrine:migrations:migrate --no-interaction
-    $STD php bin/console app:translations:dump
-    cd assets/
-    $STD yarn install
-    $STD yarn build
-    mkdir -p /opt/koillection/public/uploads
-    mkdir -p /opt/koillection/var/log
-    chown -R www-data:www-data /opt/koillection/var/log
-    chown -R www-data:www-data /opt/koillection/public/uploads
-    rm -r /opt/koillection-backup
+		# Ensure APP_RUNTIME is in .env.local for CLI commands (upgrades from older versions)
+		if ! grep -q "APP_RUNTIME" /opt/koillection/.env.local 2>/dev/null; then
+			# Ensure file ends with newline before appending to avoid concatenation
+			[[ -s /opt/koillection/.env.local && -n "$(tail -c 1 /opt/koillection/.env.local)" ]] && echo "" >>/opt/koillection/.env.local
+			echo 'APP_RUNTIME="Symfony\Component\Runtime\SymfonyRuntime"' >>/opt/koillection/.env.local
+		fi
+		NODE_VERSION="26" NODE_MODULE="yarn" setup_nodejs
+		cd /opt/koillection
+		export COMPOSER_ALLOW_SUPERUSER=1
+		export APP_RUNTIME='Symfony\Component\Runtime\SymfonyRuntime'
+		$STD composer install --no-dev -o --no-interaction --classmap-authoritative
+		$STD php bin/console doctrine:migrations:migrate --no-interaction
+		$STD php bin/console app:translations:dump
+		cd assets/
+		$STD yarn install
+		$STD yarn build
+		mkdir -p /opt/koillection/public/uploads
+		mkdir -p /opt/koillection/var/log
+		chown -R www-data:www-data /opt/koillection/var/log
+		chown -R www-data:www-data /opt/koillection/public/uploads
+		rm -r /opt/koillection-backup
 
-    # Ensure APP_RUNTIME is set in Apache config (for upgrades from older versions)
-    if ! grep -q "APP_RUNTIME" /etc/apache2/sites-available/koillection.conf 2>/dev/null; then
-      sed -i '/<VirtualHost/a\    SetEnv APP_RUNTIME "Symfony\\Component\\Runtime\\SymfonyRuntime"' /etc/apache2/sites-available/koillection.conf
-    fi
-    msg_ok "Updated Koillection"
+		# Ensure APP_RUNTIME is set in Apache config (for upgrades from older versions)
+		if ! grep -q "APP_RUNTIME" /etc/apache2/sites-available/koillection.conf 2>/dev/null; then
+			sed -i '/<VirtualHost/a\    SetEnv APP_RUNTIME "Symfony\\Component\\Runtime\\SymfonyRuntime"' /etc/apache2/sites-available/koillection.conf
+		fi
+		msg_ok "Updated Koillection"
 
-    msg_info "Starting Service"
-    systemctl start apache2
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start apache2
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

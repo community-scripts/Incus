@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -27,36 +24,36 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f /usr/local/bin/birdnet-go ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -f /usr/local/bin/birdnet-go ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "birdnet" "tphakala/birdnet-go"; then
-    msg_info "Stopping Service"
-    systemctl stop birdnet
-    msg_ok "Stopped Service"
+	if check_for_gh_release "birdnet" "tphakala/birdnet-go"; then
+		msg_info "Stopping Service"
+		systemctl stop birdnet
+		msg_ok "Stopped Service"
 
-    fetch_and_deploy_gh_release "birdnet" "tphakala/birdnet-go" "prebuild" "latest" "/opt/birdnet" "birdnet-go-linux-$(arch_resolve)*.tar.gz"
+		fetch_and_deploy_gh_release "birdnet" "tphakala/birdnet-go" "prebuild" "latest" "/opt/birdnet" "birdnet-go-linux-$(arch_resolve)*.tar.gz"
 
-    msg_info "Deploying Binary"
-    cp /opt/birdnet/birdnet-go /usr/local/bin/birdnet-go
-    chmod +x /usr/local/bin/birdnet-go
-    cp -r /opt/birdnet/libtensorflowlite_c.so /usr/local/lib/ || true
-    cp -r /opt/birdnet/libonnxruntime.so /usr/local/lib/ || true
-    ldconfig
-    msg_ok "Deployed Binary"
+		msg_info "Deploying Binary"
+		cp /opt/birdnet/birdnet-go /usr/local/bin/birdnet-go
+		chmod +x /usr/local/bin/birdnet-go
+		cp -r /opt/birdnet/libtensorflowlite_c.so /usr/local/lib/ || true
+		cp -r /opt/birdnet/libonnxruntime.so /usr/local/lib/ || true
+		ldconfig
+		msg_ok "Deployed Binary"
 
-    msg_info "Starting Service"
-    systemctl start birdnet
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start birdnet
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

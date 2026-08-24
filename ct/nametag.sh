@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,49 +22,49 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/nametag ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/nametag ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "nametag" "mattogodoy/nametag"; then
-    msg_info "Stopping Service"
-    systemctl stop nametag
-    msg_ok "Stopped Service"
+	if check_for_gh_release "nametag" "mattogodoy/nametag"; then
+		msg_info "Stopping Service"
+		systemctl stop nametag
+		msg_ok "Stopped Service"
 
-    create_backup /opt/nametag/.env /opt/nametag/data
+		create_backup /opt/nametag/.env /opt/nametag/data
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nametag" "mattogodoy/nametag" "tarball" "latest" "/opt/nametag"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nametag" "mattogodoy/nametag" "tarball" "latest" "/opt/nametag"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Rebuilding Application"
-    cd /opt/nametag
-    $STD npm ci --include=dev
-    set -a
-    source /opt/nametag/.env
-    set +a
-    $STD npx prisma generate
-    $STD npm run build
-    cp -r /opt/nametag/.next/static /opt/nametag/.next/standalone/.next/static
-    cp -r /opt/nametag/public /opt/nametag/.next/standalone/public
-    msg_ok "Rebuilt Application"
+		msg_info "Rebuilding Application"
+		cd /opt/nametag
+		$STD npm ci --include=dev
+		set -a
+		source /opt/nametag/.env
+		set +a
+		$STD npx prisma generate
+		$STD npm run build
+		cp -r /opt/nametag/.next/static /opt/nametag/.next/standalone/.next/static
+		cp -r /opt/nametag/public /opt/nametag/.next/standalone/public
+		msg_ok "Rebuilt Application"
 
-    msg_info "Running Migrations"
-    cd /opt/nametag
-    $STD npx prisma migrate deploy
-    msg_ok "Ran Migrations"
+		msg_info "Running Migrations"
+		cd /opt/nametag
+		$STD npx prisma migrate deploy
+		msg_ok "Ran Migrations"
 
-    msg_info "Starting Service"
-    systemctl start nametag
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start nametag
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

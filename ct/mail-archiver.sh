@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,41 +22,41 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/mail-archiver ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/mail-archiver ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  ensure_dependencies libgssapi-krb5-2
+	ensure_dependencies libgssapi-krb5-2
 
-  if check_for_gh_release "mail-archiver" "s1t5/mail-archiver"; then
-    msg_info "Stopping Mail-Archiver"
-    systemctl stop mail-archiver
-    msg_ok "Stopped Mail-Archiver"
+	if check_for_gh_release "mail-archiver" "s1t5/mail-archiver"; then
+		msg_info "Stopping Mail-Archiver"
+		systemctl stop mail-archiver
+		msg_ok "Stopped Mail-Archiver"
 
-    create_backup /opt/mail-archiver/appsettings.json /opt/mail-archiver/.env /opt/mail-archiver/DataProtection-Keys
+		create_backup /opt/mail-archiver/appsettings.json /opt/mail-archiver/.env /opt/mail-archiver/DataProtection-Keys
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "mail-archiver" "s1t5/mail-archiver" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "mail-archiver" "s1t5/mail-archiver" "tarball"
 
-    msg_info "Updating Mail-Archiver"
-    mv /opt/mail-archiver /opt/mail-archiver-build
-    cd /opt/mail-archiver-build
-    $STD dotnet restore
-    $STD dotnet publish -c Release -o /opt/mail-archiver
-    rm -rf /opt/mail-archiver-build
-    msg_ok "Updated Mail-Archiver"
+		msg_info "Updating Mail-Archiver"
+		mv /opt/mail-archiver /opt/mail-archiver-build
+		cd /opt/mail-archiver-build
+		$STD dotnet restore
+		$STD dotnet publish -c Release -o /opt/mail-archiver
+		rm -rf /opt/mail-archiver-build
+		msg_ok "Updated Mail-Archiver"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Starting Mail-Archiver"
-    systemctl start mail-archiver
-    msg_ok "Started Mail-Archiver"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Mail-Archiver"
+		systemctl start mail-archiver
+		msg_ok "Started Mail-Archiver"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

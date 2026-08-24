@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,46 +22,46 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/fumadocs ]]; then
-    msg_error "No installation found in /opt/fumadocs!"
-    exit
-  fi
+	if [[ ! -d /opt/fumadocs ]]; then
+		msg_error "No installation found in /opt/fumadocs!"
+		exit
+	fi
 
-  if [[ ! -f /opt/fumadocs/.projectname ]]; then
-    msg_error "Project name file not found: /opt/fumadocs/.projectname!"
-    exit
-  fi
+	if [[ ! -f /opt/fumadocs/.projectname ]]; then
+		msg_error "Project name file not found: /opt/fumadocs/.projectname!"
+		exit
+	fi
 
-  NODE_VERSION="24" NODE_MODULE="pnpm@latest" setup_nodejs
-  PROJECT_NAME=$(</opt/fumadocs/.projectname)
-  PROJECT_DIR="/opt/fumadocs/${PROJECT_NAME}"
-  SERVICE_NAME="fumadocs_${PROJECT_NAME}.service"
+	NODE_VERSION="24" NODE_MODULE="pnpm@latest" setup_nodejs
+	PROJECT_NAME=$(</opt/fumadocs/.projectname)
+	PROJECT_DIR="/opt/fumadocs/${PROJECT_NAME}"
+	SERVICE_NAME="fumadocs_${PROJECT_NAME}.service"
 
-  if [[ ! -d "$PROJECT_DIR" ]]; then
-    msg_error "Project directory does not exist: $PROJECT_DIR"
-    exit
-  fi
-  ensure_dependencies git
+	if [[ ! -d "$PROJECT_DIR" ]]; then
+		msg_error "Project directory does not exist: $PROJECT_DIR"
+		exit
+	fi
+	ensure_dependencies git
 
-  msg_info "Stopping service $SERVICE_NAME"
-  systemctl stop "$SERVICE_NAME"
-  msg_ok "Stopped service $SERVICE_NAME"
+	msg_info "Stopping service $SERVICE_NAME"
+	systemctl stop "$SERVICE_NAME"
+	msg_ok "Stopped service $SERVICE_NAME"
 
-  msg_info "Updating dependencies using pnpm"
-  cd "$PROJECT_DIR"
-  $STD pnpm up --latest
-  $STD pnpm build
-  msg_ok "Updated dependencies using pnpm"
+	msg_info "Updating dependencies using pnpm"
+	cd "$PROJECT_DIR"
+	$STD pnpm up --latest
+	$STD pnpm build
+	msg_ok "Updated dependencies using pnpm"
 
-  msg_info "Starting service $SERVICE_NAME"
-  systemctl start "$SERVICE_NAME"
-  msg_ok "Started service $SERVICE_NAME"
-  msg_ok "Updated successfully!"
-  exit
+	msg_info "Starting service $SERVICE_NAME"
+	systemctl start "$SERVICE_NAME"
+	msg_ok "Started service $SERVICE_NAME"
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

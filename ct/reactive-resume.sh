@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,48 +22,48 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f /etc/systemd/system/reactive-resume.service ]]; then
-    msg_error "No $APP Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "reactive-resume" "amruthpillai/reactive-resume"; then
-    msg_info "Stopping services"
-    systemctl stop reactive-resume
-    msg_ok "Stopped services"
+	if [[ ! -f /etc/systemd/system/reactive-resume.service ]]; then
+		msg_error "No $APP Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "reactive-resume" "amruthpillai/reactive-resume"; then
+		msg_info "Stopping services"
+		systemctl stop reactive-resume
+		msg_ok "Stopped services"
 
-    ensure_dependencies git
+		ensure_dependencies git
 
-    create_backup /opt/reactive-resume/.env
-    NODE_VERSION="24" NODE_MODULE="corepack" setup_nodejs
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "reactive-resume" "amruthpillai/reactive-resume" "tarball" "latest" "/opt/reactive-resume"
+		create_backup /opt/reactive-resume/.env
+		NODE_VERSION="24" NODE_MODULE="corepack" setup_nodejs
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "reactive-resume" "amruthpillai/reactive-resume" "tarball" "latest" "/opt/reactive-resume"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Reactive Resume (Patience)"
-    cd /opt/reactive-resume
-    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-    corepack prepare --activate
-    export CI="true"
-    export NODE_ENV="production"
-    $STD pnpm install --frozen-lockfile
-    $STD pnpm run build
-    msg_ok "Updated Reactive Resume"
+		msg_info "Updating Reactive Resume (Patience)"
+		cd /opt/reactive-resume
+		export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+		corepack prepare --activate
+		export CI="true"
+		export NODE_ENV="production"
+		$STD pnpm install --frozen-lockfile
+		$STD pnpm run build
+		msg_ok "Updated Reactive Resume"
 
-    msg_info "Updating Service"
-    sed -i 's|WorkingDirectory=/opt/reactive-resume/apps/web|WorkingDirectory=/opt/reactive-resume/apps/server|; s|ExecStart=/usr/bin/node .output/server/index.mjs|ExecStart=/usr/bin/node dist/index.mjs|' /etc/systemd/system/reactive-resume.service
-    systemctl daemon-reload
-    msg_ok "Updated Service"
+		msg_info "Updating Service"
+		sed -i 's|WorkingDirectory=/opt/reactive-resume/apps/web|WorkingDirectory=/opt/reactive-resume/apps/server|; s|ExecStart=/usr/bin/node .output/server/index.mjs|ExecStart=/usr/bin/node dist/index.mjs|' /etc/systemd/system/reactive-resume.service
+		systemctl daemon-reload
+		msg_ok "Updated Service"
 
-    msg_info "Restarting services"
-    systemctl start chromium-printer reactive-resume
-    msg_ok "Restarted services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Restarting services"
+		systemctl start chromium-printer reactive-resume
+		msg_ok "Restarted services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,50 +22,50 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/endurain ]]; then
-    msg_error "No ${APP} installation found!"
-    exit 233
-  fi
-  if check_for_codeberg_release "endurain" "endurain-project/endurain"; then
-    msg_info "Stopping Service"
-    systemctl stop endurain
-    msg_ok "Stopped Service"
+	if [[ ! -d /opt/endurain ]]; then
+		msg_error "No ${APP} installation found!"
+		exit 233
+	fi
+	if check_for_codeberg_release "endurain" "endurain-project/endurain"; then
+		msg_info "Stopping Service"
+		systemctl stop endurain
+		msg_ok "Stopped Service"
 
-    NODE_VERSION="24" setup_nodejs
+		NODE_VERSION="24" setup_nodejs
 
-    create_backup /opt/endurain/.env /opt/endurain/frontend/dist/env.js
-    CLEAN_INSTALL=1 fetch_and_deploy_codeberg_release "endurain" "endurain-project/endurain" "tarball" "latest" "/opt/endurain"
+		create_backup /opt/endurain/.env /opt/endurain/frontend/dist/env.js
+		CLEAN_INSTALL=1 fetch_and_deploy_codeberg_release "endurain" "endurain-project/endurain" "tarball" "latest" "/opt/endurain"
 
-    msg_info "Preparing Update"
-    cd /opt/endurain
-    rm -rf /opt/endurain/{docs,example.env,screenshot_01.png} /opt/endurain/docker* /opt/endurain/*.yml
-    msg_ok "Prepared Update"
+		msg_info "Preparing Update"
+		cd /opt/endurain
+		rm -rf /opt/endurain/{docs,example.env,screenshot_01.png} /opt/endurain/docker* /opt/endurain/*.yml
+		msg_ok "Prepared Update"
 
-    msg_info "Updating Frontend"
-    cd /opt/endurain/frontend
-    $STD npm ci
-    $STD npm run build
-    msg_ok "Updated Frontend"
+		msg_info "Updating Frontend"
+		cd /opt/endurain/frontend
+		$STD npm ci
+		$STD npm run build
+		msg_ok "Updated Frontend"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Backend"
-    cd /opt/endurain/backend
-    UV_VERSION=$(grep -Po 'required-version\s*=\s*"\K[^"]+' pyproject.toml 2>/dev/null || echo "0.11.18")
-    UV_VERSION="$UV_VERSION" setup_uv
-    $STD uv sync --frozen --no-dev
-    msg_ok "Backend Updated"
+		msg_info "Updating Backend"
+		cd /opt/endurain/backend
+		UV_VERSION=$(grep -Po 'required-version\s*=\s*"\K[^"]+' pyproject.toml 2>/dev/null || echo "0.11.18")
+		UV_VERSION="$UV_VERSION" setup_uv
+		$STD uv sync --frozen --no-dev
+		msg_ok "Backend Updated"
 
-    msg_info "Starting Service"
-    systemctl start endurain
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start endurain
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,68 +22,68 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/scanopy ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/scanopy ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "Scanopy" "scanopy/scanopy"; then
-    msg_info "Stopping services"
-    systemctl stop scanopy-server
-    [[ -f /etc/systemd/system/scanopy-daemon.service ]] && systemctl stop scanopy-daemon
-    msg_ok "Stopped services"
+	if check_for_gh_release "Scanopy" "scanopy/scanopy"; then
+		msg_info "Stopping services"
+		systemctl stop scanopy-server
+		[[ -f /etc/systemd/system/scanopy-daemon.service ]] && systemctl stop scanopy-daemon
+		msg_ok "Stopped services"
 
-    create_backup /opt/scanopy/.env /opt/scanopy/oidc.toml
+		create_backup /opt/scanopy/.env /opt/scanopy/oidc.toml
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Scanopy" "scanopy/scanopy" "tarball" "latest" "/opt/scanopy"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Scanopy" "scanopy/scanopy" "tarball" "latest" "/opt/scanopy"
 
-    restore_backup
+		restore_backup
 
-    ensure_dependencies pkg-config libssl-dev
-    TOOLCHAIN="$(grep "channel" /opt/scanopy/backend/rust-toolchain.toml | awk -F\" '{print $2}')"
-    RUST_TOOLCHAIN=$TOOLCHAIN setup_rust
+		ensure_dependencies pkg-config libssl-dev
+		TOOLCHAIN="$(grep "channel" /opt/scanopy/backend/rust-toolchain.toml | awk -F\" '{print $2}')"
+		RUST_TOOLCHAIN=$TOOLCHAIN setup_rust
 
-    if ! grep -q "PUBLIC_URL" /opt/scanopy/.env; then
-      sed -i "\|_PATH=|a\\scanopy_PUBLIC_URL=http://${LOCAL_IP}:60072" /opt/scanopy/.env
-    fi
-    sed -i 's|_TARGET=.*$|_URL=http://127.0.0.1:60072|' /opt/scanopy/.env
+		if ! grep -q "PUBLIC_URL" /opt/scanopy/.env; then
+			sed -i "\|_PATH=|a\\scanopy_PUBLIC_URL=http://${LOCAL_IP}:60072" /opt/scanopy/.env
+		fi
+		sed -i 's|_TARGET=.*$|_URL=http://127.0.0.1:60072|' /opt/scanopy/.env
 
-    msg_info "Building Scanopy Server (patience)"
-    cd /opt/scanopy/backend
-    $STD cargo build --release --bin server --bin generate-fixtures
-    $STD ./target/release/generate-fixtures --output-dir /opt/scanopy/ui/src/lib/data
-    mv ./target/release/server /usr/bin/scanopy-server
-    msg_ok "Built Scanopy Server"
+		msg_info "Building Scanopy Server (patience)"
+		cd /opt/scanopy/backend
+		$STD cargo build --release --bin server --bin generate-fixtures
+		$STD ./target/release/generate-fixtures --output-dir /opt/scanopy/ui/src/lib/data
+		mv ./target/release/server /usr/bin/scanopy-server
+		msg_ok "Built Scanopy Server"
 
-    msg_info "Creating frontend UI"
-    export PUBLIC_SERVER_HOSTNAME=default
-    export PUBLIC_SERVER_PORT=""
-    cd /opt/scanopy/ui
-    $STD npm ci --no-fund --no-audit
-    $STD npm run build
-    msg_ok "Created frontend UI"
+		msg_info "Creating frontend UI"
+		export PUBLIC_SERVER_HOSTNAME=default
+		export PUBLIC_SERVER_PORT=""
+		cd /opt/scanopy/ui
+		$STD npm ci --no-fund --no-audit
+		$STD npm run build
+		msg_ok "Created frontend UI"
 
-    if [[ -f /etc/systemd/system/scanopy-daemon.service ]]; then
-      fetch_and_deploy_gh_release "Scanopy Daemon" "scanopy/scanopy" "singlefile" "latest" "/usr/local/bin" "scanopy-daemon-linux-$(arch_resolve)"
-      mv "/usr/local/bin/Scanopy Daemon" /usr/local/bin/scanopy-daemon
-      rm -f /usr/bin/scanopy-daemon ~/configure_daemon.sh
-      sed -i -e 's|usr/bin|usr/local/bin|' \
-        -e 's/push/daemon_poll/' \
-        -e 's/pull/server_poll/' /etc/systemd/system/scanopy-daemon.service
-      systemctl daemon-reload
-      msg_ok "Updated Scanopy Daemon"
-    fi
+		if [[ -f /etc/systemd/system/scanopy-daemon.service ]]; then
+			fetch_and_deploy_gh_release "Scanopy Daemon" "scanopy/scanopy" "singlefile" "latest" "/usr/local/bin" "scanopy-daemon-linux-$(arch_resolve)"
+			mv "/usr/local/bin/Scanopy Daemon" /usr/local/bin/scanopy-daemon
+			rm -f /usr/bin/scanopy-daemon ~/configure_daemon.sh
+			sed -i -e 's|usr/bin|usr/local/bin|' \
+				-e 's/push/daemon_poll/' \
+				-e 's/pull/server_poll/' /etc/systemd/system/scanopy-daemon.service
+			systemctl daemon-reload
+			msg_ok "Updated Scanopy Daemon"
+		fi
 
-    msg_info "Starting services"
-    systemctl start scanopy-server
-    [[ -f /etc/systemd/system/scanopy-daemon.service ]] && systemctl start scanopy-daemon
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting services"
+		systemctl start scanopy-server
+		[[ -f /etc/systemd/system/scanopy-daemon.service ]] && systemctl start scanopy-daemon
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

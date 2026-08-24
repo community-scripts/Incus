@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,76 +22,76 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/dawarich ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/dawarich ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  ensure_dependencies libgeos++-dev libxml2-dev libxslt-dev libjemalloc-dev
+	ensure_dependencies libgeos++-dev libxml2-dev libxslt-dev libjemalloc-dev
 
-  if check_for_gh_release "dawarich" "Freika/dawarich"; then
-    msg_info "Stopping Services"
-    systemctl stop dawarich-web dawarich-worker
-    msg_ok "Stopped Services"
+	if check_for_gh_release "dawarich" "Freika/dawarich"; then
+		msg_info "Stopping Services"
+		systemctl stop dawarich-web dawarich-worker
+		msg_ok "Stopped Services"
 
-    create_backup /opt/dawarich/app/storage \
-      /opt/dawarich/app/config/master.key \
-      /opt/dawarich/app/config/credentials.yml.enc
+		create_backup /opt/dawarich/app/storage \
+			/opt/dawarich/app/config/master.key \
+			/opt/dawarich/app/config/credentials.yml.enc
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "dawarich" "Freika/dawarich" "tarball" "latest" "/opt/dawarich/app"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "dawarich" "Freika/dawarich" "tarball" "latest" "/opt/dawarich/app"
 
-    RUBY_VERSION=$(cat /opt/dawarich/app/.ruby-version 2>/dev/null || echo "3.4.6")
-    RUBY_VERSION=${RUBY_VERSION} RUBY_INSTALL_RAILS="false" HOME=/root setup_ruby
+		RUBY_VERSION=$(cat /opt/dawarich/app/.ruby-version 2>/dev/null || echo "3.4.6")
+		RUBY_VERSION=${RUBY_VERSION} RUBY_INSTALL_RAILS="false" HOME=/root setup_ruby
 
-    msg_info "Running Migrations"
-    cd /opt/dawarich/app
-    source /root/.profile
-    export PATH="/root/.rbenv/shims:/root/.rbenv/bin:${PATH}"
-    eval "$(/root/.rbenv/bin/rbenv init - bash)"
+		msg_info "Running Migrations"
+		cd /opt/dawarich/app
+		source /root/.profile
+		export PATH="/root/.rbenv/shims:/root/.rbenv/bin:${PATH}"
+		eval "$(/root/.rbenv/bin/rbenv init - bash)"
 
-    if ! grep -q "OTP_ENCRYPTION_PRIMARY_KEY" /opt/dawarich/.env; then
-      echo "OTP_ENCRYPTION_PRIMARY_KEY=$(openssl rand -hex 64)" >>/opt/dawarich/.env
-    fi
+		if ! grep -q "OTP_ENCRYPTION_PRIMARY_KEY" /opt/dawarich/.env; then
+			echo "OTP_ENCRYPTION_PRIMARY_KEY=$(openssl rand -hex 64)" >>/opt/dawarich/.env
+		fi
 
-    if ! grep -q "OTP_ENCRYPTION_DETERMINISTIC_KEY" /opt/dawarich/.env; then
-      echo "OTP_ENCRYPTION_DETERMINISTIC_KEY=$(openssl rand -hex 64)" >>/opt/dawarich/.env
-    fi
+		if ! grep -q "OTP_ENCRYPTION_DETERMINISTIC_KEY" /opt/dawarich/.env; then
+			echo "OTP_ENCRYPTION_DETERMINISTIC_KEY=$(openssl rand -hex 64)" >>/opt/dawarich/.env
+		fi
 
-    if ! grep -q "OTP_ENCRYPTION_KEY_DERIVATION_SALT" /opt/dawarich/.env; then
-      echo "OTP_ENCRYPTION_KEY_DERIVATION_SALT=$(openssl rand -hex 64)" >>/opt/dawarich/.env
-    fi
+		if ! grep -q "OTP_ENCRYPTION_KEY_DERIVATION_SALT" /opt/dawarich/.env; then
+			echo "OTP_ENCRYPTION_KEY_DERIVATION_SALT=$(openssl rand -hex 64)" >>/opt/dawarich/.env
+		fi
 
-    set -a && source /opt/dawarich/.env && set +a
+		set -a && source /opt/dawarich/.env && set +a
 
-    $STD bundle config set --local deployment 'true'
-    $STD bundle config set --local without 'development test'
-    $STD bundle install
+		$STD bundle config set --local deployment 'true'
+		$STD bundle config set --local without 'development test'
+		$STD bundle install
 
-    if [[ -f /opt/dawarich/package.json ]]; then
-      cd /opt/dawarich
-      $STD npm install
-      cd /opt/dawarich/app
-    elif [[ -f /opt/dawarich/app/package.json ]]; then
-      $STD npm install
-    fi
+		if [[ -f /opt/dawarich/package.json ]]; then
+			cd /opt/dawarich
+			$STD npm install
+			cd /opt/dawarich/app
+		elif [[ -f /opt/dawarich/app/package.json ]]; then
+			$STD npm install
+		fi
 
-    $STD bundle exec rails db:migrate
-    $STD bundle exec rake assets:precompile
-    $STD bundle exec rake data:migrate
-    msg_ok "Ran Migrations"
+		$STD bundle exec rails db:migrate
+		$STD bundle exec rake assets:precompile
+		$STD bundle exec rake data:migrate
+		msg_ok "Ran Migrations"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Starting Services"
-    systemctl start dawarich-web dawarich-worker
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start dawarich-web dawarich-worker
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

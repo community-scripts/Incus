@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,42 +22,42 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -f /opt/cleanuparr/Cleanuparr ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "cleanuparr" "Cleanuparr/Cleanuparr"; then
-    msg_info "Stopping Service"
-    systemctl stop cleanuparr
-    msg_ok "Stopped Service"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -f /opt/cleanuparr/Cleanuparr ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "cleanuparr" "Cleanuparr/Cleanuparr"; then
+		msg_info "Stopping Service"
+		systemctl stop cleanuparr
+		msg_ok "Stopped Service"
 
-    if [[ ! -d /etc/cleanuparr ]]; then
-      msg_info "Migrating Configuration to /etc/cleanuparr"
-      mv /opt/cleanuparr/config /etc/cleanuparr
-      mkdir -p /etc/cleanuparr /var/log/cleanuparr
-      rm -rf /etc/cleanuparr/logs
-      sed -i -e 's|^Environment="CONFIG_DIR=.*|Environment="CLEANUPARR_CONFIG_PATH=/etc/cleanuparr"|' \
-        -e '/^Environment="CLEANUPARR_CONFIG_PATH=/a Environment="CLEANUPARR_LOGS_PATH=/var/log/cleanuparr"' \
-        /etc/systemd/system/cleanuparr.service
-      systemctl daemon-reload
-      msg_ok "Migrated Configuration to /etc/cleanuparr"
-    fi
+		if [[ ! -d /etc/cleanuparr ]]; then
+			msg_info "Migrating Configuration to /etc/cleanuparr"
+			mv /opt/cleanuparr/config /etc/cleanuparr
+			mkdir -p /etc/cleanuparr /var/log/cleanuparr
+			rm -rf /etc/cleanuparr/logs
+			sed -i -e 's|^Environment="CONFIG_DIR=.*|Environment="CLEANUPARR_CONFIG_PATH=/etc/cleanuparr"|' \
+				-e '/^Environment="CLEANUPARR_CONFIG_PATH=/a Environment="CLEANUPARR_LOGS_PATH=/var/log/cleanuparr"' \
+				/etc/systemd/system/cleanuparr.service
+			systemctl daemon-reload
+			msg_ok "Migrated Configuration to /etc/cleanuparr"
+		fi
 
-    create_backup /etc/cleanuparr
+		create_backup /etc/cleanuparr
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Cleanuparr" "Cleanuparr/Cleanuparr" "prebuild" "latest" "/opt/cleanuparr" "*linux-$(arch_resolve).zip"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Cleanuparr" "Cleanuparr/Cleanuparr" "prebuild" "latest" "/opt/cleanuparr" "*linux-$(arch_resolve).zip"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Starting Service"
-    systemctl start cleanuparr
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start cleanuparr
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 start
 build_container

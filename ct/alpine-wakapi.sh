@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -26,44 +23,44 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  if [[ ! -d /opt/wakapi ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	if [[ ! -d /opt/wakapi ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  RELEASE=$(curl -s https://api.github.com/repos/muety/wakapi/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
-  if [ "${RELEASE}" != "$(cat ~/.wakapi 2>/dev/null)" ] || [ ! -f ~/.wakapi ]; then
-    msg_info "Stopping Wakapi Service"
-    $STD rc-service wakapi stop
-    msg_ok "Stopped Wakapi Service"
+	RELEASE=$(curl -s https://api.github.com/repos/muety/wakapi/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
+	if [ "${RELEASE}" != "$(cat ~/.wakapi 2>/dev/null)" ] || [ ! -f ~/.wakapi ]; then
+		msg_info "Stopping Wakapi Service"
+		$STD rc-service wakapi stop
+		msg_ok "Stopped Wakapi Service"
 
-    msg_info "Updating Wakapi LXC"
-    $STD apk -U upgrade
-    msg_ok "Updated Wakapi LXC"
+		msg_info "Updating Wakapi LXC"
+		$STD apk -U upgrade
+		msg_ok "Updated Wakapi LXC"
 
-    msg_info "Creating backup"
-    mkdir -p /opt/wakapi-backup
-    cp /opt/wakapi/config.yml /opt/wakapi/wakapi_db.db /opt/wakapi-backup/
-    msg_ok "Created backup"
+		msg_info "Creating backup"
+		mkdir -p /opt/wakapi-backup
+		cp /opt/wakapi/config.yml /opt/wakapi/wakapi_db.db /opt/wakapi-backup/
+		msg_ok "Created backup"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "wakapi" "muety/wakapi" "prebuild" "latest" "/opt/wakapi" "wakapi_linux_$(arch_resolve).zip"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "wakapi" "muety/wakapi" "prebuild" "latest" "/opt/wakapi" "wakapi_linux_$(arch_resolve).zip"
 
-    msg_info "Configuring Wakapi"
-    cd /opt/wakapi
-    cp /opt/wakapi-backup/config.yml /opt/wakapi/
-    cp /opt/wakapi-backup/wakapi_db.db /opt/wakapi/
-    rm -rf /opt/wakapi-backup
-    msg_ok "Configured Wakapi"
+		msg_info "Configuring Wakapi"
+		cd /opt/wakapi
+		cp /opt/wakapi-backup/config.yml /opt/wakapi/
+		cp /opt/wakapi-backup/wakapi_db.db /opt/wakapi/
+		rm -rf /opt/wakapi-backup
+		msg_ok "Configured Wakapi"
 
-    msg_info "Starting Service"
-    $STD rc-service wakapi start
-    msg_ok "Started Service"
-    msg_ok "Updated successfully"
-  else
-    msg_ok "No update required. ${APP} is already at ${RELEASE}"
-  fi
-  exit 0
+		msg_info "Starting Service"
+		$STD rc-service wakapi start
+		msg_ok "Started Service"
+		msg_ok "Updated successfully"
+	else
+		msg_ok "No update required. ${APP} is already at ${RELEASE}"
+	fi
+	exit 0
 }
 
 start

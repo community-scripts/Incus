@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
+
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,42 +23,42 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f ~/.actualbudget && ! -f /opt/actualbudget_version.txt ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -f ~/.actualbudget && ! -f /opt/actualbudget_version.txt ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  NODE_VERSION="24" setup_nodejs
-  RELEASE=$(get_latest_github_release "actualbudget/actual")
-  if [[ -f /opt/actualbudget-data/config.json ]]; then
-    if check_for_gh_release "actualbudget" "actualbudget/actual"; then
-      msg_info "Stopping Service"
-      systemctl stop actualbudget
-      msg_ok "Stopped Service"
+	NODE_VERSION="24" setup_nodejs
+	RELEASE=$(get_latest_github_release "actualbudget/actual")
+	if [[ -f /opt/actualbudget-data/config.json ]]; then
+		if check_for_gh_release "actualbudget" "actualbudget/actual"; then
+			msg_info "Stopping Service"
+			systemctl stop actualbudget
+			msg_ok "Stopped Service"
 
-      msg_info "Updating Actual Budget to ${RELEASE}"
-      $STD npm config set allow-scripts=bcrypt,better-sqlite3,argon2 --location=global
-      $STD npm update -g @actual-app/sync-server
-      $STD npm rebuild -g
-      echo "${RELEASE}" >~/.actualbudget
-      msg_ok "Updated Actual Budget to ${RELEASE}"
+			msg_info "Updating Actual Budget to ${RELEASE}"
+			$STD npm config set allow-scripts=bcrypt,better-sqlite3,argon2 --location=global
+			$STD npm update -g @actual-app/sync-server
+			$STD npm rebuild -g
+			echo "${RELEASE}" >~/.actualbudget
+			msg_ok "Updated Actual Budget to ${RELEASE}"
 
-      msg_info "Starting Service"
-      systemctl start actualbudget
-      msg_ok "Started Service"
-      msg_ok "Updated successfully!"
-    fi
-  else
-    msg_warn "Old Installation Found, you need to migrate your data and recreate to a new container"
-    msg_warn "Please follow the instructions on the Actual Budget website to migrate your data"
-    msg_warn "https://actualbudget.org/docs/backup-restore/backup"
-    exit
-  fi
-  exit
+			msg_info "Starting Service"
+			systemctl start actualbudget
+			msg_ok "Started Service"
+			msg_ok "Updated successfully!"
+		fi
+	else
+		msg_warn "Old Installation Found, you need to migrate your data and recreate to a new container"
+		msg_warn "Please follow the instructions on the Actual Budget website to migrate your data"
+		msg_warn "https://actualbudget.org/docs/backup-restore/backup"
+		exit
+	fi
+	exit
 }
 
 start

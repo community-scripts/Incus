@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,47 +22,47 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/bookstack ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  setup_mariadb
-  ensure_dependencies git
-  if check_for_gh_release "bookstack" "BookStackApp/BookStack"; then
-    msg_info "Stopping Apache2"
-    systemctl stop apache2
-    msg_ok "Services Stopped"
+	if [[ ! -d /opt/bookstack ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	setup_mariadb
+	ensure_dependencies git
+	if check_for_gh_release "bookstack" "BookStackApp/BookStack"; then
+		msg_info "Stopping Apache2"
+		systemctl stop apache2
+		msg_ok "Services Stopped"
 
-    create_backup /opt/bookstack/.env \
-      /opt/bookstack/public/uploads \
-      /opt/bookstack/storage/uploads \
-      /opt/bookstack/themes
-    fetch_and_deploy_gh_release "bookstack" "BookStackApp/BookStack" "tarball"
-    PHP_VERSION="8.3" PHP_APACHE="YES" PHP_FPM="YES" PHP_MODULE="ldap,tidy,mysqli" setup_php
-    setup_composer
-    restore_backup
+		create_backup /opt/bookstack/.env \
+			/opt/bookstack/public/uploads \
+			/opt/bookstack/storage/uploads \
+			/opt/bookstack/themes
+		fetch_and_deploy_gh_release "bookstack" "BookStackApp/BookStack" "tarball"
+		PHP_VERSION="8.3" PHP_APACHE="YES" PHP_FPM="YES" PHP_MODULE="ldap,tidy,mysqli" setup_php
+		setup_composer
+		restore_backup
 
-    msg_info "Configuring BookStack"
-    cd /opt/bookstack
-    export COMPOSER_ALLOW_SUPERUSER=1
-    $STD /usr/local/bin/composer install --no-dev
-    $STD php artisan migrate --force
-    chown www-data:www-data -R /opt/bookstack /opt/bookstack/bootstrap/cache /opt/bookstack/public/uploads /opt/bookstack/storage
-    chmod -R 755 /opt/bookstack /opt/bookstack/bootstrap/cache /opt/bookstack/public/uploads /opt/bookstack/storage
-    chmod -R 775 /opt/bookstack/storage /opt/bookstack/bootstrap/cache /opt/bookstack/public/uploads
-    chmod -R 640 /opt/bookstack/.env
-    msg_ok "Configured BookStack"
+		msg_info "Configuring BookStack"
+		cd /opt/bookstack
+		export COMPOSER_ALLOW_SUPERUSER=1
+		$STD /usr/local/bin/composer install --no-dev
+		$STD php artisan migrate --force
+		chown www-data:www-data -R /opt/bookstack /opt/bookstack/bootstrap/cache /opt/bookstack/public/uploads /opt/bookstack/storage
+		chmod -R 755 /opt/bookstack /opt/bookstack/bootstrap/cache /opt/bookstack/public/uploads /opt/bookstack/storage
+		chmod -R 775 /opt/bookstack/storage /opt/bookstack/bootstrap/cache /opt/bookstack/public/uploads
+		chmod -R 640 /opt/bookstack/.env
+		msg_ok "Configured BookStack"
 
-    msg_info "Starting Apache2"
-    systemctl start apache2
-    msg_ok "Started Apache2"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Apache2"
+		systemctl start apache2
+		msg_ok "Started Apache2"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 start
 build_container

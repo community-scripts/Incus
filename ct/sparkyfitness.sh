@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,59 +22,59 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/sparkyfitness ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/sparkyfitness ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  ensure_dependencies git
-  if check_for_gh_release "sparkyfitness" "CodeWithCJ/SparkyFitness"; then
-    msg_info "Stopping Services"
-    systemctl stop sparkyfitness-server nginx
-    msg_ok "Stopped Services"
+	ensure_dependencies git
+	if check_for_gh_release "sparkyfitness" "CodeWithCJ/SparkyFitness"; then
+		msg_info "Stopping Services"
+		systemctl stop sparkyfitness-server nginx
+		msg_ok "Stopped Services"
 
-    create_backup /opt/sparkyfitness/SparkyFitnessServer/uploads /opt/sparkyfitness/SparkyFitnessServer/backup
+		create_backup /opt/sparkyfitness/SparkyFitnessServer/uploads /opt/sparkyfitness/SparkyFitnessServer/backup
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "sparkyfitness" "CodeWithCJ/SparkyFitness" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "sparkyfitness" "CodeWithCJ/SparkyFitness" "tarball"
 
-    restore_backup
+		restore_backup
 
-    PNPM_VERSION="$(jq -r '.packageManager | split("@")[1]' /opt/sparkyfitness/package.json)"
-    NODE_VERSION="25" NODE_MODULE="pnpm@${PNPM_VERSION}" setup_nodejs
+		PNPM_VERSION="$(jq -r '.packageManager | split("@")[1]' /opt/sparkyfitness/package.json)"
+		NODE_VERSION="25" NODE_MODULE="pnpm@${PNPM_VERSION}" setup_nodejs
 
-    msg_info "Updating Sparky Fitness Backend"
-    cd /opt/sparkyfitness/SparkyFitnessServer
-    $STD pnpm install
-    msg_ok "Updated Sparky Fitness Backend"
+		msg_info "Updating Sparky Fitness Backend"
+		cd /opt/sparkyfitness/SparkyFitnessServer
+		$STD pnpm install
+		msg_ok "Updated Sparky Fitness Backend"
 
-    msg_info "Updating Sparky Fitness Frontend (Patience)"
-    cd /opt/sparkyfitness
-    $STD pnpm install
-    cd /opt/sparkyfitness/SparkyFitnessFrontend
-    $STD pnpm run build
-    cp -a /opt/sparkyfitness/SparkyFitnessFrontend/dist/. /var/www/sparkyfitness/
-    msg_ok "Updated Sparky Fitness Frontend"
+		msg_info "Updating Sparky Fitness Frontend (Patience)"
+		cd /opt/sparkyfitness
+		$STD pnpm install
+		cd /opt/sparkyfitness/SparkyFitnessFrontend
+		$STD pnpm run build
+		cp -a /opt/sparkyfitness/SparkyFitnessFrontend/dist/. /var/www/sparkyfitness/
+		msg_ok "Updated Sparky Fitness Frontend"
 
-    msg_info "Refreshing Nginx Config"
-    FRONTEND_URL=$(grep -oP '^SPARKY_FITNESS_FRONTEND_URL=\K.*' /etc/sparkyfitness/.env)
-    sed \
-      -e 's|${SPARKY_FITNESS_SERVER_HOST}|127.0.0.1|g' \
-      -e 's|${SPARKY_FITNESS_SERVER_PORT}|3010|g' \
-      -e "s|\${SPARKY_FITNESS_FRONTEND_URL}|${FRONTEND_URL}|g" \
-      -e 's|${NGINX_LISTEN_PORT}|80|g' \
-      -e 's|${NGINX_ACCESS_LOG}|/var/log/nginx/sparkyfitness.access.log|g' \
-      -e 's|${NGINX_ERROR_LOG}|/var/log/nginx/sparkyfitness.error.log|g' \
-      -e 's|root /usr/share/nginx/html;|root /var/www/sparkyfitness;|g' \
-      -e 's|server_name localhost;|server_name _;|g' \
-      "/opt/sparkyfitness/docker/nginx.conf" >/etc/nginx/sites-available/sparkyfitness
-    msg_ok "Refreshed Nginx Config"
+		msg_info "Refreshing Nginx Config"
+		FRONTEND_URL=$(grep -oP '^SPARKY_FITNESS_FRONTEND_URL=\K.*' /etc/sparkyfitness/.env)
+		sed \
+			-e 's|${SPARKY_FITNESS_SERVER_HOST}|127.0.0.1|g' \
+			-e 's|${SPARKY_FITNESS_SERVER_PORT}|3010|g' \
+			-e "s|\${SPARKY_FITNESS_FRONTEND_URL}|${FRONTEND_URL}|g" \
+			-e 's|${NGINX_LISTEN_PORT}|80|g' \
+			-e 's|${NGINX_ACCESS_LOG}|/var/log/nginx/sparkyfitness.access.log|g' \
+			-e 's|${NGINX_ERROR_LOG}|/var/log/nginx/sparkyfitness.error.log|g' \
+			-e 's|root /usr/share/nginx/html;|root /var/www/sparkyfitness;|g' \
+			-e 's|server_name localhost;|server_name _;|g' \
+			"/opt/sparkyfitness/docker/nginx.conf" >/etc/nginx/sites-available/sparkyfitness
+		msg_ok "Refreshed Nginx Config"
 
-    msg_info "Refreshing SparkyFitness Service"
-    cat <<EOF >/etc/systemd/system/sparkyfitness-server.service
+		msg_info "Refreshing SparkyFitness Service"
+		cat <<EOF >/etc/systemd/system/sparkyfitness-server.service
   [Unit]
   Description=SparkyFitness Backend Service
   After=network.target postgresql.service
@@ -94,16 +91,16 @@ function update_script() {
   [Install]
   WantedBy=multi-user.target
 EOF
-    systemctl daemon-reload
-    msg_ok "Refreshed SparkyFitness Service"
+		systemctl daemon-reload
+		msg_ok "Refreshed SparkyFitness Service"
 
-    msg_info "Starting Services"
-    $STD systemctl start sparkyfitness-server
-    nginx_enable_site sparkyfitness
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		$STD systemctl start sparkyfitness-server
+		nginx_enable_site sparkyfitness
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

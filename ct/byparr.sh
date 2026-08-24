@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,75 +22,75 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/Byparr ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/Byparr ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "Byparr" "ThePhaseless/Byparr"; then
-    msg_info "Stopping Service"
-    systemctl stop byparr
-    msg_ok "Stopped Service"
+	if check_for_gh_release "Byparr" "ThePhaseless/Byparr"; then
+		msg_info "Stopping Service"
+		systemctl stop byparr
+		msg_ok "Stopped Service"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Byparr" "ThePhaseless/Byparr" "tarball" "latest"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Byparr" "ThePhaseless/Byparr" "tarball" "latest"
 
-    if ! dpkg -l | grep -q ffmpeg; then
-      msg_info "Installing dependencies"
-      $STD apt install -y --no-install-recommends \
-        ffmpeg \
-        libatk1.0-0 \
-        libcairo-gobject2 \
-        libcairo2 \
-        libdbus-glib-1-2 \
-        libfontconfig1 \
-        libfreetype6 \
-        libgdk-pixbuf-xlib-2.0-0 \
-        libglib2.0-0 \
-        libgtk-3-0 \
-        libpango-1.0-0 \
-        libpangocairo-1.0-0 \
-        libpangoft2-1.0-0 \
-        libx11-6 \
-        libx11-xcb1 \
-        libxcb-shm0 \
-        libxcb1 \
-        libxcomposite1 \
-        libxcursor1 \
-        libxdamage1 \
-        libxext6 \
-        libxfixes3 \
-        libxi6 \
-        libxrender1 \
-        libxt6 \
-        libxtst6 \
-        xvfb \
-        fonts-noto-color-emoji \
-        fonts-unifont \
-        xfonts-cyrillic \
-        xfonts-scalable \
-        fonts-liberation \
-        fonts-ipafont-gothic \
-        fonts-wqy-zenhei \
-        fonts-tlwg-loma-otf
-      $STD apt autoremove -y chromium
-      msg_ok "Installed dependencies"
-    fi
+		if ! dpkg -l | grep -q ffmpeg; then
+			msg_info "Installing dependencies"
+			$STD apt install -y --no-install-recommends \
+				ffmpeg \
+				libatk1.0-0 \
+				libcairo-gobject2 \
+				libcairo2 \
+				libdbus-glib-1-2 \
+				libfontconfig1 \
+				libfreetype6 \
+				libgdk-pixbuf-xlib-2.0-0 \
+				libglib2.0-0 \
+				libgtk-3-0 \
+				libpango-1.0-0 \
+				libpangocairo-1.0-0 \
+				libpangoft2-1.0-0 \
+				libx11-6 \
+				libx11-xcb1 \
+				libxcb-shm0 \
+				libxcb1 \
+				libxcomposite1 \
+				libxcursor1 \
+				libxdamage1 \
+				libxext6 \
+				libxfixes3 \
+				libxi6 \
+				libxrender1 \
+				libxt6 \
+				libxtst6 \
+				xvfb \
+				fonts-noto-color-emoji \
+				fonts-unifont \
+				xfonts-cyrillic \
+				xfonts-scalable \
+				fonts-liberation \
+				fonts-ipafont-gothic \
+				fonts-wqy-zenhei \
+				fonts-tlwg-loma-otf
+			$STD apt autoremove -y chromium
+			msg_ok "Installed dependencies"
+		fi
 
-    msg_info "Configuring Byparr"
-    cd /opt/Byparr
-    $STD uv sync --link-mode copy
-    $STD uv run python -m invisible_playwright fetch
-    msg_ok "Configured Byparr"
+		msg_info "Configuring Byparr"
+		cd /opt/Byparr
+		$STD uv sync --link-mode copy
+		$STD uv run python -m invisible_playwright fetch
+		msg_ok "Configured Byparr"
 
-    msg_info "Starting Service"
-    systemctl start byparr
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start byparr
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

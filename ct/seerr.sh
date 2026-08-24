@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,32 +22,32 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/seerr && ! -d /opt/jellyseerr && ! -d /opt/overseerr ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/seerr && ! -d /opt/jellyseerr && ! -d /opt/overseerr ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  # Start Migration from Jellyseerr
-  if [[ -f /etc/systemd/system/jellyseerr.service ]]; then
-    msg_info "Stopping Jellyseerr"
-    $STD systemctl stop jellyseerr || true
-    $STD systemctl disable jellyseerr || true
-    [ -f /etc/systemd/system/jellyseerr.service ] && rm -f /etc/systemd/system/jellyseerr.service
-    msg_ok "Stopped Jellyseerr"
+	# Start Migration from Jellyseerr
+	if [[ -f /etc/systemd/system/jellyseerr.service ]]; then
+		msg_info "Stopping Jellyseerr"
+		$STD systemctl stop jellyseerr || true
+		$STD systemctl disable jellyseerr || true
+		[ -f /etc/systemd/system/jellyseerr.service ] && rm -f /etc/systemd/system/jellyseerr.service
+		msg_ok "Stopped Jellyseerr"
 
-    msg_info "Creating Backup (Patience)"
-    tar -czf /opt/jellyseerr_backup_$(date +%Y%m%d_%H%M%S).tar.gz -C /opt jellyseerr
-    msg_ok "Created Backup"
+		msg_info "Creating Backup (Patience)"
+		tar -czf /opt/jellyseerr_backup_$(date +%Y%m%d_%H%M%S).tar.gz -C /opt jellyseerr
+		msg_ok "Created Backup"
 
-    msg_info "Migrating Jellyseerr to seerr"
-    [ -d /opt/jellyseerr ] && mv /opt/jellyseerr /opt/seerr
-    [ -d /etc/jellyseerr ] && mv /etc/jellyseerr /etc/seerr
-    [ -f /etc/seerr/jellyseerr.conf ] && mv /etc/seerr/jellyseerr.conf /etc/seerr/seerr.conf
-    cat <<EOF >/etc/systemd/system/seerr.service
+		msg_info "Migrating Jellyseerr to seerr"
+		[ -d /opt/jellyseerr ] && mv /opt/jellyseerr /opt/seerr
+		[ -d /etc/jellyseerr ] && mv /etc/jellyseerr /etc/seerr
+		[ -f /etc/seerr/jellyseerr.conf ] && mv /etc/seerr/jellyseerr.conf /etc/seerr/seerr.conf
+		cat <<EOF >/etc/systemd/system/seerr.service
 [Unit]
 Description=Seerr Service
 Wants=network-online.target
@@ -67,28 +64,28 @@ ExecStart=/usr/bin/node dist/index.js
 [Install]
 WantedBy=multi-user.target
 EOF
-    systemctl daemon-reload
-    systemctl enable -q --now seerr
-    msg_ok "Migrated Jellyserr to Seerr"
-  fi
-  # END Jellyseerr Migration
+		systemctl daemon-reload
+		systemctl enable -q --now seerr
+		msg_ok "Migrated Jellyserr to Seerr"
+	fi
+	# END Jellyseerr Migration
 
-  # Start Migration from Overseerr
-  if [[ -f /etc/systemd/system/overseerr.service ]]; then
-    msg_info "Stopping Overseerr"
-    $STD systemctl stop overseerr || true
-    $STD systemctl disable overseerr || true
-    [ -f /etc/systemd/system/overseerr.service ] && rm -f /etc/systemd/system/overseerr.service
-    msg_ok "Stopped Overseerr"
+	# Start Migration from Overseerr
+	if [[ -f /etc/systemd/system/overseerr.service ]]; then
+		msg_info "Stopping Overseerr"
+		$STD systemctl stop overseerr || true
+		$STD systemctl disable overseerr || true
+		[ -f /etc/systemd/system/overseerr.service ] && rm -f /etc/systemd/system/overseerr.service
+		msg_ok "Stopped Overseerr"
 
-    msg_info "Creating Backup (Patience)"
-    tar -czf /opt/overseerr_backup_$(date +%Y%m%d_%H%M%S).tar.gz -C /opt overseerr
-    msg_ok "Created Backup"
+		msg_info "Creating Backup (Patience)"
+		tar -czf /opt/overseerr_backup_$(date +%Y%m%d_%H%M%S).tar.gz -C /opt overseerr
+		msg_ok "Created Backup"
 
-    msg_info "Migrating Overseerr to seerr"
-    [ -d /opt/overseerr ] && mv /opt/overseerr /opt/seerr
-    mkdir -p /etc/seerr
-    cat <<EOF >/etc/seerr/seerr.conf
+		msg_info "Migrating Overseerr to seerr"
+		[ -d /opt/overseerr ] && mv /opt/overseerr /opt/seerr
+		mkdir -p /etc/seerr
+		cat <<EOF >/etc/seerr/seerr.conf
 ## Seerr's default port is 5055, if you want to use both, change this.
 ## specify on which port to listen
 PORT=5055
@@ -99,7 +96,7 @@ PORT=5055
 ## Uncomment if you want to force Node.js to resolve IPv4 before IPv6 (advanced users only)
 # FORCE_IPV4_FIRST=true
 EOF
-    cat <<EOF >/etc/systemd/system/seerr.service
+		cat <<EOF >/etc/systemd/system/seerr.service
 [Unit]
 Description=Seerr Service
 Wants=network-online.target
@@ -116,50 +113,50 @@ ExecStart=/usr/bin/node dist/index.js
 [Install]
 WantedBy=multi-user.target
 EOF
-    systemctl daemon-reload
-    systemctl enable -q --now seerr
-    msg_ok "Migrated Overseerr to Seerr"
-  fi
-  # END Overseerr Migration
+		systemctl daemon-reload
+		systemctl enable -q --now seerr
+		msg_ok "Migrated Overseerr to Seerr"
+	fi
+	# END Overseerr Migration
 
-  if check_for_gh_release "seerr" "seerr-team/seerr"; then
-    msg_info "Stopping Service"
-    systemctl stop seerr
-    msg_ok "Stopped Service"
+	if check_for_gh_release "seerr" "seerr-team/seerr"; then
+		msg_info "Stopping Service"
+		systemctl stop seerr
+		msg_ok "Stopped Service"
 
-    msg_info "Creating Backup"
-    cp -a /opt/seerr/config /opt/seerr_backup
-    msg_ok "Created Backup"
+		msg_info "Creating Backup"
+		cp -a /opt/seerr/config /opt/seerr_backup
+		msg_ok "Created Backup"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "seerr" "seerr-team/seerr" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "seerr" "seerr-team/seerr" "tarball"
 
-    ensure_dependencies build-essential python3-setuptools
+		ensure_dependencies build-essential python3-setuptools
 
-    msg_info "Updating PNPM Version"
-    pnpm_desired=$(grep -Po '"pnpm":\s*"\K[^"]+' /opt/seerr/package.json)
-    NODE_VERSION="22" NODE_MODULE="pnpm@$pnpm_desired" setup_nodejs
-    msg_ok "Updated PNPM Version"
+		msg_info "Updating PNPM Version"
+		pnpm_desired=$(grep -Po '"pnpm":\s*"\K[^"]+' /opt/seerr/package.json)
+		NODE_VERSION="22" NODE_MODULE="pnpm@$pnpm_desired" setup_nodejs
+		msg_ok "Updated PNPM Version"
 
-    msg_info "Updating Seerr"
-    cd /opt/seerr
-    rm -rf dist .next node_modules
-    export CYPRESS_INSTALL_BINARY=0
-    $STD pnpm install --frozen-lockfile
-    export NODE_OPTIONS="--max-old-space-size=3072"
-    $STD pnpm build
-    msg_ok "Updated Seerr"
+		msg_info "Updating Seerr"
+		cd /opt/seerr
+		rm -rf dist .next node_modules
+		export CYPRESS_INSTALL_BINARY=0
+		$STD pnpm install --frozen-lockfile
+		export NODE_OPTIONS="--max-old-space-size=3072"
+		$STD pnpm build
+		msg_ok "Updated Seerr"
 
-    msg_info "Restoring Backup"
-    rm -rf /opt/seerr/config
-    mv /opt/seerr_backup /opt/seerr/config
-    msg_ok "Restored Backup"
+		msg_info "Restoring Backup"
+		rm -rf /opt/seerr/config
+		mv /opt/seerr_backup /opt/seerr/config
+		msg_ok "Restored Backup"
 
-    msg_info "Starting Service"
-    systemctl start seerr
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start seerr
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

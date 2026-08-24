@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,45 +22,45 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/networkoptimizer ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/networkoptimizer ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "networkoptimizer" "Ozark-Connect/NetworkOptimizer"; then
-    msg_info "Stopping Service"
-    systemctl stop networkoptimizer
-    msg_ok "Stopped Service"
+	if check_for_gh_release "networkoptimizer" "Ozark-Connect/NetworkOptimizer"; then
+		msg_info "Stopping Service"
+		systemctl stop networkoptimizer
+		msg_ok "Stopped Service"
 
-    create_backup /opt/networkoptimizer/networkoptimizer.env
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "networkoptimizer" "Ozark-Connect/NetworkOptimizer" "tarball"
-    restore_backup
+		create_backup /opt/networkoptimizer/networkoptimizer.env
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "networkoptimizer" "Ozark-Connect/NetworkOptimizer" "tarball"
+		restore_backup
 
-    msg_info "Rebuilding NetworkOptimizer"
-    RID="linux-x64"
-    [[ "$(dpkg --print-architecture)" == "arm64" ]] && RID="linux-arm64"
-    cd /opt/networkoptimizer
-    export MSBUILDDISABLENODEREUSE=1
-    export DOTNET_CLI_TELEMETRY_OPTOUT=1
-    export DOTNET_SYSTEM_NET_DISABLEIPV6=1
-    $STD dotnet publish src/NetworkOptimizer.Web -c Release -r "$RID" --self-contained -o /opt/networkoptimizer/publish
-    chmod +x /opt/networkoptimizer/publish/NetworkOptimizer.Web
-    mkdir -p /opt/networkoptimizer/publish/tools
-    cd /opt/networkoptimizer/src/uwnspeedtest
-    CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $STD go build -trimpath -ldflags "-s -w" -o /opt/networkoptimizer/publish/tools/uwnspeedtest-linux-arm64 .
-    [[ "$(arch_resolve)" != "arm64" ]] && CGO_ENABLED=0 GOOS=linux GOARCH="$(arch_resolve)" $STD go build -trimpath -ldflags "-s -w" -o "/opt/networkoptimizer/publish/tools/uwnspeedtest-linux-$(arch_resolve)" .
-    msg_ok "Rebuilt NetworkOptimizer"
+		msg_info "Rebuilding NetworkOptimizer"
+		RID="linux-x64"
+		[[ "$(dpkg --print-architecture)" == "arm64" ]] && RID="linux-arm64"
+		cd /opt/networkoptimizer
+		export MSBUILDDISABLENODEREUSE=1
+		export DOTNET_CLI_TELEMETRY_OPTOUT=1
+		export DOTNET_SYSTEM_NET_DISABLEIPV6=1
+		$STD dotnet publish src/NetworkOptimizer.Web -c Release -r "$RID" --self-contained -o /opt/networkoptimizer/publish
+		chmod +x /opt/networkoptimizer/publish/NetworkOptimizer.Web
+		mkdir -p /opt/networkoptimizer/publish/tools
+		cd /opt/networkoptimizer/src/uwnspeedtest
+		CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $STD go build -trimpath -ldflags "-s -w" -o /opt/networkoptimizer/publish/tools/uwnspeedtest-linux-arm64 .
+		[[ "$(arch_resolve)" != "arm64" ]] && CGO_ENABLED=0 GOOS=linux GOARCH="$(arch_resolve)" $STD go build -trimpath -ldflags "-s -w" -o "/opt/networkoptimizer/publish/tools/uwnspeedtest-linux-$(arch_resolve)" .
+		msg_ok "Rebuilt NetworkOptimizer"
 
-    msg_info "Starting Service"
-    systemctl start networkoptimizer
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start networkoptimizer
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

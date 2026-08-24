@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
+
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,33 +23,33 @@ color
 catch_errors
 
 function update_script() {
-  LXCIP=$(ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
+	LXCIP=$(ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
 
-  CHOICE=$(msg_menu "Grafana Update Options" \
-    "1" "Check for Grafana Updates" \
-    "2" "Allow 0.0.0.0 for listening" \
-    "3" "Allow only ${LXCIP} for listening")
+	CHOICE=$(msg_menu "Grafana Update Options" \
+		"1" "Check for Grafana Updates" \
+		"2" "Allow 0.0.0.0 for listening" \
+		"3" "Allow only ${LXCIP} for listening")
 
-  case $CHOICE in
-  1)
-    $STD apk -U upgrade
-    msg_ok "Updated successfully!"
-    exit
-    ;;
-  2)
-    sed -i -e "s/cfg:server.http_addr=.*/cfg:server.http_addr=0.0.0.0/g" /etc/conf.d/grafana
-    service grafana restart
-    msg_ok "Allowed listening on all interfaces!"
-    exit
-    ;;
-  3)
-    sed -i -e "s/cfg:server.http_addr=.*/cfg:server.http_addr=$LXCIP/g" /etc/conf.d/grafana
-    service grafana restart
-    msg_ok "Allowed listening only on ${LXCIP}!"
-    exit
-    ;;
-  esac
-  exit 0
+	case $CHOICE in
+	1)
+		$STD apk -U upgrade
+		msg_ok "Updated successfully!"
+		exit
+		;;
+	2)
+		sed -i -e "s/cfg:server.http_addr=.*/cfg:server.http_addr=0.0.0.0/g" /etc/conf.d/grafana
+		service grafana restart
+		msg_ok "Allowed listening on all interfaces!"
+		exit
+		;;
+	3)
+		sed -i -e "s/cfg:server.http_addr=.*/cfg:server.http_addr=$LXCIP/g" /etc/conf.d/grafana
+		service grafana restart
+		msg_ok "Allowed listening only on ${LXCIP}!"
+		exit
+		;;
+	esac
+	exit 0
 }
 
 start

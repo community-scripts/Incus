@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,48 +22,48 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/kutt ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/kutt ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "kutt" "thedevs-network/kutt"; then
-    msg_info "Stopping services"
-    systemctl stop kutt
-    msg_ok "Stopped services"
+	if check_for_gh_release "kutt" "thedevs-network/kutt"; then
+		msg_info "Stopping services"
+		systemctl stop kutt
+		msg_ok "Stopped services"
 
-    msg_info "Backing up data"
-    mkdir -p /opt/kutt-backup
-    [ -d /opt/kutt/custom ] && cp -r /opt/kutt/custom /opt/kutt-backup/
-    [ -d /opt/kutt/db ] && cp -r /opt/kutt/db /opt/kutt-backup/
-    cp /opt/kutt/.env /opt/kutt-backup/
-    msg_ok "Backed up data"
+		msg_info "Backing up data"
+		mkdir -p /opt/kutt-backup
+		[ -d /opt/kutt/custom ] && cp -r /opt/kutt/custom /opt/kutt-backup/
+		[ -d /opt/kutt/db ] && cp -r /opt/kutt/db /opt/kutt-backup/
+		cp /opt/kutt/.env /opt/kutt-backup/
+		msg_ok "Backed up data"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "kutt" "thedevs-network/kutt" "tarball" "latest"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "kutt" "thedevs-network/kutt" "tarball" "latest"
 
-    msg_info "Restoring data"
-    [ -d /opt/kutt-backup/custom ] && cp -r /opt/kutt-backup/custom /opt/kutt/
-    [ -d /opt/kutt-backup/db ] && cp -r /opt/kutt-backup/db /opt/kutt/
-    [ -f /opt/kutt-backup/.env ] && cp /opt/kutt-backup/.env /opt/kutt/
-    rm -rf /opt/kutt-backup
-    msg_ok "Restored data"
+		msg_info "Restoring data"
+		[ -d /opt/kutt-backup/custom ] && cp -r /opt/kutt-backup/custom /opt/kutt/
+		[ -d /opt/kutt-backup/db ] && cp -r /opt/kutt-backup/db /opt/kutt/
+		[ -f /opt/kutt-backup/.env ] && cp /opt/kutt-backup/.env /opt/kutt/
+		rm -rf /opt/kutt-backup
+		msg_ok "Restored data"
 
-    msg_info "Configuring Kutt"
-    cd /opt/kutt
-    $STD npm install
-    $STD npm run migrate
-    msg_ok "Configured Kutt"
+		msg_info "Configuring Kutt"
+		cd /opt/kutt
+		$STD npm install
+		$STD npm run migrate
+		msg_ok "Configured Kutt"
 
-    msg_info "Starting services"
-    systemctl start kutt
-    msg_ok "Started services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting services"
+		systemctl start kutt
+		msg_ok "Started services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

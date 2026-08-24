@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,84 +22,84 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/gramps-web-api ]] || [[ ! -d /opt/gramps-web/frontend ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/gramps-web-api ]] || [[ ! -d /opt/gramps-web/frontend ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  PYTHON_VERSION="3.12" setup_uv
-  NODE_VERSION="22" NODE_MODULE="corepack" setup_nodejs
+	PYTHON_VERSION="3.12" setup_uv
+	NODE_VERSION="22" NODE_MODULE="corepack" setup_nodejs
 
-  if check_for_gh_release "gramps-web-api" "gramps-project/gramps-web-api"; then
-    msg_info "Stopping Service"
-    systemctl stop gramps-web
-    msg_ok "Stopped Service"
+	if check_for_gh_release "gramps-web-api" "gramps-project/gramps-web-api"; then
+		msg_info "Stopping Service"
+		systemctl stop gramps-web
+		msg_ok "Stopped Service"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gramps-web-api" "gramps-project/gramps-web-api" "tarball" "latest" "/opt/gramps-web-api"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gramps-web-api" "gramps-project/gramps-web-api" "tarball" "latest" "/opt/gramps-web-api"
 
-    msg_info "Updating Gramps Web API"
-    $STD uv venv -c -p python3.12 /opt/gramps-web/venv
-    source /opt/gramps-web/venv/bin/activate
-    $STD uv pip install --no-cache-dir --upgrade pip setuptools wheel
-    $STD uv pip install --no-cache-dir gunicorn
-    $STD uv pip install --no-cache-dir /opt/gramps-web-api
-    msg_ok "Updated Gramps Web API"
+		msg_info "Updating Gramps Web API"
+		$STD uv venv -c -p python3.12 /opt/gramps-web/venv
+		source /opt/gramps-web/venv/bin/activate
+		$STD uv pip install --no-cache-dir --upgrade pip setuptools wheel
+		$STD uv pip install --no-cache-dir gunicorn
+		$STD uv pip install --no-cache-dir /opt/gramps-web-api
+		msg_ok "Updated Gramps Web API"
 
-    msg_info "Applying Database Migration"
-    cd /opt/gramps-web-api
-    GRAMPS_API_CONFIG=/opt/gramps-web/config/config.cfg \
-      ALEMBIC_CONFIG=/opt/gramps-web-api/alembic.ini \
-      GRAMPSHOME=/opt/gramps-web/data \
-      GRAMPS_DATABASE_PATH=/opt/gramps-web/data/gramps/grampsdb \
-      $STD /opt/gramps-web/venv/bin/python3 -m gramps_webapi user migrate
-    msg_ok "Applied Database Migration"
+		msg_info "Applying Database Migration"
+		cd /opt/gramps-web-api
+		GRAMPS_API_CONFIG=/opt/gramps-web/config/config.cfg \
+			ALEMBIC_CONFIG=/opt/gramps-web-api/alembic.ini \
+			GRAMPSHOME=/opt/gramps-web/data \
+			GRAMPS_DATABASE_PATH=/opt/gramps-web/data/gramps/grampsdb \
+			$STD /opt/gramps-web/venv/bin/python3 -m gramps_webapi user migrate
+		msg_ok "Applied Database Migration"
 
-    msg_info "Updating Gramps Addons"
-    GRAMPS_VERSION=$(/opt/gramps-web/venv/bin/python3 -c "import gramps.version; print('%s%s' % (gramps.version.VERSION_TUPLE[0], gramps.version.VERSION_TUPLE[1]))" 2>/dev/null || echo "60")
-    GRAMPS_PLUGINS_DIR="/opt/gramps-web/data/gramps/gramps${GRAMPS_VERSION}/plugins"
-    mkdir -p "$GRAMPS_PLUGINS_DIR"
-    $STD wget -q https://github.com/gramps-project/addons/archive/refs/heads/master.zip -O /tmp/gramps-addons.zip
-    for addon in FilterRules JSON; do
-      unzip -p /tmp/gramps-addons.zip "addons-master/gramps${GRAMPS_VERSION}/download/${addon}.addon.tgz" |
-        tar -xz -C "$GRAMPS_PLUGINS_DIR"
-    done
-    rm -f /tmp/gramps-addons.zip
-    msg_ok "Updated Gramps Addons"
+		msg_info "Updating Gramps Addons"
+		GRAMPS_VERSION=$(/opt/gramps-web/venv/bin/python3 -c "import gramps.version; print('%s%s' % (gramps.version.VERSION_TUPLE[0], gramps.version.VERSION_TUPLE[1]))" 2>/dev/null || echo "60")
+		GRAMPS_PLUGINS_DIR="/opt/gramps-web/data/gramps/gramps${GRAMPS_VERSION}/plugins"
+		mkdir -p "$GRAMPS_PLUGINS_DIR"
+		$STD wget -q https://github.com/gramps-project/addons/archive/refs/heads/master.zip -O /tmp/gramps-addons.zip
+		for addon in FilterRules JSON; do
+			unzip -p /tmp/gramps-addons.zip "addons-master/gramps${GRAMPS_VERSION}/download/${addon}.addon.tgz" |
+				tar -xz -C "$GRAMPS_PLUGINS_DIR"
+		done
+		rm -f /tmp/gramps-addons.zip
+		msg_ok "Updated Gramps Addons"
 
-    msg_info "Starting Service"
-    systemctl start gramps-web
-    msg_ok "Started Service"
-  fi
+		msg_info "Starting Service"
+		systemctl start gramps-web
+		msg_ok "Started Service"
+	fi
 
-  if check_for_gh_release "gramps-web" "gramps-project/gramps-web"; then
-    msg_info "Stopping Service"
-    systemctl stop gramps-web
-    msg_ok "Stopped Service"
+	if check_for_gh_release "gramps-web" "gramps-project/gramps-web"; then
+		msg_info "Stopping Service"
+		systemctl stop gramps-web
+		msg_ok "Stopped Service"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gramps-web" "gramps-project/gramps-web" "tarball" "latest" "/opt/gramps-web/frontend"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gramps-web" "gramps-project/gramps-web" "tarball" "latest" "/opt/gramps-web/frontend"
 
-    msg_info "Updating Gramps Web Frontend"
-    cd /opt/gramps-web/frontend
-    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+		msg_info "Updating Gramps Web Frontend"
+		cd /opt/gramps-web/frontend
+		export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-    create_backup /opt/gramps-web/frontend/dist/config.js
+		create_backup /opt/gramps-web/frontend/dist/config.js
 
-    $STD npm install
-    $STD npm run build
+		$STD npm install
+		$STD npm run build
 
-    restore_backup
+		restore_backup
 
-    msg_ok "Updated Gramps Web Frontend"
+		msg_ok "Updated Gramps Web Frontend"
 
-    msg_info "Starting Service"
-    systemctl start gramps-web
-    msg_ok "Started Service"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start gramps-web
+		msg_ok "Started Service"
+	fi
+	exit
 }
 
 start

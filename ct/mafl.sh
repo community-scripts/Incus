@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,39 +22,39 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/mafl ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "mafl" "hywax/mafl"; then
-    msg_info "Stopping Mafl service"
-    systemctl stop mafl
-    msg_ok "Service stopped"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/mafl ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "mafl" "hywax/mafl"; then
+		msg_info "Stopping Mafl service"
+		systemctl stop mafl
+		msg_ok "Service stopped"
 
-    msg_info "Backing up data"
-    mkdir -p /opt/mafl-backup/data
-    mv /opt/mafl/data /opt/mafl-backup/data
-    rm -rf /opt/mafl
-    msg_ok "Backup complete"
+		msg_info "Backing up data"
+		mkdir -p /opt/mafl-backup/data
+		mv /opt/mafl/data /opt/mafl-backup/data
+		rm -rf /opt/mafl
+		msg_ok "Backup complete"
 
-    fetch_and_deploy_gh_release "mafl" "hywax/mafl" "tarball"
+		fetch_and_deploy_gh_release "mafl" "hywax/mafl" "tarball"
 
-    msg_info "Updating Mafl"
-    cd /opt/mafl
-    $STD yarn install
-    $STD yarn build
-    mv /opt/mafl-backup/data /opt/mafl/data
-    msg_ok "Mafl updated"
+		msg_info "Updating Mafl"
+		cd /opt/mafl
+		$STD yarn install
+		$STD yarn build
+		mv /opt/mafl-backup/data /opt/mafl/data
+		msg_ok "Mafl updated"
 
-    msg_info "Starting Service"
-    systemctl start mafl
-    msg_ok "Service started"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start mafl
+		msg_ok "Service started"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

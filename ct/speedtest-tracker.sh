@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,58 +22,58 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/speedtest-tracker ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/speedtest-tracker ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "speedtest-tracker" "alexjustesen/speedtest-tracker"; then
-    PHP_VERSION="8.4" PHP_FPM="YES" setup_php
-    setup_composer
-    NODE_VERSION="22" setup_nodejs
-    setcap cap_net_raw+ep /bin/ping
+	if check_for_gh_release "speedtest-tracker" "alexjustesen/speedtest-tracker"; then
+		PHP_VERSION="8.4" PHP_FPM="YES" setup_php
+		setup_composer
+		NODE_VERSION="22" setup_nodejs
+		setcap cap_net_raw+ep /bin/ping
 
-    msg_info "Stopping Service"
-    systemctl stop speedtest-tracker
-    msg_ok "Stopped Service"
+		msg_info "Stopping Service"
+		systemctl stop speedtest-tracker
+		msg_ok "Stopped Service"
 
-    msg_info "Updating Speedtest CLI"
-    $STD apt update
-    $STD apt --only-upgrade install -y speedtest
-    msg_ok "Updated Speedtest CLI"
+		msg_info "Updating Speedtest CLI"
+		$STD apt update
+		$STD apt --only-upgrade install -y speedtest
+		msg_ok "Updated Speedtest CLI"
 
-    msg_info "Creating Backup"
-    cp -r /opt/speedtest-tracker /opt/speedtest-tracker-backup
-    msg_ok "Backup Created"
+		msg_info "Creating Backup"
+		cp -r /opt/speedtest-tracker /opt/speedtest-tracker-backup
+		msg_ok "Backup Created"
 
-    fetch_and_deploy_gh_release "speedtest-tracker" "alexjustesen/speedtest-tracker" "tarball" "latest" "/opt/speedtest-tracker"
+		fetch_and_deploy_gh_release "speedtest-tracker" "alexjustesen/speedtest-tracker" "tarball" "latest" "/opt/speedtest-tracker"
 
-    msg_info "Updating Speedtest Tracker"
-    cp -r /opt/speedtest-tracker-backup/.env /opt/speedtest-tracker/.env
-    cd /opt/speedtest-tracker
-    export COMPOSER_ALLOW_SUPERUSER=1
-    $STD composer install --optimize-autoloader --no-dev
-    $STD npm ci
-    $STD npm run build
-    $STD php artisan migrate --force
-    $STD php artisan config:clear
-    $STD php artisan cache:clear
-    $STD php artisan view:clear
-    chown -R www-data:www-data /opt/speedtest-tracker
-    chmod -R 755 /opt/speedtest-tracker/storage
-    chmod -R 755 /opt/speedtest-tracker/bootstrap/cache
-    msg_ok "Updated Speedtest Tracker"
+		msg_info "Updating Speedtest Tracker"
+		cp -r /opt/speedtest-tracker-backup/.env /opt/speedtest-tracker/.env
+		cd /opt/speedtest-tracker
+		export COMPOSER_ALLOW_SUPERUSER=1
+		$STD composer install --optimize-autoloader --no-dev
+		$STD npm ci
+		$STD npm run build
+		$STD php artisan migrate --force
+		$STD php artisan config:clear
+		$STD php artisan cache:clear
+		$STD php artisan view:clear
+		chown -R www-data:www-data /opt/speedtest-tracker
+		chmod -R 755 /opt/speedtest-tracker/storage
+		chmod -R 755 /opt/speedtest-tracker/bootstrap/cache
+		msg_ok "Updated Speedtest Tracker"
 
-    msg_info "Starting Service"
-    systemctl start speedtest-tracker
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start speedtest-tracker
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

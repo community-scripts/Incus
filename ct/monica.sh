@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,53 +22,53 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/monica ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/monica ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  setup_mariadb
-  NODE_VERSION="22" NODE_MODULE="yarn@latest" setup_nodejs
+	setup_mariadb
+	NODE_VERSION="22" NODE_MODULE="yarn@latest" setup_nodejs
 
-  # Fix for previous versions not having cronjob
-  if ! grep -Fq 'php /opt/monica/artisan schedule:run' /etc/crontab; then
-    echo '* * * * * root php /opt/monica/artisan schedule:run >> /dev/null 2>&1' >>/etc/crontab
-  fi
+	# Fix for previous versions not having cronjob
+	if ! grep -Fq 'php /opt/monica/artisan schedule:run' /etc/crontab; then
+		echo '* * * * * root php /opt/monica/artisan schedule:run >> /dev/null 2>&1' >>/etc/crontab
+	fi
 
-  if check_for_gh_release "monica" "monicahq/monica"; then
-    msg_info "Stopping Service"
-    systemctl stop apache2
-    msg_ok "Stopped Service"
+	if check_for_gh_release "monica" "monicahq/monica"; then
+		msg_info "Stopping Service"
+		systemctl stop apache2
+		msg_ok "Stopped Service"
 
-    msg_info "Creating backup"
-    mv /opt/monica/ /opt/monica-backup
-    msg_ok "Backup created"
+		msg_info "Creating backup"
+		mv /opt/monica/ /opt/monica-backup
+		msg_ok "Backup created"
 
-    fetch_and_deploy_gh_release "monica" "monicahq/monica" "prebuild" "latest" "/opt/monica" "monica-v*.tar.bz2"
+		fetch_and_deploy_gh_release "monica" "monicahq/monica" "prebuild" "latest" "/opt/monica" "monica-v*.tar.bz2"
 
-    msg_info "Configuring monica"
-    cd /opt/monica/
-    cp -r /opt/monica-backup/.env /opt/monica
-    cp -r /opt/monica-backup/storage/* /opt/monica/storage/
-    $STD composer install --no-interaction --no-dev
-    $STD yarn config set ignore-engines true
-    $STD yarn install
-    $STD yarn run production
-    $STD php artisan monica:update --force
-    chown -R www-data:www-data /opt/monica
-    chmod -R 775 /opt/monica/storage
-    rm -r /opt/monica-backup
-    msg_ok "Configured monica"
+		msg_info "Configuring monica"
+		cd /opt/monica/
+		cp -r /opt/monica-backup/.env /opt/monica
+		cp -r /opt/monica-backup/storage/* /opt/monica/storage/
+		$STD composer install --no-interaction --no-dev
+		$STD yarn config set ignore-engines true
+		$STD yarn install
+		$STD yarn run production
+		$STD php artisan monica:update --force
+		chown -R www-data:www-data /opt/monica
+		chmod -R 775 /opt/monica/storage
+		rm -r /opt/monica-backup
+		msg_ok "Configured monica"
 
-    msg_info "Starting Service"
-    systemctl start apache2
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start apache2
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,45 +22,45 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/koel ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/koel ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "koel" "koel/koel"; then
-    msg_info "Stopping Services"
-    systemctl stop nginx php8.4-fpm
-    msg_ok "Stopped Services"
+	if check_for_gh_release "koel" "koel/koel"; then
+		msg_info "Stopping Services"
+		systemctl stop nginx php8.4-fpm
+		msg_ok "Stopped Services"
 
-    create_backup /opt/koel/.env /opt/koel/storage /opt/koel/public/img
+		create_backup /opt/koel/.env /opt/koel/storage /opt/koel/public/img
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "koel" "koel/koel" "prebuild" "latest" "/opt/koel" "koel-*.tar.gz"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "koel" "koel/koel" "prebuild" "latest" "/opt/koel" "koel-*.tar.gz"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Running Migrations"
-    cd /opt/koel 
-    export COMPOSER_ALLOW_SUPERUSER=1
-    $STD composer install --no-interaction --no-dev --optimize-autoloader
-    $STD php artisan migrate --force
-    $STD php artisan config:clear
-    $STD php artisan cache:clear
-    $STD php artisan view:clear
-    $STD php artisan koel:init --no-assets --no-interaction
-    chown -R www-data:www-data /opt/koel
-    chmod -R 775 /opt/koel/storage
-    msg_ok "Ran Migrations"
+		msg_info "Running Migrations"
+		cd /opt/koel
+		export COMPOSER_ALLOW_SUPERUSER=1
+		$STD composer install --no-interaction --no-dev --optimize-autoloader
+		$STD php artisan migrate --force
+		$STD php artisan config:clear
+		$STD php artisan cache:clear
+		$STD php artisan view:clear
+		$STD php artisan koel:init --no-assets --no-interaction
+		chown -R www-data:www-data /opt/koel
+		chmod -R 775 /opt/koel/storage
+		msg_ok "Ran Migrations"
 
-    msg_info "Starting Services"
-    systemctl start php8.4-fpm nginx
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start php8.4-fpm nginx
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

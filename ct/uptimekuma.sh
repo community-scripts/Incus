@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,40 +22,40 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/uptime-kuma ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/uptime-kuma ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  NODE_VERSION="22" setup_nodejs
+	NODE_VERSION="22" setup_nodejs
 
-  ensure_dependencies chromium
-  if [[ ! -L /opt/uptime-kuma/chromium ]]; then
-    ln -s /usr/bin/chromium /opt/uptime-kuma/chromium
-  fi
+	ensure_dependencies chromium
+	if [[ ! -L /opt/uptime-kuma/chromium ]]; then
+		ln -s /usr/bin/chromium /opt/uptime-kuma/chromium
+	fi
 
-  if check_for_gh_release "uptime-kuma" "louislam/uptime-kuma"; then
-    msg_info "Stopping Service"
-    systemctl stop uptime-kuma
-    msg_ok "Stopped Service"
+	if check_for_gh_release "uptime-kuma" "louislam/uptime-kuma"; then
+		msg_info "Stopping Service"
+		systemctl stop uptime-kuma
+		msg_ok "Stopped Service"
 
-    fetch_and_deploy_gh_release "uptime-kuma" "louislam/uptime-kuma" "tarball"
+		fetch_and_deploy_gh_release "uptime-kuma" "louislam/uptime-kuma" "tarball"
 
-    msg_info "Updating Uptime Kuma"
-    cd /opt/uptime-kuma
-    $STD npm install --omit dev
-    $STD npm run download-dist
-    msg_ok "Updated Uptime Kuma"
+		msg_info "Updating Uptime Kuma"
+		cd /opt/uptime-kuma
+		$STD npm install --omit dev
+		$STD npm run download-dist
+		msg_ok "Updated Uptime Kuma"
 
-    msg_info "Starting Service"
-    systemctl start uptime-kuma
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start uptime-kuma
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

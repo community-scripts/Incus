@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -26,19 +23,19 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d "/opt/dispatcharr" ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d "/opt/dispatcharr" ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  setup_uv
-  NODE_VERSION="24" setup_nodejs
-  if [[ -f "/etc/nginx/sites-available/dispatcharr.conf" ]] && ! grep -q "real_forwarded_proto" "/etc/nginx/sites-available/dispatcharr.conf"; then
-    msg_info "Migrating Nginx Configuration"
-    cat <<EOF >"/etc/nginx/sites-available/dispatcharr.conf"
+	setup_uv
+	NODE_VERSION="24" setup_nodejs
+	if [[ -f "/etc/nginx/sites-available/dispatcharr.conf" ]] && ! grep -q "real_forwarded_proto" "/etc/nginx/sites-available/dispatcharr.conf"; then
+		msg_info "Migrating Nginx Configuration"
+		cat <<EOF >"/etc/nginx/sites-available/dispatcharr.conf"
 map \$http_x_forwarded_proto \$real_forwarded_proto {
     ""      \$scheme;
     default \$http_x_forwarded_proto;
@@ -104,54 +101,54 @@ server {
     }
 }
 EOF
-    nginx_enable_site dispatcharr.conf
-    msg_ok "Migrated Nginx Configuration"
-  fi
+		nginx_enable_site dispatcharr.conf
+		msg_ok "Migrated Nginx Configuration"
+	fi
 
-  ensure_dependencies vlc-bin vlc-plugin-base
+	ensure_dependencies vlc-bin vlc-plugin-base
 
-  if check_for_gh_release "Dispatcharr" "Dispatcharr/Dispatcharr"; then
-    msg_info "Stopping Services"
-    systemctl stop dispatcharr-celery
-    systemctl stop dispatcharr-celerybeat
-    systemctl stop dispatcharr-daphne
-    systemctl stop dispatcharr
-    msg_ok "Stopped Services"
+	if check_for_gh_release "Dispatcharr" "Dispatcharr/Dispatcharr"; then
+		msg_info "Stopping Services"
+		systemctl stop dispatcharr-celery
+		systemctl stop dispatcharr-celerybeat
+		systemctl stop dispatcharr-daphne
+		systemctl stop dispatcharr
+		msg_ok "Stopped Services"
 
-    msg_info "Creating Backup"
-    BACKUP_FILE="/opt/dispatcharr_backup_$(date +%F_%H-%M-%S).tar.gz"
-    if [[ -f /opt/dispatcharr/start-gunicorn.sh ]]; then
-      rm -f /opt/dispatcharr/start-gunicorn.sh
-    fi
-    create_backup /opt/dispatcharr/.env /opt/dispatcharr/start-celery.sh /opt/dispatcharr/start-celerybeat.sh /opt/dispatcharr/start-daphne.sh
-    if [[ -f /opt/dispatcharr/.env ]]; then
-      set -o allexport
-      source /opt/dispatcharr/.env
-      set +o allexport
-      if [[ -n "$POSTGRES_DB" ]] && [[ -n "$POSTGRES_USER" ]] && [[ -n "$POSTGRES_PASSWORD" ]]; then
-        PGPASSWORD=$POSTGRES_PASSWORD pg_dump -U "$POSTGRES_USER" -h "${POSTGRES_HOST:-localhost}" -p "${POSTGRES_PORT:-5432}" "$POSTGRES_DB" >/tmp/dispatcharr_db_$(date +%F).sql
-        msg_info "Database backup created"
-      fi
-    fi
-    $STD tar -czf "$BACKUP_FILE" -C /opt dispatcharr /tmp/dispatcharr_db_*.sql
-    msg_ok "Backup created: $BACKUP_FILE"
+		msg_info "Creating Backup"
+		BACKUP_FILE="/opt/dispatcharr_backup_$(date +%F_%H-%M-%S).tar.gz"
+		if [[ -f /opt/dispatcharr/start-gunicorn.sh ]]; then
+			rm -f /opt/dispatcharr/start-gunicorn.sh
+		fi
+		create_backup /opt/dispatcharr/.env /opt/dispatcharr/start-celery.sh /opt/dispatcharr/start-celerybeat.sh /opt/dispatcharr/start-daphne.sh
+		if [[ -f /opt/dispatcharr/.env ]]; then
+			set -o allexport
+			source /opt/dispatcharr/.env
+			set +o allexport
+			if [[ -n "$POSTGRES_DB" ]] && [[ -n "$POSTGRES_USER" ]] && [[ -n "$POSTGRES_PASSWORD" ]]; then
+				PGPASSWORD=$POSTGRES_PASSWORD pg_dump -U "$POSTGRES_USER" -h "${POSTGRES_HOST:-localhost}" -p "${POSTGRES_PORT:-5432}" "$POSTGRES_DB" >/tmp/dispatcharr_db_$(date +%F).sql
+				msg_info "Database backup created"
+			fi
+		fi
+		$STD tar -czf "$BACKUP_FILE" -C /opt dispatcharr /tmp/dispatcharr_db_*.sql
+		msg_ok "Backup created: $BACKUP_FILE"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "dispatcharr" "Dispatcharr/Dispatcharr" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "dispatcharr" "Dispatcharr/Dispatcharr" "tarball"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Dispatcharr Backend"
-    if ! grep -q "DJANGO_SECRET_KEY" /opt/dispatcharr/.env; then
-      DJANGO_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | cut -c1-50)
-      echo "DJANGO_SECRET_KEY=$DJANGO_SECRET" >>/opt/dispatcharr/.env
-    fi
+		msg_info "Updating Dispatcharr Backend"
+		if ! grep -q "DJANGO_SECRET_KEY" /opt/dispatcharr/.env; then
+			DJANGO_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | cut -c1-50)
+			echo "DJANGO_SECRET_KEY=$DJANGO_SECRET" >>/opt/dispatcharr/.env
+		fi
 
-    cd /opt/dispatcharr
-    rm -rf .venv
-    $STD uv venv --clear
-    $STD uv sync
-    $STD uv pip install uwsgi gevent celery redis daphne
-    cat <<'EOF' >/opt/dispatcharr/start-uwsgi.sh
+		cd /opt/dispatcharr
+		rm -rf .venv
+		$STD uv venv --clear
+		$STD uv sync
+		$STD uv pip install uwsgi gevent celery redis daphne
+		cat <<'EOF' >/opt/dispatcharr/start-uwsgi.sh
 #!/usr/bin/env bash
 cd /opt/dispatcharr
 set -a
@@ -174,42 +171,42 @@ exec .venv/bin/uwsgi \
     --die-on-term \
     --vacuum
 EOF
-    chmod +x /opt/dispatcharr/start-uwsgi.sh
-    if grep -q 'start-gunicorn.sh' /etc/systemd/system/dispatcharr.service; then
-      sed -i 's|start-gunicorn.sh|start-uwsgi.sh|g' /etc/systemd/system/dispatcharr.service
-      systemctl daemon-reload
-    fi
-    msg_ok "Updated Dispatcharr Backend"
+		chmod +x /opt/dispatcharr/start-uwsgi.sh
+		if grep -q 'start-gunicorn.sh' /etc/systemd/system/dispatcharr.service; then
+			sed -i 's|start-gunicorn.sh|start-uwsgi.sh|g' /etc/systemd/system/dispatcharr.service
+			systemctl daemon-reload
+		fi
+		msg_ok "Updated Dispatcharr Backend"
 
-    msg_info "Building Frontend"
-    cd /opt/dispatcharr/frontend
-    node -e "const p=require('./package.json');p.overrides=p.overrides||{};p.overrides['webworkify-webpack']='2.1.3';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2));"
-    rm -f package-lock.json
-    $STD npm install --no-audit --progress=false
-    $STD npm run build
-    msg_ok "Built Frontend"
+		msg_info "Building Frontend"
+		cd /opt/dispatcharr/frontend
+		node -e "const p=require('./package.json');p.overrides=p.overrides||{};p.overrides['webworkify-webpack']='2.1.3';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2));"
+		rm -f package-lock.json
+		$STD npm install --no-audit --progress=false
+		$STD npm run build
+		msg_ok "Built Frontend"
 
-    msg_info "Running Django Migrations"
-    cd /opt/dispatcharr
-    if [[ -f .env ]]; then
-      set -o allexport
-      source .env
-      set +o allexport
-    fi
-    $STD uv run python manage.py migrate --noinput
-    $STD uv run python manage.py collectstatic --noinput
-    rm -f /tmp/dispatcharr_db_*.sql
-    msg_ok "Migrations Complete"
+		msg_info "Running Django Migrations"
+		cd /opt/dispatcharr
+		if [[ -f .env ]]; then
+			set -o allexport
+			source .env
+			set +o allexport
+		fi
+		$STD uv run python manage.py migrate --noinput
+		$STD uv run python manage.py collectstatic --noinput
+		rm -f /tmp/dispatcharr_db_*.sql
+		msg_ok "Migrations Complete"
 
-    msg_info "Starting Services"
-    systemctl start dispatcharr
-    systemctl start dispatcharr-celery
-    systemctl start dispatcharr-celerybeat
-    systemctl start dispatcharr-daphne
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start dispatcharr
+		systemctl start dispatcharr-celery
+		systemctl start dispatcharr-celerybeat
+		systemctl start dispatcharr-daphne
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

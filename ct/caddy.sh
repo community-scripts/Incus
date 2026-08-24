@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,31 +22,31 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /etc/caddy ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /etc/caddy ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  msg_info "Updating Caddy LXC"
-  $STD apt update
-  $STD apt upgrade -y
-  msg_ok "Updated Caddy LXC"
+	msg_info "Updating Caddy LXC"
+	$STD apt update
+	$STD apt upgrade -y
+	msg_ok "Updated Caddy LXC"
 
-  if command -v xcaddy >/dev/null 2>&1; then
-    if check_for_gh_release "xcaddy" "caddyserver/xcaddy"; then
-      setup_go
-      fetch_and_deploy_gh_release "xcaddy" "caddyserver/xcaddy" "binary"
+	if command -v xcaddy >/dev/null 2>&1; then
+		if check_for_gh_release "xcaddy" "caddyserver/xcaddy"; then
+			setup_go
+			fetch_and_deploy_gh_release "xcaddy" "caddyserver/xcaddy" "binary"
 
-      msg_info "Updating xCaddy"
-      $STD xcaddy build
-      msg_ok "Updated xCaddy"
-    fi
-  fi
-  msg_ok "Updated successfully!"
-  exit
+			msg_info "Updating xCaddy"
+			$STD xcaddy build
+			msg_ok "Updated xCaddy"
+		fi
+	fi
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

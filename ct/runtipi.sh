@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -27,43 +24,43 @@ catch_errors
 ADDON_SCRIPT="https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/addon/runtipi.sh"
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/runtipi ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/runtipi ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  msg_warn "⚠️  ${APP} has been migrated to an addon script."
-  echo ""
-  msg_info "This is a one-time migration. After this, you can update ${APP} anytime with:"
-  echo -e "${TAB}${TAB}${GN}update_runtipi${CL}  or  ${GN}bash <(curl -fsSL ${ADDON_SCRIPT})${CL}"
-  echo ""
-  read -r -p "${TAB}Migrate update function now? [y/N]: " CONFIRM
-  if [[ ! "${CONFIRM,,}" =~ ^(y|yes)$ ]]; then
-    msg_warn "Migration skipped. The old update will continue to work for now."
-    msg_info "Updating ${APP} (legacy)"
-    cd /opt/runtipi && ./runtipi-cli update latest
-    msg_ok "Updated ${APP}"
-    exit
-  fi
+	msg_warn "⚠️  ${APP} has been migrated to an addon script."
+	echo ""
+	msg_info "This is a one-time migration. After this, you can update ${APP} anytime with:"
+	echo -e "${TAB}${TAB}${GN}update_runtipi${CL}  or  ${GN}bash <(curl -fsSL ${ADDON_SCRIPT})${CL}"
+	echo ""
+	read -r -p "${TAB}Migrate update function now? [y/N]: " CONFIRM
+	if [[ ! "${CONFIRM,,}" =~ ^(y|yes)$ ]]; then
+		msg_warn "Migration skipped. The old update will continue to work for now."
+		msg_info "Updating ${APP} (legacy)"
+		cd /opt/runtipi && ./runtipi-cli update latest
+		msg_ok "Updated ${APP}"
+		exit
+	fi
 
-  msg_info "Migrating update function"
-  TMP_UPDATE=$(mktemp)
-  cat <<'MIGRATION_EOF' >"$TMP_UPDATE"
+	msg_info "Migrating update function"
+	TMP_UPDATE=$(mktemp)
+	cat <<'MIGRATION_EOF' >"$TMP_UPDATE"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/tools/addon/runtipi.sh)"
 MIGRATION_EOF
-  mv "$TMP_UPDATE" /usr/bin/update
-  chmod +x /usr/bin/update
+	mv "$TMP_UPDATE" /usr/bin/update
+	chmod +x /usr/bin/update
 
-  ln -sf /usr/bin/update /usr/bin/update_runtipi 2>/dev/null || true
-  msg_ok "Migration complete"
+	ln -sf /usr/bin/update /usr/bin/update_runtipi 2>/dev/null || true
+	msg_ok "Migration complete"
 
-  msg_info "Running addon update"
-  type=update bash <(curl -fsSL "${ADDON_SCRIPT}")
-  exit
+	msg_info "Running addon update"
+	type=update bash <(curl -fsSL "${ADDON_SCRIPT}")
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,27 +22,27 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if ! command -v evcc >/dev/null 2>&1; then
-    msg_error "No ${APP} Installation Found!"
-    exit 233
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if ! command -v evcc >/dev/null 2>&1; then
+		msg_error "No ${APP} Installation Found!"
+		exit 233
+	fi
 
-  if [[ -f /etc/apt/sources.list.d/evcc-stable.list ]]; then
-    setup_deb822_repo \
-      "evcc-stable" \
-      "https://dl.evcc.io/public/evcc/stable/gpg.EAD5D0E07B0EC0FD.key" \
-      "https://dl.evcc.io/public/evcc/stable/deb/debian/" \
-      "$(get_os_info codename)" \
-      "main"
-  fi
-  msg_info "Updating evcc LXC"
-  $STD apt update
-  $STD apt --only-upgrade install -y evcc
-  msg_ok "Updated successfully!"
-  exit
+	if [[ -f /etc/apt/sources.list.d/evcc-stable.list ]]; then
+		setup_deb822_repo \
+			"evcc-stable" \
+			"https://dl.evcc.io/public/evcc/stable/gpg.EAD5D0E07B0EC0FD.key" \
+			"https://dl.evcc.io/public/evcc/stable/deb/debian/" \
+			"$(get_os_info codename)" \
+			"main"
+	fi
+	msg_info "Updating evcc LXC"
+	$STD apt update
+	$STD apt --only-upgrade install -y evcc
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

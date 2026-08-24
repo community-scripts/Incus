@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,50 +22,50 @@ color
 catch_errors
 
 function update_script() {
-  if [[ ! -d /opt/tinyauth ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/tinyauth ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  msg_info "Updating packages"
-  $STD apk -U upgrade
-  msg_ok "Updated packages"
+	msg_info "Updating packages"
+	$STD apk -U upgrade
+	msg_ok "Updated packages"
 
-  RELEASE=$(curl -s https://api.github.com/repos/tinyauthapp/tinyauth/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
-  if [ "${RELEASE}" != "$(cat ~/.tinyauth 2>/dev/null)" ] || [ ! -f ~/.tinyauth ]; then
-    msg_info "Stopping Service"
-    $STD service tinyauth stop
-    msg_ok "Service Stopped"
+	RELEASE=$(curl -s https://api.github.com/repos/tinyauthapp/tinyauth/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+	if [ "${RELEASE}" != "$(cat ~/.tinyauth 2>/dev/null)" ] || [ ! -f ~/.tinyauth ]; then
+		msg_info "Stopping Service"
+		$STD service tinyauth stop
+		msg_ok "Service Stopped"
 
-    if [[ -f /opt/tinyauth/.env ]] && ! grep -q "^TINYAUTH_" /opt/tinyauth/.env; then
-      msg_info "Migrating .env to v5 format"
-      sed -i \
-        -e 's/^DATABASE_PATH=/TINYAUTH_DATABASE_PATH=/' \
-        -e 's/^USERS=/TINYAUTH_AUTH_USERS=/' \
-        -e "s/^USERS='/TINYAUTH_AUTH_USERS='/" \
-        -e 's/^APP_URL=/TINYAUTH_APPURL=/' \
-        -e 's/^SECRET=/TINYAUTH_AUTH_SECRET=/' \
-        -e 's/^PORT=/TINYAUTH_SERVER_PORT=/' \
-        -e 's/^ADDRESS=/TINYAUTH_SERVER_ADDRESS=/' \
-        /opt/tinyauth/.env
-      msg_ok "Migrated .env to v5 format"
-    fi
+		if [[ -f /opt/tinyauth/.env ]] && ! grep -q "^TINYAUTH_" /opt/tinyauth/.env; then
+			msg_info "Migrating .env to v5 format"
+			sed -i \
+				-e 's/^DATABASE_PATH=/TINYAUTH_DATABASE_PATH=/' \
+				-e 's/^USERS=/TINYAUTH_AUTH_USERS=/' \
+				-e "s/^USERS='/TINYAUTH_AUTH_USERS='/" \
+				-e 's/^APP_URL=/TINYAUTH_APPURL=/' \
+				-e 's/^SECRET=/TINYAUTH_AUTH_SECRET=/' \
+				-e 's/^PORT=/TINYAUTH_SERVER_PORT=/' \
+				-e 's/^ADDRESS=/TINYAUTH_SERVER_ADDRESS=/' \
+				/opt/tinyauth/.env
+			msg_ok "Migrated .env to v5 format"
+		fi
 
-    msg_info "Updating Tinyauth"
-    rm -f /opt/tinyauth/tinyauth
-    curl -fsSL "https://github.com/tinyauthapp/tinyauth/releases/download/v${RELEASE}/tinyauth-$(arch_resolve)" -o /opt/tinyauth/tinyauth
-    chmod +x /opt/tinyauth/tinyauth
-    echo "${RELEASE}" >~/.tinyauth
-    msg_ok "Updated Tinyauth"
+		msg_info "Updating Tinyauth"
+		rm -f /opt/tinyauth/tinyauth
+		curl -fsSL "https://github.com/tinyauthapp/tinyauth/releases/download/v${RELEASE}/tinyauth-$(arch_resolve)" -o /opt/tinyauth/tinyauth
+		chmod +x /opt/tinyauth/tinyauth
+		echo "${RELEASE}" >~/.tinyauth
+		msg_ok "Updated Tinyauth"
 
-    msg_info "Restarting Tinyauth"
-    $STD service tinyauth start
-    msg_ok "Restarted Tinyauth"
-    msg_ok "Updated successfully!"
-  else
-    msg_ok "No update required. ${APP} is already at ${RELEASE}"
-  fi
-  exit 0
+		msg_info "Restarting Tinyauth"
+		$STD service tinyauth start
+		msg_ok "Restarted Tinyauth"
+		msg_ok "Updated successfully!"
+	else
+		msg_ok "No update required. ${APP} is already at ${RELEASE}"
+	fi
+	exit 0
 }
 
 start

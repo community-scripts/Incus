@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -26,46 +23,46 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/photoprism ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "photoprism" "photoprism/photoprism"; then
-    msg_info "Stopping PhotoPrism"
-    systemctl stop photoprism
-    msg_ok "Stopped PhotoPrism"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/photoprism ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "photoprism" "photoprism/photoprism"; then
+		msg_info "Stopping PhotoPrism"
+		systemctl stop photoprism
+		msg_ok "Stopped PhotoPrism"
 
-    if ! grep -q "photoprism/config/.env" ~/.bashrc 2>/dev/null; then
-      msg_info "Adding environment export for CLI tools"
-      echo '# Load PhotoPrism environment variables for CLI tools' >>~/.bashrc
-      echo 'set -a' >>~/.bashrc
-      echo 'source /opt/photoprism/config/.env' >>~/.bashrc
-      echo 'set +a' >>~/.bashrc
-      msg_ok "Added environment export"
-    fi
+		if ! grep -q "photoprism/config/.env" ~/.bashrc 2>/dev/null; then
+			msg_info "Adding environment export for CLI tools"
+			echo '# Load PhotoPrism environment variables for CLI tools' >>~/.bashrc
+			echo 'set -a' >>~/.bashrc
+			echo 'source /opt/photoprism/config/.env' >>~/.bashrc
+			echo 'set +a' >>~/.bashrc
+			msg_ok "Added environment export"
+		fi
 
-    fetch_and_deploy_gh_release "photoprism" "photoprism/photoprism" "prebuild" "latest" "/opt/photoprism" "*linux-$(arch_resolve).tar.gz"
+		fetch_and_deploy_gh_release "photoprism" "photoprism/photoprism" "prebuild" "latest" "/opt/photoprism" "*linux-$(arch_resolve).tar.gz"
 
-    LIBHEIF_URL=$(curl -fsSL "https://dl.photoprism.app/dist/libheif/" | grep -oP "libheif-bookworm-$(arch_resolve)-v[0-9\.]+\.tar\.gz" | sort -V | tail -n 1)
-    if [[ "${LIBHEIF_URL}" != "$(cat ~/.photoprism_libheif 2>/dev/null)" ]] || [[ ! -f ~/.photoprism_libheif ]]; then
-      msg_info "Updating PhotoPrism LibHeif"
-      ensure_dependencies libvips42
-      curl -fsSL "https://dl.photoprism.app/dist/libheif/$LIBHEIF_URL" -o /tmp/libheif.tar.gz
-      tar -xzf /tmp/libheif.tar.gz -C /usr/local
-      ldconfig
-      echo "${LIBHEIF_URL}" >~/.photoprism_libheif
-      msg_ok "Updated PhotoPrism LibHeif"
-    fi
+		LIBHEIF_URL=$(curl -fsSL "https://dl.photoprism.app/dist/libheif/" | grep -oP "libheif-bookworm-$(arch_resolve)-v[0-9\.]+\.tar\.gz" | sort -V | tail -n 1)
+		if [[ "${LIBHEIF_URL}" != "$(cat ~/.photoprism_libheif 2>/dev/null)" ]] || [[ ! -f ~/.photoprism_libheif ]]; then
+			msg_info "Updating PhotoPrism LibHeif"
+			ensure_dependencies libvips42
+			curl -fsSL "https://dl.photoprism.app/dist/libheif/$LIBHEIF_URL" -o /tmp/libheif.tar.gz
+			tar -xzf /tmp/libheif.tar.gz -C /usr/local
+			ldconfig
+			echo "${LIBHEIF_URL}" >~/.photoprism_libheif
+			msg_ok "Updated PhotoPrism LibHeif"
+		fi
 
-    msg_info "Starting PhotoPrism"
-    systemctl start photoprism
-    msg_ok "Started PhotoPrism"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting PhotoPrism"
+		systemctl start photoprism
+		msg_ok "Started PhotoPrism"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

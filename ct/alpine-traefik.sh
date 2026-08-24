@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,16 +22,16 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  msg_info "Updating Alpine Packages"
-  $STD apk -U upgrade
-  msg_ok "Updated Alpine Packages"
+	header_info
+	msg_info "Updating Alpine Packages"
+	$STD apk -U upgrade
+	msg_ok "Updated Alpine Packages"
 
-  msg_info "Updating traefik from edge"
-  $STD apk add traefik --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
-  msg_ok "Updated traefik"
-  msg_ok "Updated successfully!"
-  exit 0
+	msg_info "Updating traefik from edge"
+	$STD apk add traefik --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
+	msg_ok "Updated traefik"
+	msg_ok "Updated successfully!"
+	exit 0
 }
 
 start

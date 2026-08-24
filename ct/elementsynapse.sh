@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,42 +22,42 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /etc/matrix-synapse ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /etc/matrix-synapse ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
+	NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
 
-  msg_info "Updating LXC"
-  $STD apt update
-  $STD apt -y upgrade
-  msg_ok "Updated LXC"
+	msg_info "Updating LXC"
+	$STD apt update
+	$STD apt -y upgrade
+	msg_ok "Updated LXC"
 
-  if check_for_gh_release "synapse-admin" "etkecc/synapse-admin"; then
-    msg_info "Stopping Service"
-    systemctl stop synapse-admin
-    msg_ok "Stopped Service"
+	if check_for_gh_release "synapse-admin" "etkecc/synapse-admin"; then
+		msg_info "Stopping Service"
+		systemctl stop synapse-admin
+		msg_ok "Stopped Service"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "synapse-admin" "etkecc/synapse-admin" "tarball" "latest" "/opt/synapse-admin"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "synapse-admin" "etkecc/synapse-admin" "tarball" "latest" "/opt/synapse-admin"
 
-    msg_info "Building Synapse-Admin"
-    cd /opt/synapse-admin
-    $STD yarn global add serve
-    $STD yarn install --ignore-engines
-    $STD yarn build
-    mv ./dist ../ && rm -rf * && mv ../dist ./
-    msg_ok "Built Synapse-Admin"
+		msg_info "Building Synapse-Admin"
+		cd /opt/synapse-admin
+		$STD yarn global add serve
+		$STD yarn install --ignore-engines
+		$STD yarn build
+		mv ./dist ../ && rm -rf * && mv ../dist ./
+		msg_ok "Built Synapse-Admin"
 
-    msg_info "Starting Service"
-    systemctl start synapse-admin
-    msg_ok "Started Service"
-    msg_ok "Updated Synapse-Admin to ${CHECK_UPDATE_RELEASE}"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start synapse-admin
+		msg_ok "Started Service"
+		msg_ok "Updated Synapse-Admin to ${CHECK_UPDATE_RELEASE}"
+	fi
+	exit
 }
 
 start

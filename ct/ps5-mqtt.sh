@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,35 +22,35 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/ps5-mqtt ]]; then
-    msg_error "No ${APP} installation found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/ps5-mqtt ]]; then
+		msg_error "No ${APP} installation found!"
+		exit
+	fi
 
-  NODE_VERSION="24" NODE_MODULE="playactor" setup_nodejs
+	NODE_VERSION="24" NODE_MODULE="playactor" setup_nodejs
 
-  if check_for_gh_release "ps5-mqtt" "FunkeyFlo/ps5-mqtt"; then
-    msg_info "Stopping service"
-    systemctl stop ps5-mqtt
-    msg_ok "Stopped service"
+	if check_for_gh_release "ps5-mqtt" "FunkeyFlo/ps5-mqtt"; then
+		msg_info "Stopping service"
+		systemctl stop ps5-mqtt
+		msg_ok "Stopped service"
 
-    fetch_and_deploy_gh_release "ps5-mqtt" "FunkeyFlo/ps5-mqtt" "tarball"
+		fetch_and_deploy_gh_release "ps5-mqtt" "FunkeyFlo/ps5-mqtt" "tarball"
 
-    msg_info "Configuring ${APP}"
-    cd /opt/ps5-mqtt/ps5-mqtt/
-    $STD npm install
-    $STD npm run build
-    msg_ok "Configured ${APP}"
+		msg_info "Configuring ${APP}"
+		cd /opt/ps5-mqtt/ps5-mqtt/
+		$STD npm install
+		$STD npm run build
+		msg_ok "Configured ${APP}"
 
-    msg_info "Starting service"
-    systemctl start ps5-mqtt
-    msg_ok "Started service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting service"
+		systemctl start ps5-mqtt
+		msg_ok "Started service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

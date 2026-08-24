@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,52 +22,52 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d "/opt/apprise" ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "apprise" "caronc/apprise-api"; then
-    msg_info "Stopping Service"
-    systemctl stop apprise-api
-    msg_ok "Stopped Service"
+	if [[ ! -d "/opt/apprise" ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "apprise" "caronc/apprise-api"; then
+		msg_info "Stopping Service"
+		systemctl stop apprise-api
+		msg_ok "Stopped Service"
 
-    export UV_PYTHON_INSTALL_DIR=/opt/uv-python
-    PYTHON_VERSION="3.12" setup_uv
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "apprise" "caronc/apprise-api" "tarball"
+		export UV_PYTHON_INSTALL_DIR=/opt/uv-python
+		PYTHON_VERSION="3.12" setup_uv
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "apprise" "caronc/apprise-api" "tarball"
 
-    msg_info "Updating Apprise-API"
-    cd /opt/apprise
-    cp ./requirements.txt /etc/requirements.txt
-    $STD apt install -y nginx git
-    $STD uv venv /opt/apprise/.venv
-    $STD uv pip install -r requirements.txt gunicorn supervisor -p /opt/apprise/.venv/bin/python
-    ln -sf /opt/apprise/.venv/bin/supervisord /opt/apprise/.venv/bin/gunicorn /usr/local/bin/
-    cp -fr apprise_api/static /usr/share/nginx/html/s/
-    mv apprise_api/ webapp
-    touch /etc/nginx/server-override.conf
-    touch /etc/nginx/location-override.conf
-    mkdir -p /config/store /attach /plugin /tmp/apprise /opt/apprise/logs
-    chmod 1777 /tmp/apprise && chmod 777 /config /config/store /attach /plugin /opt/apprise/logs
-    sed -i \
-      -e '/[[]program:nginx]/,/^[[]/ s|stdout_logfile=/dev/stdout|stdout_logfile=/opt/apprise/logs/nginx.log|' \
-      -e '/[[]program:nginx]/,/^[[]/ s|stderr_logfile=/dev/stderr|stderr_logfile=/opt/apprise/logs/nginx_error.log|' \
-      -e '/[[]program:gunicorn]/,/^[[]/ s|stdout_logfile=/dev/stdout|stdout_logfile=/opt/apprise/logs/gunicorn.log|' \
-      -e '/[[]program:gunicorn]/,/^[[]/ s|stderr_logfile=/dev/stderr|stderr_logfile=/opt/apprise/logs/gunicorn_error.log|' \
-      -e '/[[]supervisord]/,/^[[]/ s|logfile=/dev/null|logfile=/opt/apprise/logs/supervisor.log|' \
-      -e 's|_maxbytes=0|_maxbytes=10485760|g' \
-      /opt/apprise/webapp/etc/supervisord.conf
-    msg_ok "Updated Apprise-API"
+		msg_info "Updating Apprise-API"
+		cd /opt/apprise
+		cp ./requirements.txt /etc/requirements.txt
+		$STD apt install -y nginx git
+		$STD uv venv /opt/apprise/.venv
+		$STD uv pip install -r requirements.txt gunicorn supervisor -p /opt/apprise/.venv/bin/python
+		ln -sf /opt/apprise/.venv/bin/supervisord /opt/apprise/.venv/bin/gunicorn /usr/local/bin/
+		cp -fr apprise_api/static /usr/share/nginx/html/s/
+		mv apprise_api/ webapp
+		touch /etc/nginx/server-override.conf
+		touch /etc/nginx/location-override.conf
+		mkdir -p /config/store /attach /plugin /tmp/apprise /opt/apprise/logs
+		chmod 1777 /tmp/apprise && chmod 777 /config /config/store /attach /plugin /opt/apprise/logs
+		sed -i \
+			-e '/[[]program:nginx]/,/^[[]/ s|stdout_logfile=/dev/stdout|stdout_logfile=/opt/apprise/logs/nginx.log|' \
+			-e '/[[]program:nginx]/,/^[[]/ s|stderr_logfile=/dev/stderr|stderr_logfile=/opt/apprise/logs/nginx_error.log|' \
+			-e '/[[]program:gunicorn]/,/^[[]/ s|stdout_logfile=/dev/stdout|stdout_logfile=/opt/apprise/logs/gunicorn.log|' \
+			-e '/[[]program:gunicorn]/,/^[[]/ s|stderr_logfile=/dev/stderr|stderr_logfile=/opt/apprise/logs/gunicorn_error.log|' \
+			-e '/[[]supervisord]/,/^[[]/ s|logfile=/dev/null|logfile=/opt/apprise/logs/supervisor.log|' \
+			-e 's|_maxbytes=0|_maxbytes=10485760|g' \
+			/opt/apprise/webapp/etc/supervisord.conf
+		msg_ok "Updated Apprise-API"
 
-    msg_info "Starting Service"
-    systemctl start apprise-api
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start apprise-api
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

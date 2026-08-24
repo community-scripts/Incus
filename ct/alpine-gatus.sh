@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
+
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,35 +23,35 @@ color
 catch_errors
 
 function update_script() {
-  header_info
+	header_info
 
-  if [[ ! -d /opt/gatus ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  RELEASE=$(curl -s https://api.github.com/repos/TwiN/gatus/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
-  if [ "${RELEASE}" != "$(cat /opt/gatus_version.txt)" ] || [ ! -f /opt/gatus_version.txt ]; then
-    msg_info "Updating ${APP} LXC"
-    $STD apk -U upgrade
-    $STD service gatus stop
-    mv /opt/gatus/config/config.yaml /opt
-    rm -rf /opt/gatus/*
-    temp_file=$(mktemp)
-    curl -fsSL "https://github.com/TwiN/gatus/archive/refs/tags/v${RELEASE}.tar.gz" -o "$temp_file"
-    tar zxf "$temp_file" --strip-components=1 -C /opt/gatus
-    cd /opt/gatus
-    $STD go mod tidy
-    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gatus .
-    setcap CAP_NET_RAW+ep gatus
-    mv /opt/config.yaml config
-    rm -f "$temp_file"
-    echo "${RELEASE}" >/opt/gatus_version.txt
-    $STD service gatus start
-    msg_ok "Updated successfully!"
-  else
-    msg_ok "No update required. ${APP} is already at ${RELEASE}"
-  fi
-  exit 0
+	if [[ ! -d /opt/gatus ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	RELEASE=$(curl -s https://api.github.com/repos/TwiN/gatus/releases/latest | grep "tag_name" | awk '{print substr($2, 3, length($2)-4) }')
+	if [ "${RELEASE}" != "$(cat /opt/gatus_version.txt)" ] || [ ! -f /opt/gatus_version.txt ]; then
+		msg_info "Updating ${APP} LXC"
+		$STD apk -U upgrade
+		$STD service gatus stop
+		mv /opt/gatus/config/config.yaml /opt
+		rm -rf /opt/gatus/*
+		temp_file=$(mktemp)
+		curl -fsSL "https://github.com/TwiN/gatus/archive/refs/tags/v${RELEASE}.tar.gz" -o "$temp_file"
+		tar zxf "$temp_file" --strip-components=1 -C /opt/gatus
+		cd /opt/gatus
+		$STD go mod tidy
+		CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gatus .
+		setcap CAP_NET_RAW+ep gatus
+		mv /opt/config.yaml config
+		rm -f "$temp_file"
+		echo "${RELEASE}" >/opt/gatus_version.txt
+		$STD service gatus start
+		msg_ok "Updated successfully!"
+	else
+		msg_ok "No update required. ${APP} is already at ${RELEASE}"
+	fi
+	exit 0
 }
 
 start

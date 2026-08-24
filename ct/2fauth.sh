@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
+
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,52 +23,52 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/2fauth ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  setup_mariadb
-  if check_for_gh_release "2fauth" "Bubka/2FAuth"; then
-    $STD apt update
-    $STD apt -y upgrade
+	if [[ ! -d /opt/2fauth ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	setup_mariadb
+	if check_for_gh_release "2fauth" "Bubka/2FAuth"; then
+		$STD apt update
+		$STD apt -y upgrade
 
-    msg_info "Creating Backup"
-    create_backup \
-      /opt/2fauth/.env \
-      /opt/2fauth/storage
+		msg_info "Creating Backup"
+		create_backup \
+			/opt/2fauth/.env \
+			/opt/2fauth/storage
 
-    if ! dpkg -l | grep -q 'php8.4'; then
-      cp /etc/nginx/conf.d/2fauth.conf /etc/nginx/conf.d/2fauth.conf.bak
-    fi
-    msg_ok "Backup Created"
+		if ! dpkg -l | grep -q 'php8.4'; then
+			cp /etc/nginx/conf.d/2fauth.conf /etc/nginx/conf.d/2fauth.conf.bak
+		fi
+		msg_ok "Backup Created"
 
-    if ! dpkg -l | grep -q 'php8.4'; then
-      PHP_VERSION="8.4" PHP_FPM="YES" setup_php
-      sed -i 's/php8\.[0-9]/php8.4/g' /etc/nginx/conf.d/2fauth.conf
-    fi
+		if ! dpkg -l | grep -q 'php8.4'; then
+			PHP_VERSION="8.4" PHP_FPM="YES" setup_php
+			sed -i 's/php8\.[0-9]/php8.4/g' /etc/nginx/conf.d/2fauth.conf
+		fi
 
-    fetch_and_deploy_gh_release "2fauth" "Bubka/2FAuth" "tarball"
-    setup_composer
-    restore_backup
+		fetch_and_deploy_gh_release "2fauth" "Bubka/2FAuth" "tarball"
+		setup_composer
+		restore_backup
 
-    msg_info "Configuring 2FAuth"
-    cd /opt/2fauth
-    export COMPOSER_ALLOW_SUPERUSER=1
-    $STD composer install --no-dev --prefer-dist
-    php artisan 2fauth:install
-    chown -R www-data: /opt/2fauth
-    chmod -R 755 /opt/2fauth
-    $STD php artisan 2fauth:fix-passport-key-permissions
-    $STD systemctl restart php8.4-fpm
-    $STD systemctl restart nginx
-    msg_ok "Configured 2FAuth"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Configuring 2FAuth"
+		cd /opt/2fauth
+		export COMPOSER_ALLOW_SUPERUSER=1
+		$STD composer install --no-dev --prefer-dist
+		php artisan 2fauth:install
+		chown -R www-data: /opt/2fauth
+		chmod -R 755 /opt/2fauth
+		$STD php artisan 2fauth:fix-passport-key-permissions
+		$STD systemctl restart php8.4-fpm
+		$STD systemctl restart nginx
+		msg_ok "Configured 2FAuth"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

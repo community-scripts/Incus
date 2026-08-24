@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,52 +22,52 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/ignis ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/ignis ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "ignis" "Nystik-gh/ignis"; then
-    msg_info "Stopping Service"
-    systemctl stop ignis
-    msg_ok "Stopped Service"
+	if check_for_gh_release "ignis" "Nystik-gh/ignis"; then
+		msg_info "Stopping Service"
+		systemctl stop ignis
+		msg_ok "Stopped Service"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "ignis" "Nystik-gh/ignis" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "ignis" "Nystik-gh/ignis" "tarball"
 
-    msg_info "Building Ignis"
-    cd /opt/ignis
-    export NODE_OPTIONS="--max-old-space-size=4096"
-    export IGNIS_BUILD="$(cat ~/.ignis)"
-    $STD npm ci --ignore-scripts
-    $STD npm run build
-    $STD npm install -g @electron/asar
-    msg_ok "Built Ignis"
+		msg_info "Building Ignis"
+		cd /opt/ignis
+		export NODE_OPTIONS="--max-old-space-size=4096"
+		export IGNIS_BUILD="$(cat ~/.ignis)"
+		$STD npm ci --ignore-scripts
+		$STD npm run build
+		$STD npm install -g @electron/asar
+		msg_ok "Built Ignis"
 
-    msg_info "Checking Obsidian Web Assets"
-    OBSIDIAN_VERSION=$(grep -oP 'OBSIDIAN_VERSION=\K[0-9.]+' /opt/ignis/apps/ignis-server/Dockerfile | head -n1)
-    [[ -z "$OBSIDIAN_VERSION" ]] && OBSIDIAN_VERSION="$(cat /opt/ignis_data/obsidian.version 2>/dev/null)"
-    if [[ -n "$OBSIDIAN_VERSION" && "$OBSIDIAN_VERSION" != "$(cat /opt/ignis_data/obsidian.version 2>/dev/null)" ]]; then
-      rm -rf /opt/ignis_data/obsidian-app
-      mkdir -p /opt/ignis_data/obsidian-app
-      curl -fsSL -o /tmp/obsidian.asar.gz "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian-${OBSIDIAN_VERSION}.asar.gz"
-      gunzip -f /tmp/obsidian.asar.gz
-      $STD asar extract /tmp/obsidian.asar /opt/ignis_data/obsidian-app
-      rm -f /tmp/obsidian.asar
-      echo "${OBSIDIAN_VERSION}" >/opt/ignis_data/obsidian.version
-    fi
-    msg_ok "Checked Obsidian Web Assets"
+		msg_info "Checking Obsidian Web Assets"
+		OBSIDIAN_VERSION=$(grep -oP 'OBSIDIAN_VERSION=\K[0-9.]+' /opt/ignis/apps/ignis-server/Dockerfile | head -n1)
+		[[ -z "$OBSIDIAN_VERSION" ]] && OBSIDIAN_VERSION="$(cat /opt/ignis_data/obsidian.version 2>/dev/null)"
+		if [[ -n "$OBSIDIAN_VERSION" && "$OBSIDIAN_VERSION" != "$(cat /opt/ignis_data/obsidian.version 2>/dev/null)" ]]; then
+			rm -rf /opt/ignis_data/obsidian-app
+			mkdir -p /opt/ignis_data/obsidian-app
+			curl -fsSL -o /tmp/obsidian.asar.gz "https://github.com/obsidianmd/obsidian-releases/releases/download/v${OBSIDIAN_VERSION}/obsidian-${OBSIDIAN_VERSION}.asar.gz"
+			gunzip -f /tmp/obsidian.asar.gz
+			$STD asar extract /tmp/obsidian.asar /opt/ignis_data/obsidian-app
+			rm -f /tmp/obsidian.asar
+			echo "${OBSIDIAN_VERSION}" >/opt/ignis_data/obsidian.version
+		fi
+		msg_ok "Checked Obsidian Web Assets"
 
-    msg_info "Starting Service"
-    systemctl start ignis
-    systemctl reload nginx
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start ignis
+		systemctl reload nginx
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

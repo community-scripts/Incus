@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,23 +22,23 @@ color
 catch_errors
 
 function update_script() {
-  header_info
+	header_info
 
-  if ! apk info -e rustypaste >/dev/null 2>&1; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if ! apk info -e rustypaste >/dev/null 2>&1; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  msg_info "Updating RustyPaste"
-  $STD apk update
-  $STD apk upgrade rustypaste --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
-  msg_ok "Updated RustyPaste"
+	msg_info "Updating RustyPaste"
+	$STD apk update
+	$STD apk upgrade rustypaste --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
+	msg_ok "Updated RustyPaste"
 
-  msg_info "Restarting Services"
-  $STD rc-service rustypaste restart
-  msg_ok "Restarted Services"
-  msg_ok "Updated successfully!"
-  exit
+	msg_info "Restarting Services"
+	$STD rc-service rustypaste restart
+	msg_ok "Restarted Services"
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

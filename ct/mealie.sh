@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,75 +22,75 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/mealie ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "mealie" "mealie-recipes/mealie"; then
-    PYTHON_VERSION="3.12" setup_uv
-    NODE_MODULE="yarn" NODE_VERSION="24" setup_nodejs
+	if [[ ! -d /opt/mealie ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "mealie" "mealie-recipes/mealie"; then
+		PYTHON_VERSION="3.12" setup_uv
+		NODE_MODULE="yarn" NODE_VERSION="24" setup_nodejs
 
-    msg_info "Stopping Service"
-    systemctl stop mealie
-    msg_ok "Stopped Service"
+		msg_info "Stopping Service"
+		systemctl stop mealie
+		msg_ok "Stopped Service"
 
-    msg_info "Backing up Configuration"
-    cp -f /opt/mealie/mealie.env /opt/mealie.env
-    [[ -f /opt/mealie/start.sh ]] && cp -f /opt/mealie/start.sh /opt/mealie.start.sh
-    msg_ok "Backup completed"
+		msg_info "Backing up Configuration"
+		cp -f /opt/mealie/mealie.env /opt/mealie.env
+		[[ -f /opt/mealie/start.sh ]] && cp -f /opt/mealie/start.sh /opt/mealie.start.sh
+		msg_ok "Backup completed"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "mealie" "mealie-recipes/mealie" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "mealie" "mealie-recipes/mealie" "tarball"
 
-    msg_info "Restoring Configuration"
-    mv -f /opt/mealie.env /opt/mealie/mealie.env
-    if [[ -f /opt/mealie.start.sh ]]; then
-      mv -f /opt/mealie.start.sh /opt/mealie/start.sh
-    else
-      cat <<'STARTEOF' >/opt/mealie/start.sh
+		msg_info "Restoring Configuration"
+		mv -f /opt/mealie.env /opt/mealie/mealie.env
+		if [[ -f /opt/mealie.start.sh ]]; then
+			mv -f /opt/mealie.start.sh /opt/mealie/start.sh
+		else
+			cat <<'STARTEOF' >/opt/mealie/start.sh
 #!/bin/bash
 set -a
 source /opt/mealie/mealie.env
 set +a
 exec uv run mealie
 STARTEOF
-    fi
-    chmod +x /opt/mealie/start.sh
-    msg_ok "Configuration restored"
+		fi
+		chmod +x /opt/mealie/start.sh
+		msg_ok "Configuration restored"
 
-    msg_info "Installing Python Dependencies with uv"
-    cd /opt/mealie
-    $STD uv sync --frozen --extra pgsql
-    msg_ok "Installed Python Dependencies"
+		msg_info "Installing Python Dependencies with uv"
+		cd /opt/mealie
+		$STD uv sync --frozen --extra pgsql
+		msg_ok "Installed Python Dependencies"
 
-    msg_info "Building Frontend"
-    MEALIE_VERSION=$(<$HOME/.mealie)
-    SITE_SETTINGS=$(find /opt/mealie/frontend -name "site-settings.vue" -path "*/admin/*" | head -1)
-    $STD sed -i "s|https://github.com/mealie-recipes/mealie/commit/|https://github.com/mealie-recipes/mealie/releases/tag/|g" "$SITE_SETTINGS"
-    $STD sed -i "s|value: data.buildId,|value: \"v${MEALIE_VERSION}\",|g" "$SITE_SETTINGS"
-    $STD sed -i "s|value: data.production ? i18n.t(\"about.production\") : i18n.t(\"about.development\"),|value: \"bare-metal\",|g" "$SITE_SETTINGS"
-    export NUXT_TELEMETRY_DISABLED=1
-    cd /opt/mealie/frontend
-    $STD yarn install --prefer-offline --frozen-lockfile --non-interactive --production=false --network-timeout 1000000
-    $STD yarn generate
-    msg_ok "Built Frontend"
+		msg_info "Building Frontend"
+		MEALIE_VERSION=$(<$HOME/.mealie)
+		SITE_SETTINGS=$(find /opt/mealie/frontend -name "site-settings.vue" -path "*/admin/*" | head -1)
+		$STD sed -i "s|https://github.com/mealie-recipes/mealie/commit/|https://github.com/mealie-recipes/mealie/releases/tag/|g" "$SITE_SETTINGS"
+		$STD sed -i "s|value: data.buildId,|value: \"v${MEALIE_VERSION}\",|g" "$SITE_SETTINGS"
+		$STD sed -i "s|value: data.production ? i18n.t(\"about.production\") : i18n.t(\"about.development\"),|value: \"bare-metal\",|g" "$SITE_SETTINGS"
+		export NUXT_TELEMETRY_DISABLED=1
+		cd /opt/mealie/frontend
+		$STD yarn install --prefer-offline --frozen-lockfile --non-interactive --production=false --network-timeout 1000000
+		$STD yarn generate
+		msg_ok "Built Frontend"
 
-    msg_info "Copying Built Frontend"
-    mkdir -p /opt/mealie/mealie/frontend
-    cp -r /opt/mealie/frontend/dist/* /opt/mealie/mealie/frontend/
-    msg_ok "Copied Frontend"
+		msg_info "Copying Built Frontend"
+		mkdir -p /opt/mealie/mealie/frontend
+		cp -r /opt/mealie/frontend/dist/* /opt/mealie/mealie/frontend/
+		msg_ok "Copied Frontend"
 
-    setup_nltk "averaged_perceptron_tagger_eng" "/nltk_data"
+		setup_nltk "averaged_perceptron_tagger_eng" "/nltk_data"
 
-    msg_info "Starting Service"
-    systemctl start mealie
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start mealie
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

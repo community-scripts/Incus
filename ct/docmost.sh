@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -24,51 +21,51 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/docmost ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if ! command -v node >/dev/null || [[ "$(/usr/bin/env node -v | grep -oP '^v\K[0-9]+')" != "26" ]]; then
-    NODE_VERSION="26" NODE_MODULE="pnpm@$(curl -s https://raw.githubusercontent.com/docmost/docmost/main/package.json | jq -r '.packageManager | split("@")[1]')" setup_nodejs
-  fi
-  export NODE_OPTIONS="--max_old_space_size=4096"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/docmost ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if ! command -v node >/dev/null || [[ "$(/usr/bin/env node -v | grep -oP '^v\K[0-9]+')" != "26" ]]; then
+		NODE_VERSION="26" NODE_MODULE="pnpm@$(curl -s https://raw.githubusercontent.com/docmost/docmost/main/package.json | jq -r '.packageManager | split("@")[1]')" setup_nodejs
+	fi
+	export NODE_OPTIONS="--max_old_space_size=4096"
 
-  if check_for_gh_release "docmost" "docmost/docmost"; then
-    msg_info "Stopping Service"
-    systemctl stop docmost
-    msg_ok "Stopped Service"
+	if check_for_gh_release "docmost" "docmost/docmost"; then
+		msg_info "Stopping Service"
+		systemctl stop docmost
+		msg_ok "Stopped Service"
 
-    create_backup /opt/docmost/.env /opt/docmost/data
-    
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "docmost" "docmost/docmost" "tarball"
+		create_backup /opt/docmost/.env /opt/docmost/data
 
-    restore_backup
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "docmost" "docmost/docmost" "tarball"
 
-    # Fix: Docmost EE (audit logs etc.) lives in a git submodule that is NOT
-    # included in GitHub tarballs.  The community NoopAuditService exists but
-    # is only exported by CoreModule – child modules such as UserModule cannot
-    # resolve it.  Making CoreModule @Global() exposes the token app-wide.
-    if [[ ! -f /opt/docmost/apps/server/src/ee/ee.module.ts ]] &&
-      ! grep -q '@Global()' /opt/docmost/apps/server/src/core/core.module.ts 2>/dev/null; then
-      sed -i '/^  Module,$/a\  Global,' /opt/docmost/apps/server/src/core/core.module.ts
-      sed -i '/^@Module({$/i @Global()' /opt/docmost/apps/server/src/core/core.module.ts
-    fi
+		restore_backup
 
-    msg_info "Configuring Docmost"
-    cd /opt/docmost
-    $STD pnpm install --force
-    $STD pnpm build
-    msg_ok "Configured Docmost"
+		# Fix: Docmost EE (audit logs etc.) lives in a git submodule that is NOT
+		# included in GitHub tarballs.  The community NoopAuditService exists but
+		# is only exported by CoreModule – child modules such as UserModule cannot
+		# resolve it.  Making CoreModule @Global() exposes the token app-wide.
+		if [[ ! -f /opt/docmost/apps/server/src/ee/ee.module.ts ]] &&
+			! grep -q '@Global()' /opt/docmost/apps/server/src/core/core.module.ts 2>/dev/null; then
+			sed -i '/^  Module,$/a\  Global,' /opt/docmost/apps/server/src/core/core.module.ts
+			sed -i '/^@Module({$/i @Global()' /opt/docmost/apps/server/src/core/core.module.ts
+		fi
 
-    msg_info "Starting Service"
-    systemctl start docmost
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Configuring Docmost"
+		cd /opt/docmost
+		$STD pnpm install --force
+		$STD pnpm build
+		msg_ok "Configured Docmost"
+
+		msg_info "Starting Service"
+		systemctl start docmost
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

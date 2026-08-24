@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,61 +22,61 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/tandoor ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/tandoor ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if [[ ! -f ~/.tandoor ]]; then
-    msg_error "v1 Installation found, please export your data and create an new LXC."
-    exit
-  fi
+	if [[ ! -f ~/.tandoor ]]; then
+		msg_error "v1 Installation found, please export your data and create an new LXC."
+		exit
+	fi
 
-  if ! grep -q "^ALLOWED_HOSTS=" /opt/tandoor/.env; then
-    echo "ALLOWED_HOSTS=${LOCAL_IP}" >>/opt/tandoor/.env
-  fi
+	if ! grep -q "^ALLOWED_HOSTS=" /opt/tandoor/.env; then
+		echo "ALLOWED_HOSTS=${LOCAL_IP}" >>/opt/tandoor/.env
+	fi
 
-  if check_for_gh_release "tandoor" "TandoorRecipes/recipes"; then
-    msg_info "Stopping Service"
-    systemctl stop tandoor
-    msg_ok "Stopped Service"
+	if check_for_gh_release "tandoor" "TandoorRecipes/recipes"; then
+		msg_info "Stopping Service"
+		systemctl stop tandoor
+		msg_ok "Stopped Service"
 
-    create_backup /opt/tandoor/config /opt/tandoor/api /opt/tandoor/mediafiles /opt/tandoor/staticfiles /opt/tandoor/.env
+		create_backup /opt/tandoor/config /opt/tandoor/api /opt/tandoor/mediafiles /opt/tandoor/staticfiles /opt/tandoor/.env
 
-    NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
-    PYTHON_VERSION="3.13" setup_uv
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "tandoor" "TandoorRecipes/recipes" "tarball" "latest" "/opt/tandoor"
+		NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
+		PYTHON_VERSION="3.13" setup_uv
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "tandoor" "TandoorRecipes/recipes" "tarball" "latest" "/opt/tandoor"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Tandoor"
-    cd /opt/tandoor
-    $STD uv venv --clear .venv --python=python3
-    $STD uv pip install -r requirements.txt --python .venv/bin/python
-    cd /opt/tandoor/vue3
-    $STD yarn install
-    $STD yarn build
-    TANDOOR_VERSION=$(get_latest_github_release "TandoorRecipes/recipes")
-    cat <<EOF >/opt/tandoor/cookbook/version_info.py
+		msg_info "Updating Tandoor"
+		cd /opt/tandoor
+		$STD uv venv --clear .venv --python=python3
+		$STD uv pip install -r requirements.txt --python .venv/bin/python
+		cd /opt/tandoor/vue3
+		$STD yarn install
+		$STD yarn build
+		TANDOOR_VERSION=$(get_latest_github_release "TandoorRecipes/recipes")
+		cat <<EOF >/opt/tandoor/cookbook/version_info.py
 TANDOOR_VERSION = "$TANDOOR_VERSION"
 TANDOOR_REF = "bare-metal"
 VERSION_INFO = []
 EOF
-    cd /opt/tandoor
-    $STD /opt/tandoor/.venv/bin/python manage.py migrate
-    $STD /opt/tandoor/.venv/bin/python manage.py collectstatic --no-input
-    msg_ok "Updated Tandoor"
+		cd /opt/tandoor
+		$STD /opt/tandoor/.venv/bin/python manage.py migrate
+		$STD /opt/tandoor/.venv/bin/python manage.py collectstatic --no-input
+		msg_ok "Updated Tandoor"
 
-    msg_info "Starting Service"
-    systemctl start tandoor
-    systemctl reload nginx
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start tandoor
+		systemctl reload nginx
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

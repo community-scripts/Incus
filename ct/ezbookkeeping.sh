@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -26,42 +23,42 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/ezbookkeeping ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/ezbookkeeping ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "ezbookkeeping" "mayswind/ezbookkeeping"; then
-    msg_info "Stopping Service"
-    systemctl stop ezbookkeeping
-    msg_ok "Stopped Service"
+	if check_for_gh_release "ezbookkeeping" "mayswind/ezbookkeeping"; then
+		msg_info "Stopping Service"
+		systemctl stop ezbookkeeping
+		msg_ok "Stopped Service"
 
-    msg_info "Backing up configuration"
-    mkdir -p /opt/ezbookkeeping-backup
-    cp /opt/ezbookkeeping/conf/ezbookkeeping.ini /opt/ezbookkeeping-backup/
-    cp -r /opt/ezbookkeeping/data /opt/ezbookkeeping-backup/data/
-    cp -r /opt/ezbookkeeping/storage /opt/ezbookkeeping-backup/storage/
-    msg_ok "Backed up configuration"
+		msg_info "Backing up configuration"
+		mkdir -p /opt/ezbookkeeping-backup
+		cp /opt/ezbookkeeping/conf/ezbookkeeping.ini /opt/ezbookkeeping-backup/
+		cp -r /opt/ezbookkeeping/data /opt/ezbookkeeping-backup/data/
+		cp -r /opt/ezbookkeeping/storage /opt/ezbookkeeping-backup/storage/
+		msg_ok "Backed up configuration"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "ezbookkeeping" "mayswind/ezbookkeeping" "prebuild" "latest" "/opt/ezbookkeeping" "ezbookkeeping-*-linux-$(arch_resolve).tar.gz"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "ezbookkeeping" "mayswind/ezbookkeeping" "prebuild" "latest" "/opt/ezbookkeeping" "ezbookkeeping-*-linux-$(arch_resolve).tar.gz"
 
-    msg_info "Restoring configuration"
-    cp -rf /opt/ezbookkeeping-backup/ezbookkeeping.ini /opt/ezbookkeeping/conf/
-    cp -rf /opt/ezbookkeeping-backup/data/. /opt/ezbookkeeping/data/
-    cp -rf /opt/ezbookkeeping-backup/storage/. /opt/ezbookkeeping/storage/
-    rm -rf /opt/ezbookkeeping-backup
-    msg_ok "Restored configuration"
+		msg_info "Restoring configuration"
+		cp -rf /opt/ezbookkeeping-backup/ezbookkeeping.ini /opt/ezbookkeeping/conf/
+		cp -rf /opt/ezbookkeeping-backup/data/. /opt/ezbookkeeping/data/
+		cp -rf /opt/ezbookkeeping-backup/storage/. /opt/ezbookkeeping/storage/
+		rm -rf /opt/ezbookkeeping-backup
+		msg_ok "Restored configuration"
 
-    msg_info "Starting Service"
-    systemctl start ezbookkeeping
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  cleanup_lxc
-  exit
+		msg_info "Starting Service"
+		systemctl start ezbookkeeping
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	cleanup_lxc
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,45 +22,45 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/Tautulli/ ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/Tautulli/ ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "Tautulli" "Tautulli/Tautulli"; then
-    PYTHON_VERSION="3.13" setup_uv
+	if check_for_gh_release "Tautulli" "Tautulli/Tautulli"; then
+		PYTHON_VERSION="3.13" setup_uv
 
-    msg_info "Stopping Service"
-    systemctl stop tautulli
-    msg_ok "Stopped Service"
+		msg_info "Stopping Service"
+		systemctl stop tautulli
+		msg_ok "Stopped Service"
 
-    create_backup /opt/Tautulli/config.ini /opt/Tautulli/tautulli.db
+		create_backup /opt/Tautulli/config.ini /opt/Tautulli/tautulli.db
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Tautulli" "Tautulli/Tautulli" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Tautulli" "Tautulli/Tautulli" "tarball"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Tautulli"
-    cd /opt/Tautulli
-    TAUTULLI_VERSION=$(get_latest_github_release "Tautulli/Tautulli" "false")
-    echo "${TAUTULLI_VERSION}" >/opt/Tautulli/version.txt
-    echo "master" >/opt/Tautulli/branch.txt
-    $STD uv venv -c
-    $STD source /opt/Tautulli/.venv/bin/activate
-    $STD uv pip install -r requirements.txt
-    $STD uv pip install pyopenssl
-    $STD uv pip install "setuptools<81"
-    msg_ok "Updated Tautulli"
+		msg_info "Updating Tautulli"
+		cd /opt/Tautulli
+		TAUTULLI_VERSION=$(get_latest_github_release "Tautulli/Tautulli" "false")
+		echo "${TAUTULLI_VERSION}" >/opt/Tautulli/version.txt
+		echo "master" >/opt/Tautulli/branch.txt
+		$STD uv venv -c
+		$STD source /opt/Tautulli/.venv/bin/activate
+		$STD uv pip install -r requirements.txt
+		$STD uv pip install pyopenssl
+		$STD uv pip install "setuptools<81"
+		msg_ok "Updated Tautulli"
 
-    msg_info "Starting Service"
-    systemctl start tautulli
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start tautulli
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

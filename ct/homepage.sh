@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,45 +22,45 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/homepage ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/homepage ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  NODE_VERSION="22" NODE_MODULE="pnpm@latest" setup_nodejs
-  ensure_dependencies jq
+	NODE_VERSION="22" NODE_MODULE="pnpm@latest" setup_nodejs
+	ensure_dependencies jq
 
-  if check_for_gh_release "homepage" "gethomepage/homepage"; then
-    msg_info "Stopping service"
-    systemctl stop homepage
-    msg_ok "Stopped service"
+	if check_for_gh_release "homepage" "gethomepage/homepage"; then
+		msg_info "Stopping service"
+		systemctl stop homepage
+		msg_ok "Stopped service"
 
-    create_backup /opt/homepage/.env /opt/homepage/config
-    BACKUP_DIR=/opt/homepage-assets.backup create_backup /opt/homepage/public/images /opt/homepage/public/icons
+		create_backup /opt/homepage/.env /opt/homepage/config
+		BACKUP_DIR=/opt/homepage-assets.backup create_backup /opt/homepage/public/images /opt/homepage/public/icons
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "homepage" "gethomepage/homepage" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "homepage" "gethomepage/homepage" "tarball"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Homepage (Patience)"
-    RELEASE=$(get_latest_github_release "gethomepage/homepage")
-    cd /opt/homepage
-    echo 'onlyBuiltDependencies=*' >>.npmrc
-    $STD pnpm install
-    $STD pnpm update --no-save caniuse-lite
-    export NEXT_PUBLIC_VERSION="v$RELEASE"
-    export NEXT_PUBLIC_REVISION="source"
-    export NEXT_PUBLIC_BUILDTIME=$(curl -fsSL https://api.github.com/repos/gethomepage/homepage/releases/latest | jq -r '.published_at')
-    export NEXT_TELEMETRY_DISABLED=1
-    $STD pnpm build
-    BACKUP_DIR=/opt/homepage-assets.backup restore_backup
-    if ! grep -q 'AUTH' /opt/homepage/.env; then
-      msg_info "Updating .env"
-      cp /opt/homepage/.env /opt/homepage/env.bak
-      cat <<EOF >>/opt/homepage/.env
+		msg_info "Updating Homepage (Patience)"
+		RELEASE=$(get_latest_github_release "gethomepage/homepage")
+		cd /opt/homepage
+		echo 'onlyBuiltDependencies=*' >>.npmrc
+		$STD pnpm install
+		$STD pnpm update --no-save caniuse-lite
+		export NEXT_PUBLIC_VERSION="v$RELEASE"
+		export NEXT_PUBLIC_REVISION="source"
+		export NEXT_PUBLIC_BUILDTIME=$(curl -fsSL https://api.github.com/repos/gethomepage/homepage/releases/latest | jq -r '.published_at')
+		export NEXT_TELEMETRY_DISABLED=1
+		$STD pnpm build
+		BACKUP_DIR=/opt/homepage-assets.backup restore_backup
+		if ! grep -q 'AUTH' /opt/homepage/.env; then
+			msg_info "Updating .env"
+			cp /opt/homepage/.env /opt/homepage/env.bak
+			cat <<EOF >>/opt/homepage/.env
 ## Optional Authentication
 # HOMEPAGE_AUTH_ENABLED=true
 # HOMEPAGE_AUTH_SECRET="$(openssl rand -base64 32)"
@@ -77,18 +74,18 @@ function update_script() {
 # HOMEPAGE_OIDC_SCOPE=openid email profile
 # HOMEPAGE_OIDC_NAME=
 EOF
-      msg_ok "Updated .env"
-      rm /opt/homepage/env.bak
-      chmod 600 /opt/homepage/.env
-    fi
-    msg_ok "Updated Homepage"
+			msg_ok "Updated .env"
+			rm /opt/homepage/env.bak
+			chmod 600 /opt/homepage/.env
+		fi
+		msg_ok "Updated Homepage"
 
-    msg_info "Starting service"
-    systemctl start homepage
-    msg_ok "Started service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting service"
+		systemctl start homepage
+		msg_ok "Started service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,46 +22,46 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/linkding ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/linkding ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "linkding" "sissbruecker/linkding"; then
-    msg_info "Stopping Services"
-    systemctl stop nginx linkding linkding-tasks
-    msg_ok "Stopped Services"
+	if check_for_gh_release "linkding" "sissbruecker/linkding"; then
+		msg_info "Stopping Services"
+		systemctl stop nginx linkding linkding-tasks
+		msg_ok "Stopped Services"
 
-    create_backup /opt/linkding/data /opt/linkding/.env
+		create_backup /opt/linkding/data /opt/linkding/.env
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "linkding" "sissbruecker/linkding" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "linkding" "sissbruecker/linkding" "tarball"
 
-    restore_backup
-    ln -sf /usr/lib/$(arch_resolve "x86_64-linux-gnu" "aarch64-linux-gnu")/mod_icu.so /opt/linkding/libicu.so
+		restore_backup
+		ln -sf /usr/lib/$(arch_resolve "x86_64-linux-gnu" "aarch64-linux-gnu")/mod_icu.so /opt/linkding/libicu.so
 
-    msg_info "Updating LinkDing"
-    cd /opt/linkding
-    rm -f bookmarks/settings/dev.py
-    touch bookmarks/settings/custom.py
-    $STD npm ci
-    $STD npm run build
-    $STD uv sync --no-dev --frozen
-    $STD uv pip install gunicorn
-    set -a && source /opt/linkding/.env && set +a
-    $STD /opt/linkding/.venv/bin/python manage.py migrate
-    $STD /opt/linkding/.venv/bin/python manage.py collectstatic --no-input
-    msg_ok "Updated LinkDing"
+		msg_info "Updating LinkDing"
+		cd /opt/linkding
+		rm -f bookmarks/settings/dev.py
+		touch bookmarks/settings/custom.py
+		$STD npm ci
+		$STD npm run build
+		$STD uv sync --no-dev --frozen
+		$STD uv pip install gunicorn
+		set -a && source /opt/linkding/.env && set +a
+		$STD /opt/linkding/.venv/bin/python manage.py migrate
+		$STD /opt/linkding/.venv/bin/python manage.py collectstatic --no-input
+		msg_ok "Updated LinkDing"
 
-    msg_info "Starting Services"
-    systemctl start nginx linkding linkding-tasks
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start nginx linkding linkding-tasks
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

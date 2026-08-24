@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -26,60 +23,60 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/fireshare ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/fireshare ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "fireshare" "ShaneIsrael/fireshare"; then
-    msg_info "Stopping Service"
-    systemctl stop fireshare
-    msg_ok "Stopped Service"
+	if check_for_gh_release "fireshare" "ShaneIsrael/fireshare"; then
+		msg_info "Stopping Service"
+		systemctl stop fireshare
+		msg_ok "Stopped Service"
 
-    create_backup /opt/fireshare/fireshare.env
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "fireshare" "ShaneIsrael/fireshare" "tarball"
-    restore_backup
-    rm -f /usr/local/bin/fireshare
+		create_backup /opt/fireshare/fireshare.env
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "fireshare" "ShaneIsrael/fireshare" "tarball"
+		restore_backup
+		rm -f /usr/local/bin/fireshare
 
-    if ! grep -q "__FIRESHARE_PORT__" /etc/nginx/nginx.conf; then
-      cp /opt/fireshare/app/nginx/prod.conf /etc/nginx/nginx.conf
-      sed -i 's|root /processed/|root /opt/fireshare-processed/|g' /etc/nginx/nginx.conf
-      sed -i 's/^user[[:space:]]\+nginx;/user  root;/' /etc/nginx/nginx.conf
-      sed -i 's|root[[:space:]]\+/app/build;|root /opt/fireshare/app/client/build;|' /etc/nginx/nginx.conf
-      sed -i 's/__FIRESHARE_PORT__/80/g' /etc/nginx/nginx.conf
-      cp /opt/fireshare/app/nginx/error.html /etc/nginx/
-      cp /opt/fireshare/app/nginx/api_unavailable.html /etc/nginx/
-    fi
-    msg_info "Configuring Fireshare"
+		if ! grep -q "__FIRESHARE_PORT__" /etc/nginx/nginx.conf; then
+			cp /opt/fireshare/app/nginx/prod.conf /etc/nginx/nginx.conf
+			sed -i 's|root /processed/|root /opt/fireshare-processed/|g' /etc/nginx/nginx.conf
+			sed -i 's/^user[[:space:]]\+nginx;/user  root;/' /etc/nginx/nginx.conf
+			sed -i 's|root[[:space:]]\+/app/build;|root /opt/fireshare/app/client/build;|' /etc/nginx/nginx.conf
+			sed -i 's/__FIRESHARE_PORT__/80/g' /etc/nginx/nginx.conf
+			cp /opt/fireshare/app/nginx/error.html /etc/nginx/
+			cp /opt/fireshare/app/nginx/api_unavailable.html /etc/nginx/
+		fi
+		msg_info "Configuring Fireshare"
 
-    cd /opt/fireshare
-    $STD uv venv --clear
-    $STD .venv/bin/python -m ensurepip --upgrade
-    $STD .venv/bin/python -m pip install --upgrade --break-system-packages pip
-    $STD .venv/bin/python -m pip install --no-cache-dir --break-system-packages --ignore-installed app/server
-    cp .venv/bin/fireshare /usr/local/bin/fireshare
-    export FLASK_APP="/opt/fireshare/app/server/fireshare:create_app()"
-    export DATA_DIRECTORY=/opt/fireshare-data
-    export IMAGE_DIRECTORY=/opt/fireshare-images
-    export VIDEO_DIRECTORY=/opt/fireshare-videos
-    export PROCESSED_DIRECTORY=/opt/fireshare-processed
-    $STD uv run flask db upgrade
-    cd /opt/fireshare/app/client
-    $STD npm install
-    $STD npm run build
-    msg_ok "Configured Fireshare"
+		cd /opt/fireshare
+		$STD uv venv --clear
+		$STD .venv/bin/python -m ensurepip --upgrade
+		$STD .venv/bin/python -m pip install --upgrade --break-system-packages pip
+		$STD .venv/bin/python -m pip install --no-cache-dir --break-system-packages --ignore-installed app/server
+		cp .venv/bin/fireshare /usr/local/bin/fireshare
+		export FLASK_APP="/opt/fireshare/app/server/fireshare:create_app()"
+		export DATA_DIRECTORY=/opt/fireshare-data
+		export IMAGE_DIRECTORY=/opt/fireshare-images
+		export VIDEO_DIRECTORY=/opt/fireshare-videos
+		export PROCESSED_DIRECTORY=/opt/fireshare-processed
+		$STD uv run flask db upgrade
+		cd /opt/fireshare/app/client
+		$STD npm install
+		$STD npm run build
+		msg_ok "Configured Fireshare"
 
-    msg_info "Starting Service"
-    systemctl start fireshare
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  cleanup_lxc
+		msg_info "Starting Service"
+		systemctl start fireshare
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	cleanup_lxc
 
-  exit
+	exit
 }
 
 start

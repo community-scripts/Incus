@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,60 +22,60 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d "/opt/kometa" ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "kometa" "Kometa-Team/Kometa"; then
-    msg_info "Stopping Service"
-    systemctl stop kometa
-    [[ -d "/opt/kometa-quickstart" ]] && systemctl stop kometa-quickstart
-    msg_ok "Stopped Service"
+	if [[ ! -d "/opt/kometa" ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "kometa" "Kometa-Team/Kometa"; then
+		msg_info "Stopping Service"
+		systemctl stop kometa
+		[[ -d "/opt/kometa-quickstart" ]] && systemctl stop kometa-quickstart
+		msg_ok "Stopped Service"
 
-    msg_info "Backing up data"
-    cp /opt/kometa/config/config.yml /opt
-    msg_ok "Backup completed"
+		msg_info "Backing up data"
+		cp /opt/kometa/config/config.yml /opt
+		msg_ok "Backup completed"
 
-    PYTHON_VERSION="3.13" setup_uv
-    fetch_and_deploy_gh_release "kometa" "Kometa-Team/Kometa" "tarball"
+		PYTHON_VERSION="3.13" setup_uv
+		fetch_and_deploy_gh_release "kometa" "Kometa-Team/Kometa" "tarball"
 
-    msg_info "Updating Kometa"
-    cd /opt/kometa
-    [[ -d /opt/kometa/.venv ]] || $STD uv venv /opt/kometa/.venv
-    $STD uv pip install -r requirements.txt -p /opt/kometa/.venv/bin/python
-    mkdir -p config/assets
-    cp /opt/config.yml config/config.yml
-    msg_ok "Updated Kometa"
+		msg_info "Updating Kometa"
+		cd /opt/kometa
+		[[ -d /opt/kometa/.venv ]] || $STD uv venv /opt/kometa/.venv
+		$STD uv pip install -r requirements.txt -p /opt/kometa/.venv/bin/python
+		mkdir -p config/assets
+		cp /opt/config.yml config/config.yml
+		msg_ok "Updated Kometa"
 
-    msg_info "Starting Service"
-    systemctl start kometa
-    [[ -d "/opt/kometa-quickstart" ]] && systemctl start kometa-quickstart
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
+		msg_info "Starting Service"
+		systemctl start kometa
+		[[ -d "/opt/kometa-quickstart" ]] && systemctl start kometa-quickstart
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
 
-  if [[ -d "/opt/kometa-quickstart" ]] && check_for_gh_release "kometa-quickstart" "Kometa-Team/Quickstart"; then
-    msg_info "Stopping Quickstart Service"
-    systemctl stop kometa-quickstart
-    msg_ok "Stopped Quickstart Service"
+	if [[ -d "/opt/kometa-quickstart" ]] && check_for_gh_release "kometa-quickstart" "Kometa-Team/Quickstart"; then
+		msg_info "Stopping Quickstart Service"
+		systemctl stop kometa-quickstart
+		msg_ok "Stopped Quickstart Service"
 
-    fetch_and_deploy_gh_release "kometa-quickstart" "Kometa-Team/Quickstart" "tarball"
+		fetch_and_deploy_gh_release "kometa-quickstart" "Kometa-Team/Quickstart" "tarball"
 
-    msg_info "Updating Kometa Quickstart"
-    cd /opt/kometa-quickstart
-    $STD uv pip install -r requirements.txt -p /opt/kometa-quickstart/.venv/bin/python
-    msg_ok "Updated Kometa Quickstart"
+		msg_info "Updating Kometa Quickstart"
+		cd /opt/kometa-quickstart
+		$STD uv pip install -r requirements.txt -p /opt/kometa-quickstart/.venv/bin/python
+		msg_ok "Updated Kometa Quickstart"
 
-    msg_info "Starting Quickstart Service"
-    systemctl start kometa-quickstart
-    msg_ok "Started Quickstart Service"
-    msg_ok "Updated Quickstart successfully!"
-  fi
-  exit
+		msg_info "Starting Quickstart Service"
+		systemctl start kometa-quickstart
+		msg_ok "Started Quickstart Service"
+		msg_ok "Updated Quickstart successfully!"
+	fi
+	exit
 }
 
 start

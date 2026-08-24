@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,36 +22,36 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/radicale ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/radicale ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "Radicale" "Kozea/Radicale"; then
-    msg_info "Stopping service"
-    systemctl stop radicale
-    msg_ok "Stopped service"
+	if check_for_gh_release "Radicale" "Kozea/Radicale"; then
+		msg_info "Stopping service"
+		systemctl stop radicale
+		msg_ok "Stopped service"
 
-    create_backup /opt/radicale/users
+		create_backup /opt/radicale/users
 
-    PYTHON_VERSION="3.13" setup_uv
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Radicale" "Kozea/Radicale" "tarball" "latest" "/opt/radicale"
+		PYTHON_VERSION="3.13" setup_uv
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Radicale" "Kozea/Radicale" "tarball" "latest" "/opt/radicale"
 
-    restore_backup
+		restore_backup
 
-    if grep -q 'start.sh' /etc/systemd/system/radicale.service; then
-      sed -i -e '/^Description/i[Unit]' \
-        -e '\|^ExecStart|iWorkingDirectory=/opt/radicale' \
-        -e 's|^ExecStart=.*|ExecStart=/usr/local/bin/uv run -m radicale --config /etc/radicale/config|' /etc/systemd/system/radicale.service
-      systemctl daemon-reload
-    fi
-    if [[ ! -f /etc/radicale/config ]]; then
-      msg_info "Migrating to config file (/etc/radicale/config)"
-      mkdir -p /etc/radicale
-      cat <<EOF >/etc/radicale/config
+		if grep -q 'start.sh' /etc/systemd/system/radicale.service; then
+			sed -i -e '/^Description/i[Unit]' \
+				-e '\|^ExecStart|iWorkingDirectory=/opt/radicale' \
+				-e 's|^ExecStart=.*|ExecStart=/usr/local/bin/uv run -m radicale --config /etc/radicale/config|' /etc/systemd/system/radicale.service
+			systemctl daemon-reload
+		fi
+		if [[ ! -f /etc/radicale/config ]]; then
+			msg_info "Migrating to config file (/etc/radicale/config)"
+			mkdir -p /etc/radicale
+			cat <<EOF >/etc/radicale/config
 [server]
 hosts = 0.0.0.0:5232
 
@@ -70,14 +67,14 @@ filesystem_folder = /var/lib/radicale/collections
 [web]
 type = internal
 EOF
-      msg_ok "Migrated to config (/etc/radicale/config)"
-    fi
-    msg_info "Starting service"
-    systemctl start radicale
-    msg_ok "Started service"
-    msg_ok "Updated Successfully!"
-  fi
-  exit
+			msg_ok "Migrated to config (/etc/radicale/config)"
+		fi
+		msg_info "Starting service"
+		systemctl start radicale
+		msg_ok "Started service"
+		msg_ok "Updated Successfully!"
+	fi
+	exit
 }
 
 start

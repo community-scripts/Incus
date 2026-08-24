@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,48 +22,48 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -f /etc/systemd/system/esphome-device-builder.service && ! -f /etc/systemd/system/esphomeDashboard.service ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  ensure_dependencies libusb-1.0-0
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -f /etc/systemd/system/esphome-device-builder.service && ! -f /etc/systemd/system/esphomeDashboard.service ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	ensure_dependencies libusb-1.0-0
 
-  msg_info "Stopping Service"
-  systemctl stop esphome-device-builder 2>/dev/null || true
-  systemctl stop esphomeDashboard 2>/dev/null || true
-  msg_ok "Stopped Service"
+	msg_info "Stopping Service"
+	systemctl stop esphome-device-builder 2>/dev/null || true
+	systemctl stop esphomeDashboard 2>/dev/null || true
+	msg_ok "Stopped Service"
 
-  VENV_PATH="/opt/esphome/.venv"
-  ESPHOME_BIN="${VENV_PATH}/bin/esphome"
-  export PYTHON_VERSION="3.12"
+	VENV_PATH="/opt/esphome/.venv"
+	ESPHOME_BIN="${VENV_PATH}/bin/esphome"
+	export PYTHON_VERSION="3.12"
 
-  if [[ ! -d "$VENV_PATH" || ! -x "$ESPHOME_BIN" ]]; then
-    PYTHON_VERSION="3.12" setup_uv
-    msg_info "Migrating to uv/venv"
-    rm -rf "$VENV_PATH"
-    mkdir -p /opt/esphome
-    cd /opt/esphome
-    $STD uv venv --clear "$VENV_PATH"
-    $STD "$VENV_PATH/bin/python" -m ensurepip --upgrade
-    $STD "$VENV_PATH/bin/python" -m pip install --upgrade pip
-    $STD "$VENV_PATH/bin/python" -m pip install esphome esphome-device-builder esptool
-    msg_ok "Migrated to uv/venv"
-  else
-    msg_info "Updating ESPHome Device Builder"
-    PYTHON_VERSION="3.12" setup_uv
-    $STD "$VENV_PATH/bin/python" -m pip install --upgrade esphome esphome-device-builder esptool
-    msg_ok "Updated ESPHome Device Builder"
-  fi
+	if [[ ! -d "$VENV_PATH" || ! -x "$ESPHOME_BIN" ]]; then
+		PYTHON_VERSION="3.12" setup_uv
+		msg_info "Migrating to uv/venv"
+		rm -rf "$VENV_PATH"
+		mkdir -p /opt/esphome
+		cd /opt/esphome
+		$STD uv venv --clear "$VENV_PATH"
+		$STD "$VENV_PATH/bin/python" -m ensurepip --upgrade
+		$STD "$VENV_PATH/bin/python" -m pip install --upgrade pip
+		$STD "$VENV_PATH/bin/python" -m pip install esphome esphome-device-builder esptool
+		msg_ok "Migrated to uv/venv"
+	else
+		msg_info "Updating ESPHome Device Builder"
+		PYTHON_VERSION="3.12" setup_uv
+		$STD "$VENV_PATH/bin/python" -m pip install --upgrade esphome esphome-device-builder esptool
+		msg_ok "Updated ESPHome Device Builder"
+	fi
 
-  msg_info "Migrating to ESPHome Device Builder service"
-  if [[ -f /etc/systemd/system/esphomeDashboard.service ]]; then
-    systemctl disable -q esphomeDashboard 2>/dev/null || true
-    rm -f /etc/systemd/system/esphomeDashboard.service
-  fi
-  cat <<EOF >/etc/systemd/system/esphome-device-builder.service
+	msg_info "Migrating to ESPHome Device Builder service"
+	if [[ -f /etc/systemd/system/esphomeDashboard.service ]]; then
+		systemctl disable -q esphomeDashboard 2>/dev/null || true
+		rm -f /etc/systemd/system/esphomeDashboard.service
+	fi
+	cat <<EOF >/etc/systemd/system/esphome-device-builder.service
 [Unit]
 Description=ESPHome Device Builder
 After=network.target
@@ -79,20 +76,20 @@ User=root
 [Install]
 WantedBy=multi-user.target
 EOF
-  $STD systemctl daemon-reload
-  $STD systemctl enable esphome-device-builder
-  msg_ok "Migrated to ESPHome Device Builder service"
+	$STD systemctl daemon-reload
+	$STD systemctl enable esphome-device-builder
+	msg_ok "Migrated to ESPHome Device Builder service"
 
-  msg_info "Linking esphome to /usr/local/bin"
-  rm -f /usr/local/bin/esphome
-  ln -s /opt/esphome/.venv/bin/esphome /usr/local/bin/esphome
-  msg_ok "Linked esphome binary"
+	msg_info "Linking esphome to /usr/local/bin"
+	rm -f /usr/local/bin/esphome
+	ln -s /opt/esphome/.venv/bin/esphome /usr/local/bin/esphome
+	msg_ok "Linked esphome binary"
 
-  msg_info "Starting Service"
-  systemctl start esphome-device-builder
-  msg_ok "Started Service"
-  msg_ok "Updated successfully!"
-  exit
+	msg_info "Starting Service"
+	systemctl start esphome-device-builder
+	msg_ok "Started Service"
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

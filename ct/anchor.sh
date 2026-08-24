@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,54 +22,54 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f ~/.anchor ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -f ~/.anchor ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "anchor" "ZhFahim/anchor"; then
-    msg_info "Stopping Services"
-    systemctl stop anchor-web anchor-server
-    msg_ok "Stopped Services"
+	if check_for_gh_release "anchor" "ZhFahim/anchor"; then
+		msg_info "Stopping Services"
+		systemctl stop anchor-web anchor-server
+		msg_ok "Stopped Services"
 
-    create_backup /opt/anchor/.env
+		create_backup /opt/anchor/.env
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "anchor" "ZhFahim/anchor" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "anchor" "ZhFahim/anchor" "tarball"
 
-    msg_info "Building Server"
-    cd /opt/anchor/server
-    $STD pnpm install --frozen-lockfile
-    $STD pnpm prisma generate
-    $STD pnpm build
-    [[ -d src/generated ]] && mkdir -p dist/src && cp -R src/generated dist/src/
-    msg_ok "Built Server"
+		msg_info "Building Server"
+		cd /opt/anchor/server
+		$STD pnpm install --frozen-lockfile
+		$STD pnpm prisma generate
+		$STD pnpm build
+		[[ -d src/generated ]] && mkdir -p dist/src && cp -R src/generated dist/src/
+		msg_ok "Built Server"
 
-    msg_info "Building Web Interface"
-    cd /opt/anchor/web
-    $STD pnpm install --frozen-lockfile
-    SERVER_URL=http://127.0.0.1:3001 $STD pnpm build
-    cp -r .next/static .next/standalone/.next/static
-    cp -r public .next/standalone/public
-    msg_ok "Built Web Interface"
+		msg_info "Building Web Interface"
+		cd /opt/anchor/web
+		$STD pnpm install --frozen-lockfile
+		SERVER_URL=http://127.0.0.1:3001 $STD pnpm build
+		cp -r .next/static .next/standalone/.next/static
+		cp -r public .next/standalone/public
+		msg_ok "Built Web Interface"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Running Database Migrations"
-    cd /opt/anchor/server
-    set -a && source /opt/anchor/.env && set +a
-    $STD pnpm prisma migrate deploy
-    msg_ok "Ran Database Migrations"
+		msg_info "Running Database Migrations"
+		cd /opt/anchor/server
+		set -a && source /opt/anchor/.env && set +a
+		$STD pnpm prisma migrate deploy
+		msg_ok "Ran Database Migrations"
 
-    msg_info "Starting Services"
-    systemctl start anchor-server anchor-web
-    msg_ok "Started Services"
-    msg_ok "Updated ${APP}"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start anchor-server anchor-web
+		msg_ok "Started Services"
+		msg_ok "Updated ${APP}"
+	fi
+	exit
 }
 
 start

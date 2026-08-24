@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,35 +22,35 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -f /etc/systemd/system/peanut.service ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -f /etc/systemd/system/peanut.service ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  NODE_VERSION="24" NODE_MODULE="pnpm" setup_nodejs
+	NODE_VERSION="24" NODE_MODULE="pnpm" setup_nodejs
 
-  if check_for_gh_release "PeaNUT" "Brandawg93/PeaNUT"; then
-    msg_info "Stopping Service"
-    systemctl stop peanut
-    msg_info "Stopped Service"
+	if check_for_gh_release "PeaNUT" "Brandawg93/PeaNUT"; then
+		msg_info "Stopping Service"
+		systemctl stop peanut
+		msg_info "Stopped Service"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "PeaNUT" "Brandawg93/PeaNUT" "tarball" "latest" "/opt/peanut"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "PeaNUT" "Brandawg93/PeaNUT" "tarball" "latest" "/opt/peanut"
 
-    if ! grep -q '/opt/peanut/entrypoint.mjs' /etc/systemd/system/peanut.service; then
-      msg_info "Fixing entrypoint"
-      cd /opt/peanut
-      sed -i 's|/opt/peanut/.next/standalone/server.js|/opt/peanut/entrypoint.mjs|' /etc/systemd/system/peanut.service
-      systemctl daemon-reload
-      msg_ok "Fixed entrypoint"
-    fi
+		if ! grep -q '/opt/peanut/entrypoint.mjs' /etc/systemd/system/peanut.service; then
+			msg_info "Fixing entrypoint"
+			cd /opt/peanut
+			sed -i 's|/opt/peanut/.next/standalone/server.js|/opt/peanut/entrypoint.mjs|' /etc/systemd/system/peanut.service
+			systemctl daemon-reload
+			msg_ok "Fixed entrypoint"
+		fi
 
-    if [[ ! -f /etc/peanut/peanut.env ]]; then
-      msg_info "Migrating service to EnvironmentFile"
-      mkdir -p /etc/peanut
-      cat <<EOF >/etc/peanut/peanut.env
+		if [[ ! -f /etc/peanut/peanut.env ]]; then
+			msg_info "Migrating service to EnvironmentFile"
+			mkdir -p /etc/peanut
+			cat <<EOF >/etc/peanut/peanut.env
 NODE_ENV=production
 
 #WEB_HOST=0.0.0.0
@@ -68,31 +65,31 @@ NODE_ENV=production
 #WEB_USERNAME=admin
 #WEB_PASSWORD=changeme
 EOF
-      chmod 600 /etc/peanut/peanut.env
-      sed -i '/^Environment=/d' /etc/systemd/system/peanut.service
-      if ! grep -q '^EnvironmentFile=/etc/peanut/peanut.env' /etc/systemd/system/peanut.service; then
-        sed -i '/^Type=simple/a EnvironmentFile=/etc/peanut/peanut.env' /etc/systemd/system/peanut.service
-      fi
-      systemctl daemon-reload
-      msg_ok "Migrated to /etc/peanut/peanut.env"
-    fi
+			chmod 600 /etc/peanut/peanut.env
+			sed -i '/^Environment=/d' /etc/systemd/system/peanut.service
+			if ! grep -q '^EnvironmentFile=/etc/peanut/peanut.env' /etc/systemd/system/peanut.service; then
+				sed -i '/^Type=simple/a EnvironmentFile=/etc/peanut/peanut.env' /etc/systemd/system/peanut.service
+			fi
+			systemctl daemon-reload
+			msg_ok "Migrated to /etc/peanut/peanut.env"
+		fi
 
-    msg_info "Updating PeaNUT"
-    cd /opt/peanut
-    $STD pnpm i
-    $STD pnpm run build:local
-    cp -r .next/static .next/standalone/.next/
-    mkdir -p /opt/peanut/.next/standalone/config
-    ln -sf /etc/peanut/settings.yml /opt/peanut/.next/standalone/config/settings.yml
-    ln -sf .next/standalone/server.js server.js
-    msg_ok "Updated PeaNUT"
+		msg_info "Updating PeaNUT"
+		cd /opt/peanut
+		$STD pnpm i
+		$STD pnpm run build:local
+		cp -r .next/static .next/standalone/.next/
+		mkdir -p /opt/peanut/.next/standalone/config
+		ln -sf /etc/peanut/settings.yml /opt/peanut/.next/standalone/config/settings.yml
+		ln -sf .next/standalone/server.js server.js
+		msg_ok "Updated PeaNUT"
 
-    msg_info "Starting Service"
-    systemctl start peanut
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start peanut
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

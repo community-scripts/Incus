@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,52 +22,52 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/lychee ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/lychee ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "lychee" "LycheeOrg/Lychee"; then
-    PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+	if check_for_gh_release "lychee" "LycheeOrg/Lychee"; then
+		PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 
-    msg_info "Stopping Services"
-    systemctl stop caddy php${PHP_VER}-fpm
-    msg_ok "Stopped Services"
+		msg_info "Stopping Services"
+		systemctl stop caddy php${PHP_VER}-fpm
+		msg_ok "Stopped Services"
 
-    create_backup /opt/lychee/.env \
-      /opt/lychee/storage \
-      /opt/lychee/public/uploads \
-      /opt/lychee/public/dist
+		create_backup /opt/lychee/.env \
+			/opt/lychee/storage \
+			/opt/lychee/public/uploads \
+			/opt/lychee/public/dist
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "lychee" "LycheeOrg/Lychee" "prebuild" "latest" "/opt/lychee" "Lychee.zip"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "lychee" "LycheeOrg/Lychee" "prebuild" "latest" "/opt/lychee" "Lychee.zip"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Updating Application"
-    cd /opt/lychee
-    $STD php artisan migrate --force
-    $STD php artisan config:clear
-    $STD php artisan cache:clear
-    $STD php artisan optimize:clear
-    $STD php artisan optimize
-    chown -R www-data:www-data /opt/lychee
-    chmod -R 775 /opt/lychee/storage /opt/lychee/bootstrap/cache \
-      /opt/lychee/public/dist /opt/lychee/public/uploads
-    if [[ "${VERBOSE:-no}" = "yes" ]]; then
-      php artisan lychee:diagnostics || true
-    fi
-    msg_ok "Updated Application"
+		msg_info "Updating Application"
+		cd /opt/lychee
+		$STD php artisan migrate --force
+		$STD php artisan config:clear
+		$STD php artisan cache:clear
+		$STD php artisan optimize:clear
+		$STD php artisan optimize
+		chown -R www-data:www-data /opt/lychee
+		chmod -R 775 /opt/lychee/storage /opt/lychee/bootstrap/cache \
+			/opt/lychee/public/dist /opt/lychee/public/uploads
+		if [[ "${VERBOSE:-no}" = "yes" ]]; then
+			php artisan lychee:diagnostics || true
+		fi
+		msg_ok "Updated Application"
 
-    msg_info "Starting Services"
-    systemctl start caddy php${PHP_VER}-fpm
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start caddy php${PHP_VER}-fpm
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

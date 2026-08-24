@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,36 +22,36 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/gatus ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if check_for_gh_release "gatus" "TwiN/gatus"; then
-    msg_info "Stopping Service"
-    systemctl stop gatus
-    msg_ok "Stopped Service"
+	if [[ ! -d /opt/gatus ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if check_for_gh_release "gatus" "TwiN/gatus"; then
+		msg_info "Stopping Service"
+		systemctl stop gatus
+		msg_ok "Stopped Service"
 
-    mv /opt/gatus/config/config.yaml /opt
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gatus" "TwiN/gatus" "tarball"
+		mv /opt/gatus/config/config.yaml /opt
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gatus" "TwiN/gatus" "tarball"
 
-    msg_info "Updating Gatus"
-    cd /opt/gatus
-    $STD go mod tidy
-    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gatus .
-    setcap CAP_NET_RAW+ep gatus
-    mv /opt/config.yaml config
-    msg_ok "Updated Gatus"
+		msg_info "Updating Gatus"
+		cd /opt/gatus
+		$STD go mod tidy
+		CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gatus .
+		setcap CAP_NET_RAW+ep gatus
+		mv /opt/config.yaml config
+		msg_ok "Updated Gatus"
 
-    msg_info "Starting Service"
-    systemctl start gatus
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start gatus
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

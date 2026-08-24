@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,44 +22,44 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/discourse ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/discourse ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if [[ ! -f /opt/discourse/.env ]]; then
-    msg_error "No Discourse Configuration Found!"
-    exit
-  fi
+	if [[ ! -f /opt/discourse/.env ]]; then
+		msg_error "No Discourse Configuration Found!"
+		exit
+	fi
 
-  msg_info "Stopping Service"
-  systemctl stop discourse
-  msg_ok "Stopped Service"
+	msg_info "Stopping Service"
+	systemctl stop discourse
+	msg_ok "Stopped Service"
 
-  create_backup /opt/discourse/.env
+	create_backup /opt/discourse/.env
 
-  msg_info "Updating Discourse"
-  PG_VERSION="16" PG_MODULES="pgvector" setup_postgresql
-  cd /opt/discourse
-  git pull origin main
-  $STD bundle install --deployment --without test development
-  $STD yarn install
-  $STD runuser -u postgres -- psql -d discourse -c "CREATE EXTENSION IF NOT EXISTS vector;"
-  $STD bundle exec rails assets:precompile
-  $STD bundle exec rails db:migrate
-  msg_ok "Updated Discourse"
+	msg_info "Updating Discourse"
+	PG_VERSION="16" PG_MODULES="pgvector" setup_postgresql
+	cd /opt/discourse
+	git pull origin main
+	$STD bundle install --deployment --without test development
+	$STD yarn install
+	$STD runuser -u postgres -- psql -d discourse -c "CREATE EXTENSION IF NOT EXISTS vector;"
+	$STD bundle exec rails assets:precompile
+	$STD bundle exec rails db:migrate
+	msg_ok "Updated Discourse"
 
-    restore_backup
+	restore_backup
 
-  msg_info "Starting Service"
-  systemctl start discourse
-  msg_ok "Started Service"
-  msg_ok "Updated successfully!"
-  exit
+	msg_info "Starting Service"
+	systemctl start discourse
+	msg_ok "Started Service"
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,28 +22,28 @@ color
 catch_errors
 
 function update_script() {
-    header_info
-    check_container_storage
-    check_container_resources
-    if [[ ! -d /opt/LazyLibrarian/ ]]; then
-        msg_error "No ${APP} Installation Found!"
-        exit
-    fi
-    msg_info "Stopping LazyLibrarian"
-    systemctl stop lazylibrarian
-    msg_ok "LazyLibrarian Stopped"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /opt/LazyLibrarian/ ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	msg_info "Stopping LazyLibrarian"
+	systemctl stop lazylibrarian
+	msg_ok "LazyLibrarian Stopped"
 
-    msg_info "Updating $APP LXC"
-    $STD git -C /opt/LazyLibrarian pull origin master
-    $STD pip install --break-system-packages /opt/LazyLibrarian
-    msg_ok "Updated $APP LXC"
+	msg_info "Updating $APP LXC"
+	$STD git -C /opt/LazyLibrarian pull origin master
+	$STD pip install --break-system-packages /opt/LazyLibrarian
+	msg_ok "Updated $APP LXC"
 
-    msg_info "Starting LazyLibrarian"
-    systemctl start lazylibrarian
-    msg_ok "Started LazyLibrarian"
+	msg_info "Starting LazyLibrarian"
+	systemctl start lazylibrarian
+	msg_ok "Started LazyLibrarian"
 
-    msg_ok "Updated successfully!"
-    exit
+	msg_ok "Updated successfully!"
+	exit
 }
 
 start

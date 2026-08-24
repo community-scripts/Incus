@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,39 +22,39 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f /opt/nexterm/server/nexterm-server ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -f /opt/nexterm/server/nexterm-server ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "nexterm-engine" "gnmyt/Nexterm"; then
-    msg_info "Stopping nexterm-engine"
-    systemctl stop nexterm-engine
-    msg_ok "Stopped nexterm-engine"
+	if check_for_gh_release "nexterm-engine" "gnmyt/Nexterm"; then
+		msg_info "Stopping nexterm-engine"
+		systemctl stop nexterm-engine
+		msg_ok "Stopped nexterm-engine"
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nexterm-engine" "gnmyt/Nexterm" "prebuild" "latest" "/opt/nexterm/engine" "nexterm-engine-linux-$(arch_resolve "x64" "arm64").tar.gz"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nexterm-engine" "gnmyt/Nexterm" "prebuild" "latest" "/opt/nexterm/engine" "nexterm-engine-linux-$(arch_resolve "x64" "arm64").tar.gz"
 
-    msg_info "Starting nexterm-engine"
-    systemctl start nexterm-engine
-    msg_ok "Started nexterm-engine"
-  fi
+		msg_info "Starting nexterm-engine"
+		systemctl start nexterm-engine
+		msg_ok "Started nexterm-engine"
+	fi
 
-  if check_for_gh_release "nexterm-server" "gnmyt/Nexterm"; then
-    msg_info "Stopping nexterm-server"
-    systemctl stop nexterm-server
-    msg_ok "Stopped nexterm-server"
+	if check_for_gh_release "nexterm-server" "gnmyt/Nexterm"; then
+		msg_info "Stopping nexterm-server"
+		systemctl stop nexterm-server
+		msg_ok "Stopped nexterm-server"
 
-    fetch_and_deploy_gh_release "nexterm-server" "gnmyt/Nexterm" "singlefile" "latest" "/opt/nexterm/server" "nexterm-server-linux-$(arch_resolve "x64" "arm64")"
+		fetch_and_deploy_gh_release "nexterm-server" "gnmyt/Nexterm" "singlefile" "latest" "/opt/nexterm/server" "nexterm-server-linux-$(arch_resolve "x64" "arm64")"
 
-    msg_info "Starting nexterm-server"
-    systemctl start nexterm-server
-    msg_ok "Started nexterm-server"
-  fi
-  exit
+		msg_info "Starting nexterm-server"
+		systemctl start nexterm-server
+		msg_ok "Started nexterm-server"
+	fi
+	exit
 }
 
 start

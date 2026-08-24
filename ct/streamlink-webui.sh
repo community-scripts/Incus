@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,40 +22,40 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/streamlink-webui ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/streamlink-webui ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "streamlink-webui" "CrazyWolf13/streamlink-webui"; then
-    msg_info "Stopping Service"
-    systemctl stop streamlink-webui
-    msg_info "Stopped Service"
+	if check_for_gh_release "streamlink-webui" "CrazyWolf13/streamlink-webui"; then
+		msg_info "Stopping Service"
+		systemctl stop streamlink-webui
+		msg_info "Stopped Service"
 
-    NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
-    setup_uv
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "streamlink-webui" "CrazyWolf13/streamlink-webui" "tarball"
+		NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
+		setup_uv
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "streamlink-webui" "CrazyWolf13/streamlink-webui" "tarball"
 
-    msg_info "Updating streamlink-webui"
-    $STD uv venv --clear /opt/streamlink-webui/backend/src/.venv
-    source /opt/streamlink-webui/backend/src/.venv/bin/activate
-    $STD uv pip install -r /opt/streamlink-webui/backend/src/requirements.txt --python=/opt/streamlink-webui/backend/src/.venv
-    cd /opt/streamlink-webui/frontend/src
-    $STD yarn install
-    $STD yarn build
-    chmod +x /opt/streamlink-webui/start.sh
-    msg_ok "Updated streamlink-webui"
+		msg_info "Updating streamlink-webui"
+		$STD uv venv --clear /opt/streamlink-webui/backend/src/.venv
+		source /opt/streamlink-webui/backend/src/.venv/bin/activate
+		$STD uv pip install -r /opt/streamlink-webui/backend/src/requirements.txt --python=/opt/streamlink-webui/backend/src/.venv
+		cd /opt/streamlink-webui/frontend/src
+		$STD yarn install
+		$STD yarn build
+		chmod +x /opt/streamlink-webui/start.sh
+		msg_ok "Updated streamlink-webui"
 
-    msg_info "Starting Service"
-    systemctl start streamlink-webui
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start streamlink-webui
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

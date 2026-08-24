@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,36 +22,36 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -x /usr/bin/hbbr ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -x /usr/bin/hbbr ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "rustdesk-hbbs" "lejianwen/rustdesk-server"; then
-    msg_info "Stopping Service"
-    systemctl stop rustdesk-hbbr
-    systemctl stop rustdesk-hbbs
-    if [[ -f /lib/systemd/system/rustdesk-api.service ]]; then
-      systemctl stop rustdesk-api
-    fi
-    msg_info "Stopped Service"
+	if check_for_gh_release "rustdesk-hbbs" "lejianwen/rustdesk-server"; then
+		msg_info "Stopping Service"
+		systemctl stop rustdesk-hbbr
+		systemctl stop rustdesk-hbbs
+		if [[ -f /lib/systemd/system/rustdesk-api.service ]]; then
+			systemctl stop rustdesk-api
+		fi
+		msg_info "Stopped Service"
 
-    fetch_and_deploy_gh_release "rustdesk-hbbr" "lejianwen/rustdesk-server" "binary" "latest" "/opt/rustdesk" "rustdesk-server-hbbr*$(arch_resolve).deb"
-    fetch_and_deploy_gh_release "rustdesk-hbbs" "lejianwen/rustdesk-server" "binary" "latest" "/opt/rustdesk" "rustdesk-server-hbbs*$(arch_resolve).deb"
-    fetch_and_deploy_gh_release "rustdesk-utils" "lejianwen/rustdesk-server" "binary" "latest" "/opt/rustdesk" "rustdesk-server-utils*$(arch_resolve).deb"
-    fetch_and_deploy_gh_release "rustdesk-api" "lejianwen/rustdesk-api" "binary" "latest" "/opt/rustdesk" "rustdesk-api-server*$(arch_resolve).deb"
+		fetch_and_deploy_gh_release "rustdesk-hbbr" "lejianwen/rustdesk-server" "binary" "latest" "/opt/rustdesk" "rustdesk-server-hbbr*$(arch_resolve).deb"
+		fetch_and_deploy_gh_release "rustdesk-hbbs" "lejianwen/rustdesk-server" "binary" "latest" "/opt/rustdesk" "rustdesk-server-hbbs*$(arch_resolve).deb"
+		fetch_and_deploy_gh_release "rustdesk-utils" "lejianwen/rustdesk-server" "binary" "latest" "/opt/rustdesk" "rustdesk-server-utils*$(arch_resolve).deb"
+		fetch_and_deploy_gh_release "rustdesk-api" "lejianwen/rustdesk-api" "binary" "latest" "/opt/rustdesk" "rustdesk-api-server*$(arch_resolve).deb"
 
-    msg_info "Starting services"
-    systemctl start -q rustdesk-*
-    msg_ok "Services started"
+		msg_info "Starting services"
+		systemctl start -q rustdesk-*
+		msg_ok "Services started"
 
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

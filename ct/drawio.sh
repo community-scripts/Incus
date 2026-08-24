@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,32 +22,32 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -f /var/lib/tomcat11/webapps/draw.war ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -f /var/lib/tomcat11/webapps/draw.war ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "drawio" "jgraph/drawio"; then
-    msg_info "Stopping service"
-    systemctl stop tomcat11
-    msg_ok "Service stopped"
+	if check_for_gh_release "drawio" "jgraph/drawio"; then
+		msg_info "Stopping service"
+		systemctl stop tomcat11
+		msg_ok "Service stopped"
 
-    msg_info "Updating Debian LXC"
-    $STD apt update
-    $STD apt upgrade -y
-    msg_ok "Updated Debian LXC"
+		msg_info "Updating Debian LXC"
+		$STD apt update
+		$STD apt upgrade -y
+		msg_ok "Updated Debian LXC"
 
-    USE_ORIGINAL_FILENAME=true fetch_and_deploy_gh_release "drawio" "jgraph/drawio" "singlefile" "latest" "/var/lib/tomcat11/webapps" "draw.war"
+		USE_ORIGINAL_FILENAME=true fetch_and_deploy_gh_release "drawio" "jgraph/drawio" "singlefile" "latest" "/var/lib/tomcat11/webapps" "draw.war"
 
-    msg_info "Starting service"
-    systemctl start tomcat11
-    msg_ok "Service started"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting service"
+		systemctl start tomcat11
+		msg_ok "Service started"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

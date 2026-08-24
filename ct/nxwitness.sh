@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -26,40 +23,40 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -f /etc/systemd/system/networkoptix-mediaserver.service ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  BASE_URL="https://updates.networkoptix.com/default/index.html"
-  RELEASE=$(curl -fsSL "$BASE_URL" | grep -oP '(?<=<b>)[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(?=</b>)' | head -n 1)
-  DETAIL_PAGE=$(curl -fsSL "$BASE_URL#note_$RELEASE")
-  DOWNLOAD_URL=$(echo "$DETAIL_PAGE" | grep -oP "https://updates.networkoptix.com/default/$RELEASE/$(arch_resolve "linux" "arm")/nxwitness-server-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+-linux_$(arch_resolve "x64" "arm64")\.deb" | head -n 1)
-  if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
-    msg_info "Stopping Service"
-    systemctl stop networkoptix-root-tool networkoptix-mediaserver
-    msg_ok "Stopped Service"
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -f /etc/systemd/system/networkoptix-mediaserver.service ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	BASE_URL="https://updates.networkoptix.com/default/index.html"
+	RELEASE=$(curl -fsSL "$BASE_URL" | grep -oP '(?<=<b>)[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+(?=</b>)' | head -n 1)
+	DETAIL_PAGE=$(curl -fsSL "$BASE_URL#note_$RELEASE")
+	DOWNLOAD_URL=$(echo "$DETAIL_PAGE" | grep -oP "https://updates.networkoptix.com/default/$RELEASE/$(arch_resolve "linux" "arm")/nxwitness-server-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+-linux_$(arch_resolve "x64" "arm64")\.deb" | head -n 1)
+	if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
+		msg_info "Stopping Service"
+		systemctl stop networkoptix-root-tool networkoptix-mediaserver
+		msg_ok "Stopped Service"
 
-    msg_info "Updating ${APP} to ${RELEASE}"
-    cd /tmp
-    curl -fsSL "$DOWNLOAD_URL" -o ""nxwitness-server-$RELEASE-linux_$(arch_resolve "x64" "arm64").deb""
-    export DEBIAN_FRONTEND=noninteractive
-    export DEBCONF_NOWARNINGS=yes
-    $STD dpkg -i nxwitness-server-$RELEASE-linux_$(arch_resolve "x64" "arm64").deb
-    rm -f /tmp/nxwitness-server-$RELEASE-linux_$(arch_resolve "x64" "arm64").deb
-    echo "${RELEASE}" >/opt/${APP}_version.txt
-    msg_ok "Updated ${APP}"
+		msg_info "Updating ${APP} to ${RELEASE}"
+		cd /tmp
+		curl -fsSL "$DOWNLOAD_URL" -o ""nxwitness-server-$RELEASE-linux_$(arch_resolve "x64" "arm64").deb""
+		export DEBIAN_FRONTEND=noninteractive
+		export DEBCONF_NOWARNINGS=yes
+		$STD dpkg -i nxwitness-server-$RELEASE-linux_$(arch_resolve "x64" "arm64").deb
+		rm -f /tmp/nxwitness-server-$RELEASE-linux_$(arch_resolve "x64" "arm64").deb
+		echo "${RELEASE}" >/opt/${APP}_version.txt
+		msg_ok "Updated ${APP}"
 
-    msg_info "Starting Service"
-    systemctl start networkoptix-root-tool networkoptix-mediaserver
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  else
-    msg_ok "No update required. ${APP} is already at ${RELEASE}"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start networkoptix-root-tool networkoptix-mediaserver
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	else
+		msg_ok "No update required. ${APP} is already at ${RELEASE}"
+	fi
+	exit
 }
 
 start

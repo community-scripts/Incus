@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,33 +22,33 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/commafeed ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  JAVA_VERSION="25" setup_java
-  if check_for_gh_release "commafeed" "Athou/commafeed"; then
-    msg_info "Stopping Service"
-    systemctl stop commafeed
-    msg_ok "Stopped Service"
+	if [[ ! -d /opt/commafeed ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	JAVA_VERSION="25" setup_java
+	if check_for_gh_release "commafeed" "Athou/commafeed"; then
+		msg_info "Stopping Service"
+		systemctl stop commafeed
+		msg_ok "Stopped Service"
 
-    ensure_dependencies rsync
-    create_backup /opt/commafeed/data
+		ensure_dependencies rsync
+		create_backup /opt/commafeed/data
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "commafeed" "Athou/commafeed" "prebuild" "latest" "/opt/commafeed" "commafeed-*-h2-jvm.zip"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "commafeed" "Athou/commafeed" "prebuild" "latest" "/opt/commafeed" "commafeed-*-h2-jvm.zip"
 
-    restore_backup
+		restore_backup
 
-    msg_info "Starting Service"
-    systemctl start commafeed
-    msg_ok "Started Service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Service"
+		systemctl start commafeed
+		msg_ok "Started Service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

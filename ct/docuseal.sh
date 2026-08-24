@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -25,62 +22,62 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -d /opt/docuseal ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
+	if [[ ! -d /opt/docuseal ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
 
-  if check_for_gh_release "docuseal" "docusealco/docuseal"; then
-    msg_info "Stopping Services"
-    systemctl stop docuseal docuseal-sidekiq
-    msg_ok "Stopped Services"
+	if check_for_gh_release "docuseal" "docusealco/docuseal"; then
+		msg_info "Stopping Services"
+		systemctl stop docuseal docuseal-sidekiq
+		msg_ok "Stopped Services"
 
-    ensure_dependencies libleptonica-dev libleptonica6
+		ensure_dependencies libleptonica-dev libleptonica6
 
-    create_backup /opt/docuseal/.env \
-      /opt/docuseal/data
+		create_backup /opt/docuseal/.env \
+			/opt/docuseal/data
 
-    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "docuseal" "docusealco/docuseal" "tarball"
+		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "docuseal" "docusealco/docuseal" "tarball"
 
-    local required_ruby current_ruby
-    required_ruby=$(grep -m1 '^ruby ' /opt/docuseal/Gemfile | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
-    current_ruby=$(PATH="/root/.rbenv/bin:/root/.rbenv/shims:${PATH}" rbenv global 2>/dev/null || true)
-    if [[ -n $required_ruby && $required_ruby != "$current_ruby" ]]; then
-      RUBY_VERSION="${required_ruby}" RUBY_INSTALL_RAILS="false" HOME=/root setup_ruby
-    fi
+		local required_ruby current_ruby
+		required_ruby=$(grep -m1 '^ruby ' /opt/docuseal/Gemfile | grep -oP '[0-9]+\.[0-9]+\.[0-9]+')
+		current_ruby=$(PATH="/root/.rbenv/bin:/root/.rbenv/shims:${PATH}" rbenv global 2>/dev/null || true)
+		if [[ -n $required_ruby && $required_ruby != "$current_ruby" ]]; then
+			RUBY_VERSION="${required_ruby}" RUBY_INSTALL_RAILS="false" HOME=/root setup_ruby
+		fi
 
-    restore_backup
+		restore_backup
 
-    msg_info "Building Application"
-    cd /opt/docuseal
-    export PATH="/root/.rbenv/bin:/root/.rbenv/shims:${PATH}"
-    eval "$(rbenv init - bash)" 2>/dev/null || true
-    export RAILS_ENV=production
-    export NODE_ENV=production
-    mkdir -p /opt/docuseal/tmp
-    set -a
-    source /opt/docuseal/.env
-    set +a
-    $STD bundle config set --local deployment 'true'
-    $STD bundle config set --local without 'development:test'
-    $STD bundle install -j"$(nproc)"
-    $STD yarn install --network-timeout 1000000
-    $STD ./bin/shakapacker
-    $STD bundle exec rails db:migrate
-    $STD bundle exec bootsnap precompile -j 1 --gemfile app/ lib/
-    chown -R docuseal:docuseal /opt/docuseal
-    msg_ok "Built Application"
+		msg_info "Building Application"
+		cd /opt/docuseal
+		export PATH="/root/.rbenv/bin:/root/.rbenv/shims:${PATH}"
+		eval "$(rbenv init - bash)" 2>/dev/null || true
+		export RAILS_ENV=production
+		export NODE_ENV=production
+		mkdir -p /opt/docuseal/tmp
+		set -a
+		source /opt/docuseal/.env
+		set +a
+		$STD bundle config set --local deployment 'true'
+		$STD bundle config set --local without 'development:test'
+		$STD bundle install -j"$(nproc)"
+		$STD yarn install --network-timeout 1000000
+		$STD ./bin/shakapacker
+		$STD bundle exec rails db:migrate
+		$STD bundle exec bootsnap precompile -j 1 --gemfile app/ lib/
+		chown -R docuseal:docuseal /opt/docuseal
+		msg_ok "Built Application"
 
-    msg_info "Starting Services"
-    systemctl start docuseal docuseal-sidekiq
-    msg_ok "Started Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting Services"
+		systemctl start docuseal docuseal-sidekiq
+		msg_ok "Started Services"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start

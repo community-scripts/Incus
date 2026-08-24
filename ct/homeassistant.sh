@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,65 +22,65 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /var/lib/docker/volumes/hass_config/_data ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  UPD=$(msg_menu "Home Assistant Update Options" \
-    "1" "Update ALL Containers" \
-    "2" "Remove ALL Unused Images" \
-    "3" "Install HACS" \
-    "4" "Install FileBrowser")
+	header_info
+	check_container_storage
+	check_container_resources
+	if [[ ! -d /var/lib/docker/volumes/hass_config/_data ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	UPD=$(msg_menu "Home Assistant Update Options" \
+		"1" "Update ALL Containers" \
+		"2" "Remove ALL Unused Images" \
+		"3" "Install HACS" \
+		"4" "Install FileBrowser")
 
-  if [ "$UPD" == "1" ]; then
-    msg_info "Updating All Containers"
-    CONTAINER_LIST="${1:-$(docker ps -q)}"
-    for container in ${CONTAINER_LIST}; do
-      CONTAINER_IMAGE="$(docker inspect --format "{{.Config.Image}}" --type container "${container}")"
-      RUNNING_IMAGE="$(docker inspect --format "{{.Image}}" --type container "${container}")"
-      docker pull "${CONTAINER_IMAGE}"
-      LATEST_IMAGE="$(docker inspect --format "{{.Id}}" --type image "${CONTAINER_IMAGE}")"
-      if [[ "${RUNNING_IMAGE}" != "${LATEST_IMAGE}" ]]; then
-        pip install -U runlike
-        echo "Updating ${container} image ${CONTAINER_IMAGE}"
-        DOCKER_COMMAND="$(runlike --use-volume-id "${container}")"
-        docker rm --force "${container}"
-        eval "${DOCKER_COMMAND}"
-      fi
-    done
-    msg_ok "Updated All Containers"
-    exit
-  fi
-  if [ "$UPD" == "2" ]; then
-    msg_info "Removing ALL Unused Images"
-    docker image prune -af
-    msg_ok "Removed ALL Unused Images"
-    exit
-  fi
-  if [ "$UPD" == "3" ]; then
-    msg_info "Installing Home Assistant Community Store (HACS)"
-    $STD apt update
-    cd /var/lib/docker/volumes/hass_config/_data
-    $STD bash <(curl -fsSL https://get.hacs.xyz)
-    msg_ok "Installed Home Assistant Community Store (HACS)"
-    echo -e "\n Reboot Home Assistant and clear browser cache then Add HACS integration.\n"
-    exit
-  fi
-  if [ "$UPD" == "4" ]; then
-    msg_info "Installing FileBrowser"
-    RELEASE=$(curl -fsSL https://api.github.com/repos/filebrowser/filebrowser/releases/latest | grep -o '"tag_name": ".*"' | sed 's/"//g' | sed 's/tag_name: //g')
-    $STD curl -fsSL https://github.com/filebrowser/filebrowser/releases/download/v2.23.0/linux-$(arch_resolve)-filebrowser.tar.gz | tar -xzv -C /usr/local/bin
-    $STD filebrowser config init -a '0.0.0.0'
-    $STD filebrowser config set -a '0.0.0.0'
-    $STD filebrowser users add admin community-scripts.org --perm.admin
-    msg_ok "Installed FileBrowser"
+	if [ "$UPD" == "1" ]; then
+		msg_info "Updating All Containers"
+		CONTAINER_LIST="${1:-$(docker ps -q)}"
+		for container in ${CONTAINER_LIST}; do
+			CONTAINER_IMAGE="$(docker inspect --format "{{.Config.Image}}" --type container "${container}")"
+			RUNNING_IMAGE="$(docker inspect --format "{{.Image}}" --type container "${container}")"
+			docker pull "${CONTAINER_IMAGE}"
+			LATEST_IMAGE="$(docker inspect --format "{{.Id}}" --type image "${CONTAINER_IMAGE}")"
+			if [[ "${RUNNING_IMAGE}" != "${LATEST_IMAGE}" ]]; then
+				pip install -U runlike
+				echo "Updating ${container} image ${CONTAINER_IMAGE}"
+				DOCKER_COMMAND="$(runlike --use-volume-id "${container}")"
+				docker rm --force "${container}"
+				eval "${DOCKER_COMMAND}"
+			fi
+		done
+		msg_ok "Updated All Containers"
+		exit
+	fi
+	if [ "$UPD" == "2" ]; then
+		msg_info "Removing ALL Unused Images"
+		docker image prune -af
+		msg_ok "Removed ALL Unused Images"
+		exit
+	fi
+	if [ "$UPD" == "3" ]; then
+		msg_info "Installing Home Assistant Community Store (HACS)"
+		$STD apt update
+		cd /var/lib/docker/volumes/hass_config/_data
+		$STD bash <(curl -fsSL https://get.hacs.xyz)
+		msg_ok "Installed Home Assistant Community Store (HACS)"
+		echo -e "\n Reboot Home Assistant and clear browser cache then Add HACS integration.\n"
+		exit
+	fi
+	if [ "$UPD" == "4" ]; then
+		msg_info "Installing FileBrowser"
+		RELEASE=$(curl -fsSL https://api.github.com/repos/filebrowser/filebrowser/releases/latest | grep -o '"tag_name": ".*"' | sed 's/"//g' | sed 's/tag_name: //g')
+		$STD curl -fsSL https://github.com/filebrowser/filebrowser/releases/download/v2.23.0/linux-$(arch_resolve)-filebrowser.tar.gz | tar -xzv -C /usr/local/bin
+		$STD filebrowser config init -a '0.0.0.0'
+		$STD filebrowser config set -a '0.0.0.0'
+		$STD filebrowser users add admin community-scripts.org --perm.admin
+		msg_ok "Installed FileBrowser"
 
-    msg_info "Creating Service"
-    service_path="/etc/systemd/system/filebrowser.service"
-    echo "[Unit]
+		msg_info "Creating Service"
+		service_path="/etc/systemd/system/filebrowser.service"
+		echo "[Unit]
 Description=Filebrowser
 After=network-online.target
 [Service]
@@ -93,14 +90,14 @@ ExecStart=/usr/local/bin/filebrowser -r /
 [Install]
 WantedBy=default.target" >$service_path
 
-    $STD systemctl enable --now filebrowser
-    msg_ok "Created Service"
+		$STD systemctl enable --now filebrowser
+		msg_ok "Created Service"
 
-    msg_ok "Completed successfully!\n"
-    echo -e "FileBrowser should be reachable by going to the following URL.
+		msg_ok "Completed successfully!\n"
+		echo -e "FileBrowser should be reachable by going to the following URL.
          ${BL}http://$LOCAL_IP:8080${CL}   admin|community-scripts.org\n"
-    exit
-  fi
+		exit
+	fi
 }
 
 start

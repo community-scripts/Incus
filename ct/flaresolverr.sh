@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -25,33 +22,33 @@ color
 catch_errors
 
 function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
+	header_info
+	check_container_storage
+	check_container_resources
 
-  if [[ ! -f /etc/systemd/system/flaresolverr.service ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-  if [[ $(grep -E '^VERSION_ID=' /etc/os-release) == *"12"* ]]; then
-    msg_error "Wrong Debian version detected!"
-    msg_error "You must upgrade your LXC to Debian Trixie before updating."
-    exit
-  fi
-  if check_for_gh_release "flaresolverr" "FlareSolverr/FlareSolverr"; then
-    msg_info "Stopping service"
-    systemctl stop flaresolverr
-    msg_ok "Stopped service"
+	if [[ ! -f /etc/systemd/system/flaresolverr.service ]]; then
+		msg_error "No ${APP} Installation Found!"
+		exit
+	fi
+	if [[ $(grep -E '^VERSION_ID=' /etc/os-release) == *"12"* ]]; then
+		msg_error "Wrong Debian version detected!"
+		msg_error "You must upgrade your LXC to Debian Trixie before updating."
+		exit
+	fi
+	if check_for_gh_release "flaresolverr" "FlareSolverr/FlareSolverr"; then
+		msg_info "Stopping service"
+		systemctl stop flaresolverr
+		msg_ok "Stopped service"
 
-    rm -rf /opt/flaresolverr
-    fetch_and_deploy_gh_release "flaresolverr" "FlareSolverr/FlareSolverr" "prebuild" "latest" "/opt/flaresolverr" "flaresolverr_linux_x64.tar.gz"
+		rm -rf /opt/flaresolverr
+		fetch_and_deploy_gh_release "flaresolverr" "FlareSolverr/FlareSolverr" "prebuild" "latest" "/opt/flaresolverr" "flaresolverr_linux_x64.tar.gz"
 
-    msg_info "Starting service"
-    systemctl start flaresolverr
-    msg_ok "Started service"
-    msg_ok "Updated successfully!"
-  fi
-  exit
+		msg_info "Starting service"
+		systemctl start flaresolverr
+		msg_ok "Started service"
+		msg_ok "Updated successfully!"
+	fi
+	exit
 }
 
 start
