@@ -69,18 +69,34 @@ jobs:
           # mirror, curl -fsSL or curl -s.
           pat = re.compile(r'source <\(curl -[a-zA-Z]* ?https?://[^)]*/misc/build\.func\)')
 
+          # Upstream is migrating to core, so a growing number of scripts already
+          # carry this bootstrap. Nothing to rewrite there, but they must not be
+          # reported as unrecognised either -- that failed this job for every
+          # migrated script.
+          already = re.compile(r'^_cs_boot=.*core/build\.func', re.M)
+
+          # ProxmoxVE pins its own scripts base. Carried over verbatim it would send
+          # an Incus container to ProxmoxVE for its install/ script -- exactly the
+          # silent breakage the check below exists to prevent.
+          pin = re.compile(r'^_CS_DEFAULT_URL=.*\n', re.M)
+
           scripts = sorted(glob.glob("ct/*.sh"))
-          done, miss = 0, []
+          done, kept, miss = 0, 0, []
           for p in scripts:
               s = open(p, encoding="utf-8", newline="").read()
+              s, dropped = pin.subn("", s)
               s2, n = pat.subn(NEW, s, count=1)
               if n:
                   open(p, "w", encoding="utf-8", newline="").write(s2)
                   done += 1
+              elif already.search(s):
+                  if dropped:
+                      open(p, "w", encoding="utf-8", newline="").write(s)
+                  kept += 1
               else:
                   miss.append(p)
 
-          print(f"rewritten {done}/{len(scripts)}")
+          print(f"rewritten {done}, already on core {kept}, of {len(scripts)}")
           if miss:
               # A script we cannot rewrite would silently load ProxmoxVE's
               # monolith and fail on an Incus host. Fail loudly instead.
