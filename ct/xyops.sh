@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,46 +25,46 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/xyops ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/xyops ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "xyops" "pixlcore/xyops"; then
-		msg_info "Stopping Service"
-		systemctl stop xyops
-		msg_ok "Stopped Service"
+  if check_for_gh_release "xyops" "pixlcore/xyops"; then
+    msg_info "Stopping Service"
+    systemctl stop xyops
+    msg_ok "Stopped Service"
 
-		create_backup /opt/xyops/data /opt/xyops/conf
+    create_backup /opt/xyops/data /opt/xyops/conf
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "xyops" "pixlcore/xyops" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "xyops" "pixlcore/xyops" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Rebuilding Application"
-		cd /opt/xyops
-		$STD npm install
-		$STD node bin/build.js dist
-		chmod 644 /opt/xyops/node_modules/useragent-ng/lib/regexps.js
-		msg_ok "Rebuilt Application"
+    msg_info "Rebuilding Application"
+    cd /opt/xyops
+    $STD npm install
+    $STD node bin/build.js dist
+    chmod 644 /opt/xyops/node_modules/useragent-ng/lib/regexps.js
+    msg_ok "Rebuilt Application"
 
-		fetch_and_deploy_gh_release "xysat" "pixlcore/xysat" "tarball" "latest" "/opt/xyops/satellite"
+    fetch_and_deploy_gh_release "xysat" "pixlcore/xysat" "tarball" "latest" "/opt/xyops/satellite"
 
-		msg_info "Building xySat Satellite"
-		cd /opt/xyops/satellite
-		$STD npm install
-		msg_ok "Built xySat Satellite"
+    msg_info "Building xySat Satellite"
+    cd /opt/xyops/satellite
+    $STD npm install
+    msg_ok "Built xySat Satellite"
 
-		msg_info "Starting Service"
-		systemctl start xyops
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start xyops
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

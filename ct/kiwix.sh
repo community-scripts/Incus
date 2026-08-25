@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,48 +25,48 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if ! dpkg -s kiwix-tools &>/dev/null; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if ! dpkg -s kiwix-tools &>/dev/null; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	CURRENT=$(dpkg-query -W -f='${Version}' kiwix-tools 2>/dev/null)
+  CURRENT=$(dpkg-query -W -f='${Version}' kiwix-tools 2>/dev/null)
 
-	msg_info "Updating Package Index"
-	$STD apt update
-	msg_ok "Updated Package Index"
+  msg_info "Updating Package Index"
+  $STD apt update
+  msg_ok "Updated Package Index"
 
-	CANDIDATE=$(apt-cache policy kiwix-tools | awk '/Candidate:/{print $2}')
-	if [[ -z $CANDIDATE || $CANDIDATE == "(none)" ]]; then
-		msg_error "No Candidate Version Found for kiwix-tools"
-		exit
-	fi
+  CANDIDATE=$(apt-cache policy kiwix-tools | awk '/Candidate:/{print $2}')
+  if [[ -z $CANDIDATE || $CANDIDATE == "(none)" ]]; then
+    msg_error "No Candidate Version Found for kiwix-tools"
+    exit
+  fi
 
-	if [[ $CURRENT == "$CANDIDATE" ]]; then
-		echo "${CURRENT}" >/root/.kiwix
-		msg_ok "Already on latest version: ${CURRENT}"
-		exit
-	fi
+  if [[ $CURRENT == "$CANDIDATE" ]]; then
+    echo "${CURRENT}" >/root/.kiwix
+    msg_ok "Already on latest version: ${CURRENT}"
+    exit
+  fi
 
-	msg_info "Stopping Service"
-	systemctl stop kiwix-serve
-	msg_ok "Stopped Service"
+  msg_info "Stopping Service"
+  systemctl stop kiwix-serve
+  msg_ok "Stopped Service"
 
-	msg_info "Updating Kiwix-Tools"
-	$STD apt install -y --only-upgrade kiwix-tools
-	RELEASE=$(dpkg-query -W -f='${Version}' kiwix-tools 2>/dev/null)
-	echo "${RELEASE}" >/root/.kiwix
-	msg_ok "Updated Kiwix-Tools"
-	msg_ok "Updated successfully from ${CURRENT} to ${RELEASE}!"
+  msg_info "Updating Kiwix-Tools"
+  $STD apt install -y --only-upgrade kiwix-tools
+  RELEASE=$(dpkg-query -W -f='${Version}' kiwix-tools 2>/dev/null)
+  echo "${RELEASE}" >/root/.kiwix
+  msg_ok "Updated Kiwix-Tools"
+  msg_ok "Updated successfully from ${CURRENT} to ${RELEASE}!"
 
-	msg_info "Starting Service"
-	systemctl start kiwix-serve
-	msg_ok "Started Service"
-	exit
+  msg_info "Starting Service"
+  systemctl start kiwix-serve
+  msg_ok "Started Service"
+  exit
 }
 
 start

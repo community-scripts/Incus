@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,64 +25,64 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/overseerr ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/overseerr ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if [[ -f "$HOME/.overseerr" ]] && [[ "$(printf '%s\n' "1.35.0" "$(cat "$HOME/.overseerr")" | sort -V | head -n1)" == "1.35.0" ]]; then
-		echo
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-		echo "Overseerr v1.34.0 detected."
-		echo
-		echo "Seerr is the new unified Jellyseerr and Overseerr."
-		echo "More info: https://docs.seerr.dev/blog/seerr-release"
-		echo
-		read -rp "Do you want to migrate to Seerr now? (y/N): " MIGRATE
-		echo
-		if [[ ! "$MIGRATE" =~ ^[Yy]$ ]]; then
-			msg_info "Migration cancelled. Exiting."
-			exit 0
-		fi
+  if [[ -f "$HOME/.overseerr" ]] && [[ "$(printf '%s\n' "1.35.0" "$(cat "$HOME/.overseerr")" | sort -V | head -n1)" == "1.35.0" ]]; then
+    echo
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Overseerr v1.34.0 detected."
+    echo
+    echo "Seerr is the new unified Jellyseerr and Overseerr."
+    echo "More info: https://docs.seerr.dev/blog/seerr-release"
+    echo
+    read -rp "Do you want to migrate to Seerr now? (y/N): " MIGRATE
+    echo
+    if [[ ! "$MIGRATE" =~ ^[Yy]$ ]]; then
+      msg_info "Migration cancelled. Exiting."
+      exit 0
+    fi
 
-		msg_info "Switching update script to Seerr"
-		TMP_UPDATE=$(mktemp)
-		cat <<'EOF' >"$TMP_UPDATE"
+    msg_info "Switching update script to Seerr"
+    TMP_UPDATE=$(mktemp)
+    cat <<'EOF' >"$TMP_UPDATE"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/seerr.sh)"
 EOF
-		mv "$TMP_UPDATE" /usr/bin/update
-		chmod +x /usr/bin/update
-		msg_ok "Switched update script to Seerr"
-		msg_warn "Please type 'update' again to complete the migration"
-		exit 0
-	fi
+    mv "$TMP_UPDATE" /usr/bin/update
+    chmod +x /usr/bin/update
+    msg_ok "Switched update script to Seerr"
+    msg_warn "Please type 'update' again to complete the migration"
+    exit 0
+  fi
 
-	if check_for_gh_release "overseerr" "sct/overseerr"; then
-		msg_info "Stopping Service"
-		systemctl stop overseerr
-		msg_ok "Service stopped"
+  if check_for_gh_release "overseerr" "sct/overseerr"; then
+    msg_info "Stopping Service"
+    systemctl stop overseerr
+    msg_ok "Service stopped"
 
-		create_backup /opt/overseerr/config
+    create_backup /opt/overseerr/config
 
-		fetch_and_deploy_gh_release "overseerr" "sct/overseerr" "tarball"
+    fetch_and_deploy_gh_release "overseerr" "sct/overseerr" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Configuring ${APP} (Patience)"
-		cd /opt/overseerr
-		$STD yarn install
-		$STD yarn build
-		msg_ok "Configured ${APP}"
+    msg_info "Configuring ${APP} (Patience)"
+    cd /opt/overseerr
+    $STD yarn install
+    $STD yarn build
+    msg_ok "Configured ${APP}"
 
-		msg_info "Starting Service"
-		systemctl start overseerr
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start overseerr
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

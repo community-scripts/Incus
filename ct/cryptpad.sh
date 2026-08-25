@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,48 +25,48 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d "/opt/cryptpad" ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "cryptpad" "cryptpad/cryptpad"; then
-		msg_info "Stopping Service"
-		systemctl stop cryptpad
-		msg_info "Stopped Service"
+  if [[ ! -d "/opt/cryptpad" ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "cryptpad" "cryptpad/cryptpad"; then
+    msg_info "Stopping Service"
+    systemctl stop cryptpad
+    msg_info "Stopped Service"
 
-		create_backup /opt/cryptpad/config/config.js \
-			/opt/cryptpad/blob \
-			/opt/cryptpad/block \
-			/opt/cryptpad/customize \
-			/opt/cryptpad/data \
-			/opt/cryptpad/datastore \
-			/opt/cryptpad/www/common/onlyoffice/dist \
-			/opt/cryptpad/onlyoffice-conf
+    create_backup /opt/cryptpad/config/config.js \
+      /opt/cryptpad/blob \
+      /opt/cryptpad/block \
+      /opt/cryptpad/customize \
+      /opt/cryptpad/data \
+      /opt/cryptpad/datastore \
+      /opt/cryptpad/www/common/onlyoffice/dist \
+      /opt/cryptpad/onlyoffice-conf
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "cryptpad" "cryptpad/cryptpad" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "cryptpad" "cryptpad/cryptpad" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Updating CryptPad"
-		cd /opt/cryptpad
-		$STD npm ci
-		$STD npm run install:components
-		if [ -f "/opt/cryptpad/install-onlyoffice.sh" ]; then
-			$STD bash /opt/cryptpad/install-onlyoffice.sh --accept-license
-		fi
-		$STD npm run build
-		msg_ok "Updated CryptaPad"
+    msg_info "Updating CryptPad"
+    cd /opt/cryptpad
+    $STD npm ci
+    $STD npm run install:components
+    if [ -f "/opt/cryptpad/install-onlyoffice.sh" ]; then
+      $STD bash /opt/cryptpad/install-onlyoffice.sh --accept-license
+    fi
+    $STD npm run build
+    msg_ok "Updated CryptaPad"
 
-		msg_info "Starting Service"
-		systemctl start cryptpad
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start cryptpad
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

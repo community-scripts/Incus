@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,34 +25,34 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /etc/systemd/system/jackett.service ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/systemd/system/jackett.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "Jackett" "Jackett/Jackett"; then
-		if [ ! -f /opt/.env ]; then
-			sed -i 's|^Environment="DisableRootWarning=true"$|EnvironmentFile="/opt/.env"|' /etc/systemd/system/jackett.service
-			cat <<EOF >/opt/.env
+  if check_for_gh_release "Jackett" "Jackett/Jackett"; then
+    if [ ! -f /opt/.env ]; then
+      sed -i 's|^Environment="DisableRootWarning=true"$|EnvironmentFile="/opt/.env"|' /etc/systemd/system/jackett.service
+      cat <<EOF >/opt/.env
 DisableRootWarning=true
 EOF
-		fi
+    fi
 
-		msg_info "Stopping Service"
-		systemctl stop jackett
-		msg_ok "Stopped Service"
+    msg_info "Stopping Service"
+    systemctl stop jackett
+    msg_ok "Stopped Service"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "jackett" "Jackett/Jackett" "prebuild" "latest" "/opt/Jackett" "Jackett.Binaries.Linux$(arch_resolve "AMDx64" "ARM64").tar.gz"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "jackett" "Jackett/Jackett" "prebuild" "latest" "/opt/Jackett" "Jackett.Binaries.Linux$(arch_resolve "AMDx64" "ARM64").tar.gz"
 
-		msg_info "Starting Service"
-		systemctl start jackett
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start jackett
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

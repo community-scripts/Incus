@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,41 +25,41 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/UmlautAdaptarr ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/UmlautAdaptarr ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if grep -qs "packages.microsoft.com/debian/12" /etc/apt/sources.list.d/microsoft*.sources; then
-		msg_info "Migrating Microsoft Repository to Debian 13"
-		setup_deb822_repo \
-			"microsoft" \
-			"https://packages.microsoft.com/keys/microsoft-2025.asc" \
-			"https://packages.microsoft.com/debian/13/prod/" \
-			"trixie" \
-			"main"
-		rm -f /usr/share/keyrings/microsoft-prod.gpg
-		msg_ok "Migrated Microsoft Repository to Debian 13"
-	fi
+  if grep -qs "packages.microsoft.com/debian/12" /etc/apt/sources.list.d/microsoft*.sources; then
+    msg_info "Migrating Microsoft Repository to Debian 13"
+    setup_deb822_repo \
+      "microsoft" \
+      "https://packages.microsoft.com/keys/microsoft-2025.asc" \
+      "https://packages.microsoft.com/debian/13/prod/" \
+      "trixie" \
+      "main"
+    rm -f /usr/share/keyrings/microsoft-prod.gpg
+    msg_ok "Migrated Microsoft Repository to Debian 13"
+  fi
 
-	if check_for_gh_release "UmlautAdaptarr" "PCJones/Umlautadaptarr"; then
-		msg_info "Stopping Service"
-		systemctl stop umlautadaptarr
-		msg_ok "Stopped Service"
+  if check_for_gh_release "UmlautAdaptarr" "PCJones/Umlautadaptarr"; then
+    msg_info "Stopping Service"
+    systemctl stop umlautadaptarr
+    msg_ok "Stopped Service"
 
-		create_backup /opt/UmlautAdaptarr/appsettings.json
-		fetch_and_deploy_gh_release "UmlautAdaptarr" "PCJones/Umlautadaptarr" "prebuild" "latest" "/opt/UmlautAdaptarr" "linux-x64.zip"
-		restore_backup
+    create_backup /opt/UmlautAdaptarr/appsettings.json
+    fetch_and_deploy_gh_release "UmlautAdaptarr" "PCJones/Umlautadaptarr" "prebuild" "latest" "/opt/UmlautAdaptarr" "linux-x64.zip"
+    restore_backup
 
-		msg_info "Starting Service"
-		systemctl start umlautadaptarr
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start umlautadaptarr
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 start
 build_container

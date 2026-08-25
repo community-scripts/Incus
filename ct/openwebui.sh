@@ -23,44 +23,44 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	ensure_dependencies zstd build-essential libmariadb-dev
-	[[ -f /root/.ollama ]] && rm -f /root/.ollama
+  ensure_dependencies zstd build-essential libmariadb-dev
+  [[ -f /root/.ollama ]] && rm -f /root/.ollama
 
-	if [[ -d /opt/open-webui ]]; then
-		msg_warn "Legacy installation detected — migrating to uv based install..."
-		msg_info "Stopping Service"
-		systemctl stop open-webui
-		msg_ok "Stopped Service"
+  if [[ -d /opt/open-webui ]]; then
+    msg_warn "Legacy installation detected — migrating to uv based install..."
+    msg_info "Stopping Service"
+    systemctl stop open-webui
+    msg_ok "Stopped Service"
 
-		msg_info "Creating Backup"
-		mkdir -p /opt/open-webui-backup
-		cp -a /opt/open-webui/backend/data /opt/open-webui-backup/data || true
-		cp -a /opt/open-webui/.env /opt/open-webui-backup/.env || true
-		msg_ok "Created Backup"
+    msg_info "Creating Backup"
+    mkdir -p /opt/open-webui-backup
+    cp -a /opt/open-webui/backend/data /opt/open-webui-backup/data || true
+    cp -a /opt/open-webui/.env /opt/open-webui-backup/.env || true
+    msg_ok "Created Backup"
 
-		msg_info "Removing legacy installation"
-		rm -rf /opt/open-webui
-		rm -rf /root/.open-webui || true
-		msg_ok "Removed legacy installation"
+    msg_info "Removing legacy installation"
+    rm -rf /opt/open-webui
+    rm -rf /root/.open-webui || true
+    msg_ok "Removed legacy installation"
 
-		msg_info "Installing uv-based Open-WebUI"
-		PYTHON_VERSION="3.12" setup_uv
-		$STD uv tool install --python 3.12 --constraint <(echo "numba>=0.60") open-webui[all]
-		msg_ok "Installed uv-based Open-WebUI"
+    msg_info "Installing uv-based Open-WebUI"
+    PYTHON_VERSION="3.12" setup_uv
+    $STD uv tool install --python 3.12 --constraint <(echo "numba>=0.60") open-webui[all]
+    msg_ok "Installed uv-based Open-WebUI"
 
-		msg_info "Restoring data"
-		mkdir -p /root/.open-webui
-		cp -a /opt/open-webui-backup/data/* /root/.open-webui/ || true
-		cp -a /opt/open-webui-backup/.env /root/.env || true
-		rm -rf /opt/open-webui-backup || true
-		msg_ok "Restored data"
+    msg_info "Restoring data"
+    mkdir -p /root/.open-webui
+    cp -a /opt/open-webui-backup/data/* /root/.open-webui/ || true
+    cp -a /opt/open-webui-backup/.env /root/.env || true
+    rm -rf /opt/open-webui-backup || true
+    msg_ok "Restored data"
 
-		msg_info "Recreating Service"
-		cat <<EOF >/etc/systemd/system/open-webui.service
+    msg_info "Recreating Service"
+    cat <<EOF >/etc/systemd/system/open-webui.service
 [Unit]
 Description=Open WebUI Service
 After=network.target
@@ -79,54 +79,54 @@ User=root
 WantedBy=multi-user.target
 EOF
 
-		$STD systemctl daemon-reload
-		systemctl enable -q --now open-webui
-		msg_ok "Recreated Service"
+    $STD systemctl daemon-reload
+    systemctl enable -q --now open-webui
+    msg_ok "Recreated Service"
 
-		msg_ok "Migration completed"
-		exit 0
-	fi
+    msg_ok "Migration completed"
+    exit 0
+  fi
 
-	if [[ ! -d /root/.open-webui ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /root/.open-webui ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if [ -x "/usr/bin/ollama" ]; then
-		msg_info "Checking for Ollama Update"
-		if check_for_gh_release "ollama-com" "ollama/ollama"; then
-			msg_info "Stopping Ollama Service"
-			systemctl stop ollama
-			msg_ok "Stopped Service"
+  if [ -x "/usr/bin/ollama" ]; then
+    msg_info "Checking for Ollama Update"
+    if check_for_gh_release "ollama-com" "ollama/ollama"; then
+      msg_info "Stopping Ollama Service"
+      systemctl stop ollama
+      msg_ok "Stopped Service"
 
-			rm -rf /usr/lib/ollama /usr/bin/ollama
-			if ! fetch_and_deploy_gh_release "ollama-com" "ollama/ollama" "prebuild" "latest" "/usr/lib/ollama" "ollama-linux-$(arch_resolve).tar.zst"; then
-				msg_error "Ollama download or deployment failed – check network connectivity and GitHub API availability"
-			else
-				ln -sf /usr/lib/ollama/bin/ollama /usr/bin/ollama
-				msg_ok "Updated Ollama to ${CHECK_UPDATE_RELEASE}"
-			fi
+      rm -rf /usr/lib/ollama /usr/bin/ollama
+      if ! fetch_and_deploy_gh_release "ollama-com" "ollama/ollama" "prebuild" "latest" "/usr/lib/ollama" "ollama-linux-$(arch_resolve).tar.zst"; then
+        msg_error "Ollama download or deployment failed – check network connectivity and GitHub API availability"
+      else
+        ln -sf /usr/lib/ollama/bin/ollama /usr/bin/ollama
+        msg_ok "Updated Ollama to ${CHECK_UPDATE_RELEASE}"
+      fi
 
-			msg_info "Starting Ollama Service"
-			systemctl start ollama
-			msg_ok "Started Service"
-		fi
-	fi
+      msg_info "Starting Ollama Service"
+      systemctl start ollama
+      msg_ok "Started Service"
+    fi
+  fi
 
-	msg_info "Updating Open WebUI via uv"
-	PYTHON_VERSION="3.12" setup_uv
-	OWUI_PYTHON="/root/.local/share/uv/tools/open-webui/bin/python3.12"
-	OTEL_ARGS=()
-	if [[ -x "$OWUI_PYTHON" ]]; then
-		while IFS= read -r pkg; do
-			OTEL_ARGS+=(--with "$pkg")
-		done < <(uv pip list --python "$OWUI_PYTHON" --format freeze 2>/dev/null | grep -i '^opentelemetry-' | cut -d= -f1)
-	fi
-	$STD uv tool install --force --python 3.12 --constraint <(echo "numba>=0.60") "${OTEL_ARGS[@]}" open-webui[all]
-	systemctl restart open-webui
-	msg_ok "Updated Open WebUI"
-	msg_ok "Updated successfully!"
-	exit
+  msg_info "Updating Open WebUI via uv"
+  PYTHON_VERSION="3.12" setup_uv
+  OWUI_PYTHON="/root/.local/share/uv/tools/open-webui/bin/python3.12"
+  OTEL_ARGS=()
+  if [[ -x "$OWUI_PYTHON" ]]; then
+    while IFS= read -r pkg; do
+      OTEL_ARGS+=(--with "$pkg")
+    done < <(uv pip list --python "$OWUI_PYTHON" --format freeze 2>/dev/null | grep -i '^opentelemetry-' | cut -d= -f1)
+  fi
+  $STD uv tool install --force --python 3.12 --constraint <(echo "numba>=0.60") "${OTEL_ARGS[@]}" open-webui[all]
+  systemctl restart open-webui
+  msg_ok "Updated Open WebUI"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

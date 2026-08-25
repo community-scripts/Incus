@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,54 +25,54 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/kan ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/kan ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_tag "kan" "kanbn/kan"; then
-		msg_info "Stopping Service"
-		systemctl stop kan
-		msg_ok "Stopped Service"
+  if check_for_gh_tag "kan" "kanbn/kan"; then
+    msg_info "Stopping Service"
+    systemctl stop kan
+    msg_ok "Stopped Service"
 
-		create_backup /opt/kan/.env
+    create_backup /opt/kan/.env
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_tag "kan" "kanbn/kan" "latest"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_tag "kan" "kanbn/kan" "latest"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Building Application"
-		cd /opt/kan
-		set -a && source /opt/kan/.env && set +a
-		export NEXT_PUBLIC_USE_STANDALONE_OUTPUT=true
-		$STD pnpm install --ignore-scripts --prod=false
-		export CI=true
-		find /opt/kan/packages /opt/kan/apps -name 'tsconfig.json' -exec sed -i 's|"@kan/tsconfig/|"../../tooling/typescript/|g' {} +
-		$STD pnpm build --filter=@kan/web
-		unset NEXT_PUBLIC_USE_STANDALONE_OUTPUT CI
-		msg_ok "Built Application"
+    msg_info "Building Application"
+    cd /opt/kan
+    set -a && source /opt/kan/.env && set +a
+    export NEXT_PUBLIC_USE_STANDALONE_OUTPUT=true
+    $STD pnpm install --ignore-scripts --prod=false
+    export CI=true
+    find /opt/kan/packages /opt/kan/apps -name 'tsconfig.json' -exec sed -i 's|"@kan/tsconfig/|"../../tooling/typescript/|g' {} +
+    $STD pnpm build --filter=@kan/web
+    unset NEXT_PUBLIC_USE_STANDALONE_OUTPUT CI
+    msg_ok "Built Application"
 
-		msg_info "Setting up Standalone"
-		mkdir -p /opt/kan/apps/web/.next/standalone/apps/web/.next/static
-		cp -r /opt/kan/apps/web/.next/static/* /opt/kan/apps/web/.next/standalone/apps/web/.next/static/
-		cp -r /opt/kan/apps/web/public /opt/kan/apps/web/.next/standalone/apps/web/public
-		msg_ok "Set up Standalone"
+    msg_info "Setting up Standalone"
+    mkdir -p /opt/kan/apps/web/.next/standalone/apps/web/.next/static
+    cp -r /opt/kan/apps/web/.next/static/* /opt/kan/apps/web/.next/standalone/apps/web/.next/static/
+    cp -r /opt/kan/apps/web/public /opt/kan/apps/web/.next/standalone/apps/web/public
+    msg_ok "Set up Standalone"
 
-		msg_info "Running Database Migrations"
-		cd /opt/kan/packages/db
-		$STD pnpm exec drizzle-kit migrate
-		msg_ok "Ran Database Migrations"
+    msg_info "Running Database Migrations"
+    cd /opt/kan/packages/db
+    $STD pnpm exec drizzle-kit migrate
+    msg_ok "Ran Database Migrations"
 
-		msg_info "Starting Service"
-		systemctl start kan
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start kan
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

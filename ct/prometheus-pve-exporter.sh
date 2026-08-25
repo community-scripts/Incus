@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,42 +25,42 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /etc/systemd/system/prometheus-pve-exporter.service ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/systemd/system/prometheus-pve-exporter.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	msg_info "Stopping Service"
-	systemctl stop prometheus-pve-exporter
-	msg_ok "Stopped Service"
+  msg_info "Stopping Service"
+  systemctl stop prometheus-pve-exporter
+  msg_ok "Stopped Service"
 
-	export PVE_VENV_PATH="/opt/prometheus-pve-exporter/.venv"
-	export PVE_EXPORTER_BIN="${PVE_VENV_PATH}/bin/pve_exporter"
+  export PVE_VENV_PATH="/opt/prometheus-pve-exporter/.venv"
+  export PVE_EXPORTER_BIN="${PVE_VENV_PATH}/bin/pve_exporter"
 
-	if [[ ! -d "$PVE_VENV_PATH" || ! -x "$PVE_EXPORTER_BIN" ]]; then
-		PYTHON_VERSION="3.12" setup_uv
-		msg_info "Migrating to uv/venv"
-		rm -rf "$PVE_VENV_PATH"
-		mkdir -p /opt/prometheus-pve-exporter
-		cd /opt/prometheus-pve-exporter
-		$STD uv venv --clear "$PVE_VENV_PATH"
-		$STD "$PVE_VENV_PATH/bin/python" -m ensurepip --upgrade
-		$STD "$PVE_VENV_PATH/bin/python" -m pip install --upgrade pip
-		$STD "$PVE_VENV_PATH/bin/python" -m pip install prometheus-pve-exporter
-		msg_ok "Migrated to uv/venv"
-	else
-		msg_info "Updating Prometheus Proxmox VE Exporter"
-		PYTHON_VERSION="3.12" setup_uv
-		$STD "$PVE_VENV_PATH/bin/python" -m pip install --upgrade prometheus-pve-exporter
-		msg_ok "Updated Prometheus Proxmox VE Exporter"
-	fi
-	local service_file="/etc/systemd/system/prometheus-pve-exporter.service"
-	if ! grep -q "${PVE_VENV_PATH}/bin/pve_exporter" "$service_file"; then
-		msg_info "Updating systemd service"
-		cat <<EOF >"$service_file"
+  if [[ ! -d "$PVE_VENV_PATH" || ! -x "$PVE_EXPORTER_BIN" ]]; then
+    PYTHON_VERSION="3.12" setup_uv
+    msg_info "Migrating to uv/venv"
+    rm -rf "$PVE_VENV_PATH"
+    mkdir -p /opt/prometheus-pve-exporter
+    cd /opt/prometheus-pve-exporter
+    $STD uv venv --clear "$PVE_VENV_PATH"
+    $STD "$PVE_VENV_PATH/bin/python" -m ensurepip --upgrade
+    $STD "$PVE_VENV_PATH/bin/python" -m pip install --upgrade pip
+    $STD "$PVE_VENV_PATH/bin/python" -m pip install prometheus-pve-exporter
+    msg_ok "Migrated to uv/venv"
+  else
+    msg_info "Updating Prometheus Proxmox VE Exporter"
+    PYTHON_VERSION="3.12" setup_uv
+    $STD "$PVE_VENV_PATH/bin/python" -m pip install --upgrade prometheus-pve-exporter
+    msg_ok "Updated Prometheus Proxmox VE Exporter"
+  fi
+  local service_file="/etc/systemd/system/prometheus-pve-exporter.service"
+  if ! grep -q "${PVE_VENV_PATH}/bin/pve_exporter" "$service_file"; then
+    msg_info "Updating systemd service"
+    cat <<EOF >"$service_file"
 [Unit]
 Description=Prometheus Proxmox VE Exporter
 Documentation=https://github.com/znerol/prometheus-pve-exporter
@@ -75,16 +78,16 @@ ExecReload=/bin/kill -HUP \$MAINPID
 [Install]
 WantedBy=multi-user.target
 EOF
-		$STD systemctl daemon-reload
-		msg_ok "Updated systemd service"
-	fi
+    $STD systemctl daemon-reload
+    msg_ok "Updated systemd service"
+  fi
 
-	msg_info "Starting Service"
-	systemctl start prometheus-pve-exporter
-	msg_ok "Started Service"
+  msg_info "Starting Service"
+  systemctl start prometheus-pve-exporter
+  msg_ok "Started Service"
 
-	msg_ok "Updated successfully!"
-	exit 0
+  msg_ok "Updated successfully!"
+  exit 0
 }
 
 start

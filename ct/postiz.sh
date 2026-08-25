@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,49 +26,49 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/postiz ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/postiz ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "postiz" "gitroomhq/postiz-app"; then
-		msg_info "Stopping Services"
-		systemctl stop postiz-orchestrator postiz-frontend postiz-backend
-		msg_ok "Stopped Services"
+  if check_for_gh_release "postiz" "gitroomhq/postiz-app"; then
+    msg_info "Stopping Services"
+    systemctl stop postiz-orchestrator postiz-frontend postiz-backend
+    msg_ok "Stopped Services"
 
-		create_backup /opt/postiz/.env \
-			/opt/postiz/uploads
+    create_backup /opt/postiz/.env \
+      /opt/postiz/uploads
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "postiz" "gitroomhq/postiz-app" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "postiz" "gitroomhq/postiz-app" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Building Application"
-		cd /opt/postiz
-		set -a && source /opt/postiz/.env && set +a
-		export NODE_OPTIONS="--max-old-space-size=4096"
-		$STD pnpm install
-		$STD pnpm run build
-		unset NODE_OPTIONS
-		msg_ok "Built Application"
+    msg_info "Building Application"
+    cd /opt/postiz
+    set -a && source /opt/postiz/.env && set +a
+    export NODE_OPTIONS="--max-old-space-size=4096"
+    $STD pnpm install
+    $STD pnpm run build
+    unset NODE_OPTIONS
+    msg_ok "Built Application"
 
-		msg_info "Running Database Migrations"
-		cd /opt/postiz
-		$STD pnpm run prisma-db-push
-		msg_ok "Ran Database Migrations"
+    msg_info "Running Database Migrations"
+    cd /opt/postiz
+    $STD pnpm run prisma-db-push
+    msg_ok "Ran Database Migrations"
 
-		mkdir -p /opt/postiz/uploads
+    mkdir -p /opt/postiz/uploads
 
-		msg_info "Starting Services"
-		systemctl start postiz-backend postiz-frontend postiz-orchestrator
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start postiz-backend postiz-frontend postiz-orchestrator
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

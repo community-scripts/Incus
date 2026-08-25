@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -21,45 +24,45 @@ variables
 color
 catch_errors
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /etc/systemd/system/homebox.service ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if [[ -x /opt/homebox ]]; then
-		sed -i 's|WorkingDirectory=/opt$|WorkingDirectory=/opt/homebox|' /etc/systemd/system/homebox.service
-		sed -i 's|ExecStart=/opt/homebox$|ExecStart=/opt/homebox/homebox|' /etc/systemd/system/homebox.service
-		sed -i 's|EnvironmentFile=/opt/.env$|EnvironmentFile=/opt/homebox/.env|' /etc/systemd/system/homebox.service
-		systemctl daemon-reload
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/systemd/system/homebox.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if [[ -x /opt/homebox ]]; then
+    sed -i 's|WorkingDirectory=/opt$|WorkingDirectory=/opt/homebox|' /etc/systemd/system/homebox.service
+    sed -i 's|ExecStart=/opt/homebox$|ExecStart=/opt/homebox/homebox|' /etc/systemd/system/homebox.service
+    sed -i 's|EnvironmentFile=/opt/.env$|EnvironmentFile=/opt/homebox/.env|' /etc/systemd/system/homebox.service
+    systemctl daemon-reload
+  fi
 
-	if check_for_gh_release "homebox" "sysadminsmedia/homebox"; then
-		msg_info "Stopping Service"
-		systemctl stop homebox
-		msg_ok "Stopped Service"
+  if check_for_gh_release "homebox" "sysadminsmedia/homebox"; then
+    msg_info "Stopping Service"
+    systemctl stop homebox
+    msg_ok "Stopped Service"
 
-		create_backup /opt/homebox/.env /opt/homebox/.data
+    create_backup /opt/homebox/.env /opt/homebox/.data
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "homebox" "sysadminsmedia/homebox" "prebuild" "latest" "/opt/homebox" "homebox_Linux_$(arch_resolve "x86_64" "arm64").tar.gz"
-		chmod +x /opt/homebox/homebox
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "homebox" "sysadminsmedia/homebox" "prebuild" "latest" "/opt/homebox" "homebox_Linux_$(arch_resolve "x86_64" "arm64").tar.gz"
+    chmod +x /opt/homebox/homebox
 
-		restore_backup
-		[ -f /opt/.env ] && mv /opt/.env /opt/homebox/.env
-		[ -d /opt/.data ] && mv /opt/.data /opt/homebox/.data
+    restore_backup
+    [ -f /opt/.env ] && mv /opt/.env /opt/homebox/.env
+    [ -d /opt/.data ] && mv /opt/.data /opt/homebox/.data
 
-		if ! grep -q "HBOX_AUTH_API_KEY_PEPPER" /opt/homebox/.env; then
-			AUTH_KEY=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | cut -c1-32)
-			echo "HBOX_AUTH_API_KEY_PEPPER=${AUTH_KEY}" >>/opt/homebox/.env
-		fi
+    if ! grep -q "HBOX_AUTH_API_KEY_PEPPER" /opt/homebox/.env; then
+      AUTH_KEY=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | cut -c1-32)
+      echo "HBOX_AUTH_API_KEY_PEPPER=${AUTH_KEY}" >>/opt/homebox/.env
+    fi
 
-		msg_info "Starting Service"
-		systemctl start homebox
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start homebox
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -27,83 +30,83 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/pangolin ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/pangolin ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	ensure_dependencies build-essential python3
+  ensure_dependencies build-essential python3
 
-	if ! command -v psql &>/dev/null; then
-		msg_error "This installation uses SQLite and cannot be upgraded to Pangolin ${PANGOLIN_VERSION}."
-		echo -e "${INFO}${YW}Starting with Pangolin 1.20.0, PostgreSQL is required as the database backend.${CL}"
-		echo -e "${INFO}${YW}An automatic migration of your existing SQLite data is not supported.${CL}"
-		echo -e "${INFO}${YW}Please create a new LXC with the Pangolin install script, which sets up PostgreSQL automatically.${CL}"
-		echo -e "${INFO}${YW}Your current data is preserved in this container and can be manually migrated if needed.${CL}"
-		exit 1
-	fi
+  if ! command -v psql &>/dev/null; then
+    msg_error "This installation uses SQLite and cannot be upgraded to Pangolin ${PANGOLIN_VERSION}."
+    echo -e "${INFO}${YW}Starting with Pangolin 1.20.0, PostgreSQL is required as the database backend.${CL}"
+    echo -e "${INFO}${YW}An automatic migration of your existing SQLite data is not supported.${CL}"
+    echo -e "${INFO}${YW}Please create a new LXC with the Pangolin install script, which sets up PostgreSQL automatically.${CL}"
+    echo -e "${INFO}${YW}Your current data is preserved in this container and can be manually migrated if needed.${CL}"
+    exit 1
+  fi
 
-	NODE_VERSION="24" setup_nodejs
+  NODE_VERSION="24" setup_nodejs
 
-	if check_for_gh_release "pangolin" "fosrl/pangolin" "$PANGOLIN_VERSION" "Pinned to a tested release because Pangolin's schema changes have repeatedly broken unattended updates. To try a newer version at your own risk, run: 'export PANGOLIN_VERSION=<tag>' and re-run update. If it breaks, please open an issue at https://github.com/community-scripts/ProxmoxVE/issues with the error log."; then
-		msg_info "Stopping Service"
-		systemctl stop pangolin
-		systemctl stop gerbil
-		msg_info "Service stopped"
+  if check_for_gh_release "pangolin" "fosrl/pangolin" "$PANGOLIN_VERSION" "Pinned to a tested release because Pangolin's schema changes have repeatedly broken unattended updates. To try a newer version at your own risk, run: 'export PANGOLIN_VERSION=<tag>' and re-run update. If it breaks, please open an issue at https://github.com/community-scripts/ProxmoxVE/issues with the error log."; then
+    msg_info "Stopping Service"
+    systemctl stop pangolin
+    systemctl stop gerbil
+    msg_info "Service stopped"
 
-		DB_URL=$(sed -n 's/.*connection_string: "\(.*\)".*/\1/p' /opt/pangolin/config/config.yml)
-		create_backup /opt/pangolin/config
+    DB_URL=$(sed -n 's/.*connection_string: "\(.*\)".*/\1/p' /opt/pangolin/config/config.yml)
+    create_backup /opt/pangolin/config
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "pangolin" "fosrl/pangolin" "tarball" "$PANGOLIN_VERSION"
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gerbil" "fosrl/gerbil" "singlefile" "latest" "/usr/bin" "gerbil_linux_$(arch_resolve)"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "pangolin" "fosrl/pangolin" "tarball" "$PANGOLIN_VERSION"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gerbil" "fosrl/gerbil" "singlefile" "latest" "/usr/bin" "gerbil_linux_$(arch_resolve)"
 
-		msg_info "Updating Pangolin"
-		cd /opt/pangolin
-		$STD npm ci
-		$STD npm run set:pg
-		$STD npm run set:oss
-		rm -rf server/private
-		DATABASE_URL="$DB_URL" $STD npm run db:generate
-		$STD npm run build
-		$STD npm run build:cli
-		cp -R .next/standalone ./
-		cp -r server/migrations ./dist/init
-		chmod +x ./dist/cli.mjs
-		cp server/db/names.json ./dist/names.json
-		cp server/db/ios_models.json ./dist/ios_models.json
-		cp server/db/mac_models.json ./dist/mac_models.json
-		msg_ok "Updated Pangolin"
+    msg_info "Updating Pangolin"
+    cd /opt/pangolin
+    $STD npm ci
+    $STD npm run set:pg
+    $STD npm run set:oss
+    rm -rf server/private
+    DATABASE_URL="$DB_URL" $STD npm run db:generate
+    $STD npm run build
+    $STD npm run build:cli
+    cp -R .next/standalone ./
+    cp -r server/migrations ./dist/init
+    chmod +x ./dist/cli.mjs
+    cp server/db/names.json ./dist/names.json
+    cp server/db/ios_models.json ./dist/ios_models.json
+    cp server/db/mac_models.json ./dist/mac_models.json
+    msg_ok "Updated Pangolin"
 
-		restore_backup
+    restore_backup
 
-		if ! grep -q '^ExecStartPre=/usr/bin/node dist/migrations.mjs' /etc/systemd/system/pangolin.service 2>/dev/null; then
-			msg_info "Adding migration step to pangolin.service"
-			sed -i '/^ExecStart=\/usr\/bin\/node --enable-source-maps dist\/server.mjs/i ExecStartPre=/usr/bin/node dist/migrations.mjs' /etc/systemd/system/pangolin.service
-			systemctl daemon-reload
-			msg_ok "Updated pangolin.service"
-		fi
+    if ! grep -q '^ExecStartPre=/usr/bin/node dist/migrations.mjs' /etc/systemd/system/pangolin.service 2>/dev/null; then
+      msg_info "Adding migration step to pangolin.service"
+      sed -i '/^ExecStart=\/usr\/bin\/node --enable-source-maps dist\/server.mjs/i ExecStartPre=/usr/bin/node dist/migrations.mjs' /etc/systemd/system/pangolin.service
+      systemctl daemon-reload
+      msg_ok "Updated pangolin.service"
+    fi
 
-		msg_info "Running database migrations"
-		cd /opt/pangolin
-		ENVIRONMENT=prod $STD node dist/migrations.mjs
+    msg_info "Running database migrations"
+    cd /opt/pangolin
+    ENVIRONMENT=prod $STD node dist/migrations.mjs
 
-		msg_ok "Ran database migrations"
+    msg_ok "Ran database migrations"
 
-		msg_info "Updating Badger plugin version"
-		BADGER_VERSION=$(get_latest_github_release "fosrl/badger" "false")
-		sed -i "s/version: \"v[0-9.]*\"/version: \"$BADGER_VERSION\"/g" /opt/pangolin/config/traefik/traefik_config.yml
-		msg_ok "Updated Badger plugin version"
+    msg_info "Updating Badger plugin version"
+    BADGER_VERSION=$(get_latest_github_release "fosrl/badger" "false")
+    sed -i "s/version: \"v[0-9.]*\"/version: \"$BADGER_VERSION\"/g" /opt/pangolin/config/traefik/traefik_config.yml
+    msg_ok "Updated Badger plugin version"
 
-		msg_info "Starting Services"
-		systemctl start pangolin
-		systemctl start gerbil
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start pangolin
+    systemctl start gerbil
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

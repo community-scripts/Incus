@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,37 +25,37 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /etc/systemd/system/listmonk.service ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "listmonk" "knadh/listmonk"; then
-		msg_info "Stopping Service"
-		systemctl stop listmonk
-		msg_ok "Stopped Service"
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/systemd/system/listmonk.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "listmonk" "knadh/listmonk"; then
+    msg_info "Stopping Service"
+    systemctl stop listmonk
+    msg_ok "Stopped Service"
 
-		msg_info "Backing up data"
-		mv /opt/listmonk/ /opt/listmonk-backup
-		msg_ok "Backed up data"
+    msg_info "Backing up data"
+    mv /opt/listmonk/ /opt/listmonk-backup
+    msg_ok "Backed up data"
 
-		fetch_and_deploy_gh_release "listmonk" "knadh/listmonk" "prebuild" "latest" "/opt/listmonk" "listmonk*linux_$(arch_resolve).tar.gz"
+    fetch_and_deploy_gh_release "listmonk" "knadh/listmonk" "prebuild" "latest" "/opt/listmonk" "listmonk*linux_$(arch_resolve).tar.gz"
 
-		msg_info "Configuring listmonk"
-		mv /opt/listmonk-backup/config.toml /opt/listmonk/config.toml
-		mv /opt/listmonk-backup/uploads /opt/listmonk/uploads
-		$STD /opt/listmonk/listmonk --upgrade --yes --config /opt/listmonk/config.toml
-		rm -rf /opt/listmonk-backup/
-		msg_ok "Configured listmonk"
+    msg_info "Configuring listmonk"
+    mv /opt/listmonk-backup/config.toml /opt/listmonk/config.toml
+    mv /opt/listmonk-backup/uploads /opt/listmonk/uploads
+    $STD /opt/listmonk/listmonk --upgrade --yes --config /opt/listmonk/config.toml
+    rm -rf /opt/listmonk-backup/
+    msg_ok "Configured listmonk"
 
-		msg_info "Starting Service"
-		systemctl start listmonk
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start listmonk
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

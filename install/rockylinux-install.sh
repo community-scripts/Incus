@@ -3,7 +3,7 @@
 # Copyright (c) 2021-2026 community-scripts ORG
 # Author: MickLesk (CanbiZ)
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
-# Source: https://redis.io/
+# Source: https://rockylinux.org/
 
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
@@ -13,12 +13,6 @@ setting_up_container
 network_check
 update_os
 
-msg_info "Installing Redis"
-$STD apk add redis
-$STD sed -i 's/^bind .*/bind 0.0.0.0/' /etc/redis.conf
-$STD rc-update add redis default
-$STD rc-service redis start
-msg_ok "Installed Redis"
-
 motd_ssh
 customize
+cleanup_lxc

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,37 +25,37 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/signoz ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/signoz ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "signoz" "SigNoz/signoz"; then
-		msg_info "Stopping Services"
-		systemctl stop signoz
-		systemctl stop signoz-otel-collector
-		msg_ok "Stopped Services"
+  if check_for_gh_release "signoz" "SigNoz/signoz"; then
+    msg_info "Stopping Services"
+    systemctl stop signoz
+    systemctl stop signoz-otel-collector
+    msg_ok "Stopped Services"
 
-		fetch_and_deploy_gh_release "signoz" "SigNoz/signoz" "prebuild" "latest" "/opt/signoz" "signoz-community_linux_$(arch_resolve).tar.gz"
-		fetch_and_deploy_gh_release "signoz-otel-collector" "SigNoz/signoz-otel-collector" "prebuild" "latest" "/opt/signoz-otel-collector" "signoz-otel-collector_linux_$(arch_resolve).tar.gz"
-		fetch_and_deploy_gh_release "signoz-schema-migrator" "SigNoz/signoz-otel-collector" "prebuild" "latest" "/opt/signoz-schema-migrator" "signoz-schema-migrator_linux_$(arch_resolve).tar.gz"
+    fetch_and_deploy_gh_release "signoz" "SigNoz/signoz" "prebuild" "latest" "/opt/signoz" "signoz-community_linux_$(arch_resolve).tar.gz"
+    fetch_and_deploy_gh_release "signoz-otel-collector" "SigNoz/signoz-otel-collector" "prebuild" "latest" "/opt/signoz-otel-collector" "signoz-otel-collector_linux_$(arch_resolve).tar.gz"
+    fetch_and_deploy_gh_release "signoz-schema-migrator" "SigNoz/signoz-otel-collector" "prebuild" "latest" "/opt/signoz-schema-migrator" "signoz-schema-migrator_linux_$(arch_resolve).tar.gz"
 
-		msg_info "Updating SigNoz"
-		cd /opt/signoz-schema-migrator/bin
-		$STD ./signoz-schema-migrator sync --dsn="tcp://localhost:9000?password=" --replication=true --up=
-		$STD ./signoz-schema-migrator async --dsn="tcp://localhost:9000?password=" --replication=true --up=
-		msg_ok "Updated SigNoz"
+    msg_info "Updating SigNoz"
+    cd /opt/signoz-schema-migrator/bin 
+    $STD ./signoz-schema-migrator sync --dsn="tcp://localhost:9000?password=" --replication=true --up=
+    $STD ./signoz-schema-migrator async --dsn="tcp://localhost:9000?password=" --replication=true --up=
+    msg_ok "Updated SigNoz"
 
-		msg_info "Starting Services"
-		systemctl start signoz-otel-collector
-		systemctl start signoz
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start signoz-otel-collector
+    systemctl start signoz
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

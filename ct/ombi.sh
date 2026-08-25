@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,38 +25,38 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/ombi ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "ombi" "Ombi-app/Ombi"; then
-		msg_info "Stopping Service"
-		systemctl stop ombi
-		msg_ok "Stopped Service"
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/ombi ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "ombi" "Ombi-app/Ombi"; then
+    msg_info "Stopping Service"
+    systemctl stop ombi
+    msg_ok "Stopped Service"
 
-		msg_info "Creating backup"
-		[[ -f /opt/ombi/Ombi.db ]] && mv /opt/ombi/Ombi.db /opt
-		[[ -f /opt/ombi/OmbiExternal.db ]] && mv /opt/ombi/OmbiExternal.db /opt
-		[[ -f /opt/ombi/OmbiSettings.db ]] && mv /opt/ombi/OmbiSettings.db /opt
-		[[ -f /opt/ombi/database.json ]] && mv /opt/ombi/database.json /opt
-		msg_ok "Backup created"
+    msg_info "Creating backup"
+    [[ -f /opt/ombi/Ombi.db ]] && mv /opt/ombi/Ombi.db /opt
+    [[ -f /opt/ombi/OmbiExternal.db ]] && mv /opt/ombi/OmbiExternal.db /opt
+    [[ -f /opt/ombi/OmbiSettings.db ]] && mv /opt/ombi/OmbiSettings.db /opt
+    [[ -f /opt/ombi/database.json ]] && mv /opt/ombi/database.json /opt
+    msg_ok "Backup created"
 
-		rm -rf /opt/ombi
-		fetch_and_deploy_gh_release "ombi" "Ombi-app/Ombi" "prebuild" "latest" "/opt/ombi" "linux-$(arch_resolve "x64" "arm64").tar.gz"
-		[[ -f /opt/Ombi.db ]] && mv /opt/Ombi.db /opt/ombi
-		[[ -f /opt/OmbiExternal.db ]] && mv /opt/OmbiExternal.db /opt/ombi
-		[[ -f /opt/OmbiSettings.db ]] && mv /opt/OmbiSettings.db /opt/ombi
-		[[ -f /opt/database.json ]] && mv /opt/database.json /opt/ombi
+    rm -rf /opt/ombi
+    fetch_and_deploy_gh_release "ombi" "Ombi-app/Ombi" "prebuild" "latest" "/opt/ombi" "linux-$(arch_resolve "x64" "arm64").tar.gz"
+    [[ -f /opt/Ombi.db ]] && mv /opt/Ombi.db /opt/ombi
+    [[ -f /opt/OmbiExternal.db ]] && mv /opt/OmbiExternal.db /opt/ombi
+    [[ -f /opt/OmbiSettings.db ]] && mv /opt/OmbiSettings.db /opt/ombi
+    [[ -f /opt/database.json ]] && mv /opt/database.json /opt/ombi
 
-		msg_info "Starting Service"
-		systemctl start ombi
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start ombi
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

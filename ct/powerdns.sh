@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,51 +26,51 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/poweradmin ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/poweradmin ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if [[ -f /opt/poweradmin/powerdns.db ]]; then
-		msg_info "Moving PowerDNS database out of the web root"
-		systemctl stop pdns apache2
-		mkdir -p /var/lib/powerdns
-		mv /opt/poweradmin/powerdns.db /var/lib/powerdns/powerdns.db
-		sed -i 's#/opt/poweradmin/powerdns.db#/var/lib/powerdns/powerdns.db#' \
-			/etc/powerdns/pdns.d/gsqlite3.conf /opt/poweradmin/config/settings.php
-		chown pdns:pdns /var/lib/powerdns/powerdns.db
-		chmod 664 /var/lib/powerdns/powerdns.db
-		systemctl start pdns apache2
-		msg_ok "Moved PowerDNS database out of the web root"
-	fi
+  if [[ -f /opt/poweradmin/powerdns.db ]]; then
+    msg_info "Moving PowerDNS database out of the web root"
+    systemctl stop pdns apache2
+    mkdir -p /var/lib/powerdns
+    mv /opt/poweradmin/powerdns.db /var/lib/powerdns/powerdns.db
+    sed -i 's#/opt/poweradmin/powerdns.db#/var/lib/powerdns/powerdns.db#' \
+      /etc/powerdns/pdns.d/gsqlite3.conf /opt/poweradmin/config/settings.php
+    chown pdns:pdns /var/lib/powerdns/powerdns.db
+    chmod 664 /var/lib/powerdns/powerdns.db
+    systemctl start pdns apache2
+    msg_ok "Moved PowerDNS database out of the web root"
+  fi
 
-	msg_info "Updating PowerDNS"
-	$STD apt update
-	$STD apt install -y --only-upgrade pdns-server pdns-backend-sqlite3
-	msg_ok "Updated PowerDNS"
+  msg_info "Updating PowerDNS"
+  $STD apt update
+  $STD apt install -y --only-upgrade pdns-server pdns-backend-sqlite3
+  msg_ok "Updated PowerDNS"
 
-	if check_for_gh_release "poweradmin" "poweradmin/poweradmin"; then
-		create_backup /opt/poweradmin/config/settings.php
+  if check_for_gh_release "poweradmin" "poweradmin/poweradmin"; then
+    create_backup /opt/poweradmin/config/settings.php
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "poweradmin" "poweradmin/poweradmin" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "poweradmin" "poweradmin/poweradmin" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Updating Poweradmin"
-		rm -rf /opt/poweradmin/install
-		chown -R www-data:pdns /opt/poweradmin
-		chmod 775 /opt/poweradmin
-		msg_ok "Updated Poweradmin"
+    msg_info "Updating Poweradmin"
+    rm -rf /opt/poweradmin/install
+    chown -R www-data:pdns /opt/poweradmin
+    chmod 775 /opt/poweradmin
+    msg_ok "Updated Poweradmin"
 
-		msg_info "Restarting Services"
-		systemctl restart pdns apache2
-		msg_ok "Restarted Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Restarting Services"
+    systemctl restart pdns apache2
+    msg_ok "Restarted Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

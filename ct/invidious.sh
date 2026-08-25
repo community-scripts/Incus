@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,49 +26,49 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/invidious ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/invidious ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "Invidious" "iv-org/invidious"; then
-		msg_info "Stopping services"
-		$STD systemctl stop invidious-companion invidious
-		msg_ok "Stopped services"
+  if check_for_gh_release "Invidious" "iv-org/invidious"; then
+    msg_info "Stopping services"
+    $STD systemctl stop invidious-companion invidious
+    msg_ok "Stopped services"
 
-		create_backup /opt/invidious/config/config.yml
+    create_backup /opt/invidious/config/config.yml
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Invidious" "iv-org/invidious" "tarball" "latest" "/opt/invidious"
-		if check_for_gh_release "Invidious-Companion" "iv-org/invidious-companion"; then
-			CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Invidious-Companion" "iv-org/invidious-companion" "prebuild" "latest" "/opt/invidious-companion" "invidious_companion-$(arch_resolve x86_64 aarch64)-unknown-linux-gnu.tar.gz"
-		fi
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Invidious" "iv-org/invidious" "tarball" "latest" "/opt/invidious"
+    if check_for_gh_release "Invidious-Companion" "iv-org/invidious-companion"; then
+      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Invidious-Companion" "iv-org/invidious-companion" "prebuild" "latest" "/opt/invidious-companion" "invidious_companion-$(arch_resolve x86_64 aarch64)-unknown-linux-gnu.tar.gz"
+    fi
 
-		msg_info "Rebuilding Invidious"
-		cd /opt/invidious
-		INVIDIOUS_VERSION="$(cat ~/.invidious 2>/dev/null || echo "unknown")"
-		INVIDIOUS_VERSION="${INVIDIOUS_VERSION#v}"
-		sed -i \
-			-e "s~^\(\s*CURRENT_BRANCH\s*=\).*~\1 \"master\"~" \
-			-e "s~^\(\s*CURRENT_COMMIT\s*=\).*~\1 \"\"~" \
-			-e "s~^\(\s*CURRENT_VERSION\s*=\).*~\1 \"${INVIDIOUS_VERSION}\"~" \
-			-e "s~^\(\s*CURRENT_TAG\s*=\).*~\1 \"${INVIDIOUS_VERSION}\"~" \
-			-e "s~^\(\s*ASSET_COMMIT\s*=\).*~\1 \"\"~" \
-			src/invidious.cr
-		$STD make
-		msg_ok "Rebuilt Invidious"
+    msg_info "Rebuilding Invidious"
+    cd /opt/invidious
+    INVIDIOUS_VERSION="$(cat ~/.invidious 2>/dev/null || echo "unknown")"
+    INVIDIOUS_VERSION="${INVIDIOUS_VERSION#v}"
+    sed -i \
+      -e "s~^\(\s*CURRENT_BRANCH\s*=\).*~\1 \"master\"~" \
+      -e "s~^\(\s*CURRENT_COMMIT\s*=\).*~\1 \"\"~" \
+      -e "s~^\(\s*CURRENT_VERSION\s*=\).*~\1 \"${INVIDIOUS_VERSION}\"~" \
+      -e "s~^\(\s*CURRENT_TAG\s*=\).*~\1 \"${INVIDIOUS_VERSION}\"~" \
+      -e "s~^\(\s*ASSET_COMMIT\s*=\).*~\1 \"\"~" \
+      src/invidious.cr
+    $STD make
+    msg_ok "Rebuilt Invidious"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Starting services"
-		$STD systemctl start invidious invidious-companion
-		msg_ok "Started services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting services"
+    $STD systemctl start invidious invidious-companion
+    msg_ok "Started services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

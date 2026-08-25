@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,52 +25,52 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/mediamanager ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/mediamanager ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	setup_uv
+  setup_uv
 
-	if check_for_gh_release "mediamanager" "maxdorninger/MediaManager"; then
-		msg_info "Stopping Service"
-		systemctl stop mediamanager
-		msg_ok "Stopped Service"
+  if check_for_gh_release "mediamanager" "maxdorninger/MediaManager"; then
+    msg_info "Stopping Service"
+    systemctl stop mediamanager
+    msg_ok "Stopped Service"
 
-		fetch_and_deploy_gh_release "MediaManager" "maxdorninger/MediaManager" "tarball" "latest" "/opt/mediamanager"
-		msg_info "Updating MediaManager"
-		MM_DIR="/opt/mm"
-		export CONFIG_DIR="${MM_DIR}/config"
-		export FRONTEND_FILES_DIR="${MM_DIR}/web/build"
-		export PUBLIC_VERSION=""
-		export PUBLIC_API_URL=""
-		export BASE_PATH="/web"
-		cd /opt/mediamanager/web
-		$STD npm install --no-fund --no-audit
-		$STD npm run build
-		rm -rf "$FRONTEND_FILES_DIR"/build
-		cp -r build "$FRONTEND_FILES_DIR"
-		export BASE_PATH=""
-		export VIRTUAL_ENV="/opt/${MM_DIR}/venv"
-		cd /opt/mediamanager
-		rm -rf "$MM_DIR"/{media_manager,alembic*}
-		cp -r {media_manager,alembic*} "$MM_DIR"
-		$STD /usr/local/bin/uv sync --locked --active -n -p cpython3.13 --managed-python
-		if ! grep -q "LOG_FILE" "$MM_DIR"/start.sh; then
-			sed -i "\|build\"$|a\export LOG_FILE=\"$CONFIG_DIR/media_manager.log\"" "$MM_DIR"/start.sh
-		fi
+    fetch_and_deploy_gh_release "MediaManager" "maxdorninger/MediaManager" "tarball" "latest" "/opt/mediamanager"
+    msg_info "Updating MediaManager"
+    MM_DIR="/opt/mm"
+    export CONFIG_DIR="${MM_DIR}/config"
+    export FRONTEND_FILES_DIR="${MM_DIR}/web/build"
+    export PUBLIC_VERSION=""
+    export PUBLIC_API_URL=""
+    export BASE_PATH="/web"
+    cd /opt/mediamanager/web 
+    $STD npm install --no-fund --no-audit
+    $STD npm run build
+    rm -rf "$FRONTEND_FILES_DIR"/build
+    cp -r build "$FRONTEND_FILES_DIR"
+    export BASE_PATH=""
+    export VIRTUAL_ENV="/opt/${MM_DIR}/venv"
+    cd /opt/mediamanager 
+    rm -rf "$MM_DIR"/{media_manager,alembic*}
+    cp -r {media_manager,alembic*} "$MM_DIR"
+    $STD /usr/local/bin/uv sync --locked --active -n -p cpython3.13 --managed-python
+    if ! grep -q "LOG_FILE" "$MM_DIR"/start.sh; then
+      sed -i "\|build\"$|a\export LOG_FILE=\"$CONFIG_DIR/media_manager.log\"" "$MM_DIR"/start.sh
+    fi
 
-		msg_ok "Updated MediaManager"
+    msg_ok "Updated MediaManager"
 
-		msg_info "Starting Service"
-		systemctl start mediamanager
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start mediamanager
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,34 +25,34 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -f /etc/docspell-restserver/docspell-server.conf ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -f /etc/docspell-restserver/docspell-server.conf ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "docspell-joex" "eikek/docspell"; then
-		msg_info "Stopping Services"
-		systemctl stop docspell-joex docspell-restserver
-		msg_ok "Stopped Services"
+  if check_for_gh_release "docspell-joex" "eikek/docspell"; then
+    msg_info "Stopping Services"
+    systemctl stop docspell-joex docspell-restserver
+    msg_ok "Stopped Services"
 
-		create_backup /etc/docspell-joex/docspell-joex.conf \
-			/etc/docspell-restserver/docspell-server.conf
+    create_backup /etc/docspell-joex/docspell-joex.conf \
+      /etc/docspell-restserver/docspell-server.conf
 
-		DPKG_FORCE_CONFOLD=1 fetch_and_deploy_gh_release "docspell-joex" "eikek/docspell" "binary" "latest" "/opt/docspell" "docspell-joex_*_all.deb"
-		DPKG_FORCE_CONFOLD=1 fetch_and_deploy_gh_release "docspell-restserver" "eikek/docspell" "binary" "latest" "/opt/docspell" "docspell-restserver_*_all.deb"
+    DPKG_FORCE_CONFOLD=1 fetch_and_deploy_gh_release "docspell-joex" "eikek/docspell" "binary" "latest" "/opt/docspell" "docspell-joex_*_all.deb"
+    DPKG_FORCE_CONFOLD=1 fetch_and_deploy_gh_release "docspell-restserver" "eikek/docspell" "binary" "latest" "/opt/docspell" "docspell-restserver_*_all.deb"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Starting Services"
-		systemctl start docspell-restserver docspell-joex
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start docspell-restserver docspell-joex
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

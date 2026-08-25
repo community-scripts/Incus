@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,45 +25,45 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/traccar ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/traccar ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "traccar" "traccar/traccar"; then
-		msg_info "Stopping Service"
-		systemctl stop traccar
-		msg_ok "Stopped Service"
+  if check_for_gh_release "traccar" "traccar/traccar"; then
+    msg_info "Stopping Service"
+    systemctl stop traccar
+    msg_ok "Stopped Service"
 
-		msg_info "Creating backup"
-		mv /opt/traccar/conf/traccar.xml /opt
-		[[ -d /opt/traccar/data ]] && mv /opt/traccar/data /opt
-		[[ -d /opt/traccar/media ]] && mv /opt/traccar/media /opt
-		msg_ok "Backup created"
+    msg_info "Creating backup"
+    mv /opt/traccar/conf/traccar.xml /opt
+    [[ -d /opt/traccar/data ]] && mv /opt/traccar/data /opt
+    [[ -d /opt/traccar/media ]] && mv /opt/traccar/media /opt
+    msg_ok "Backup created"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "traccar" "traccar/traccar" "prebuild" "latest" "/opt/traccar" "traccar-linux-$(arch_resolve "64*" "arm-*").zip"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "traccar" "traccar/traccar" "prebuild" "latest" "/opt/traccar" "traccar-linux-$(arch_resolve "64*" "arm-*").zip"
 
-		msg_info "Perform Update"
-		cd /opt/traccar
-		$STD ./traccar.run
-		msg_ok "App-Update completed"
+    msg_info "Perform Update"
+    cd /opt/traccar
+    $STD ./traccar.run
+    msg_ok "App-Update completed"
 
-		msg_info "Restoring data"
-		mv /opt/traccar.xml /opt/traccar/conf
-		[[ -d /opt/data ]] && mv /opt/data /opt/traccar
-		[[ -d /opt/media ]] && mv /opt/media /opt/traccar
-		[ -f README.txt ] || [ -f traccar.run ] && rm -f README.txt traccar.run
-		msg_ok "Data restored"
+    msg_info "Restoring data"
+    mv /opt/traccar.xml /opt/traccar/conf
+    [[ -d /opt/data ]] && mv /opt/data /opt/traccar
+    [[ -d /opt/media ]] && mv /opt/media /opt/traccar
+    [ -f README.txt ] || [ -f traccar.run ] && rm -f README.txt traccar.run
+    msg_ok "Data restored"
 
-		msg_info "Starting Service"
-		systemctl start traccar
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start traccar
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

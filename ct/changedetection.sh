@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
-# Author: tteck (tteckster)
+# Author: tteck (tteckster) | Co-Author: CrazyWolf13, MickLesk
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://changedetection.io/ | Github: https://github.com/dgtlmoon/changedetection.io
 
@@ -12,7 +15,7 @@ var_cpu="${var_cpu:-4}"
 var_ram="${var_ram:-4096}"
 var_disk="${var_disk:-10}"
 var_os="${var_os:-debian}"
-var_version="${var_version:-12}"
+var_version="${var_version:-13}"
 var_arm64="${var_arm64:-yes}"
 var_unprivileged="${var_unprivileged:-1}"
 
@@ -22,70 +25,70 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -f /etc/systemd/system/changedetection.service ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -f /etc/systemd/system/changedetection.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	ensure_dependencies libjpeg-dev
+  ensure_dependencies libjpeg-dev
 
-	NODE_VERSION="24" setup_nodejs
+  NODE_VERSION="24" setup_nodejs
 
-	VENV_PATH="/opt/changedetection/.venv"
-	CHANGEDETECTION_BIN="${VENV_PATH}/bin/changedetection.io"
+  VENV_PATH="/opt/changedetection/.venv"
+  CHANGEDETECTION_BIN="${VENV_PATH}/bin/changedetection.io"
 
-	PYTHON_VERSION="3.13" setup_uv
+  PYTHON_VERSION="3.13" setup_uv
 
-	if [[ ! -d "$VENV_PATH" || ! -x "$CHANGEDETECTION_BIN" ]]; then
-		msg_info "Migrating to uv/venv"
-		rm -rf "$VENV_PATH"
-		$STD uv venv --clear "$VENV_PATH"
-		$STD "$VENV_PATH/bin/python" -m ensurepip --upgrade
-		$STD "$VENV_PATH/bin/python" -m pip install --upgrade pip
-		$STD "$VENV_PATH/bin/python" -m pip install changedetection.io playwright
-		msg_ok "Migrated to uv/venv"
-	else
-		msg_info "Updating ${APP}"
-		$STD "$VENV_PATH/bin/python" -m pip install --upgrade changedetection.io playwright
-		msg_ok "Updated ${APP}"
-	fi
+  if [[ ! -d "$VENV_PATH" || ! -x "$CHANGEDETECTION_BIN" ]]; then
+    msg_info "Migrating to uv/venv"
+    rm -rf "$VENV_PATH"
+    $STD uv venv --clear "$VENV_PATH"
+    $STD "$VENV_PATH/bin/python" -m ensurepip --upgrade
+    $STD "$VENV_PATH/bin/python" -m pip install --upgrade pip
+    $STD "$VENV_PATH/bin/python" -m pip install changedetection.io playwright
+    msg_ok "Migrated to uv/venv"
+  else
+    msg_info "Updating ${APP}"
+    $STD "$VENV_PATH/bin/python" -m pip install --upgrade changedetection.io playwright
+    msg_ok "Updated ${APP}"
+  fi
 
-	SERVICE_FILE="/etc/systemd/system/changedetection.service"
-	if ! grep -q "${VENV_PATH}/bin/changedetection.io" "$SERVICE_FILE"; then
-		msg_info "Updating systemd service"
-		sed -i "s|^ExecStart=.*|ExecStart=${VENV_PATH}/bin/changedetection.io -d /opt/changedetection -p 5000|" "$SERVICE_FILE"
-		$STD systemctl daemon-reload
-		msg_ok "Updated systemd service"
-	fi
+  SERVICE_FILE="/etc/systemd/system/changedetection.service"
+  if ! grep -q "${VENV_PATH}/bin/changedetection.io" "$SERVICE_FILE"; then
+    msg_info "Updating systemd service"
+    sed -i "s|^ExecStart=.*|ExecStart=${VENV_PATH}/bin/changedetection.io -d /opt/changedetection -p 5000|" "$SERVICE_FILE"
+    $STD systemctl daemon-reload
+    msg_ok "Updated systemd service"
+  fi
 
-	if [[ -f /etc/systemd/system/browserless.service ]]; then
-		msg_info "Updating Browserless (Patience)"
-		$STD git -C /opt/browserless/ fetch --all
-		$STD git -C /opt/browserless/ reset --hard origin/main
-		$STD npm update --prefix /opt/browserless
-		$STD npm ci --include=optional --include=dev --prefix /opt/browserless
-		$STD /opt/browserless/node_modules/playwright-core/cli.js install --with-deps
-		# Update Chrome separately, as it has to be done with the force option. Otherwise the installation of other browsers will not be done if Chrome is already installed.
-		$STD /opt/browserless/node_modules/playwright-core/cli.js install --force chrome
-		$STD /opt/browserless/node_modules/playwright-core/cli.js install --force msedge
-		$STD /opt/browserless/node_modules/playwright-core/cli.js install chromium firefox webkit
-		$STD npm install --prefix /opt/browserless esbuild typescript ts-node @types/node --save-dev
-		$STD npm run build --prefix /opt/browserless
-		$STD npm run build:function --prefix /opt/browserless
-		$STD npm prune production --prefix /opt/browserless
-		systemctl restart browserless
-		msg_ok "Updated Browserless"
-	else
-		msg_error "No Browserless Installation Found!"
-	fi
+  if [[ -f /etc/systemd/system/browserless.service ]]; then
+    msg_info "Updating Browserless (Patience)"
+    $STD git -C /opt/browserless/ fetch --all
+    $STD git -C /opt/browserless/ reset --hard origin/main
+    $STD npm update --prefix /opt/browserless
+    $STD npm ci --include=optional --include=dev --prefix /opt/browserless
+    $STD /opt/browserless/node_modules/playwright-core/cli.js install --with-deps
+    # Update Chrome separately, as it has to be done with the force option. Otherwise the installation of other browsers will not be done if Chrome is already installed.
+    $STD /opt/browserless/node_modules/playwright-core/cli.js install --force chrome
+    $STD /opt/browserless/node_modules/playwright-core/cli.js install --force msedge
+    $STD /opt/browserless/node_modules/playwright-core/cli.js install chromium firefox webkit
+    $STD npm install --prefix /opt/browserless esbuild typescript ts-node @types/node --save-dev
+    $STD npm run build --prefix /opt/browserless
+    $STD npm run build:function --prefix /opt/browserless
+    $STD npm prune production --prefix /opt/browserless
+    systemctl restart browserless
+    msg_ok "Updated Browserless"
+  else
+    msg_error "No Browserless Installation Found!"
+  fi
 
-	systemctl restart changedetection
-	msg_ok "Updated successfully!"
-	exit
+  systemctl restart changedetection
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

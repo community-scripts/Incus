@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2025 community-scripts ORG
@@ -23,38 +26,38 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	msg_info "Updating Container OS"
-	$STD apt update
-	$STD apt upgrade -y
-	msg_ok "Updated Container OS"
+  msg_info "Updating Container OS"
+  $STD apt update
+  $STD apt upgrade -y
+  msg_ok "Updated Container OS"
 
-	if [[ ! -d /opt/tor-snowflake ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/tor-snowflake ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if GITLAB_URL="https://gitlab.torproject.org" check_for_gl_release "tor-snowflake" "tpo/anti-censorship/pluggable-transports/snowflake"; then
-		msg_info "Stopping Service"
-		systemctl stop snowflake-proxy
-		msg_ok "Stopped Service"
+  if GITLAB_URL="https://gitlab.torproject.org" check_for_gl_release "tor-snowflake" "tpo/anti-censorship/pluggable-transports/snowflake"; then
+    msg_info "Stopping Service"
+    systemctl stop snowflake-proxy
+    msg_ok "Stopped Service"
 
-		CLEAN_INSTALL=1 GITLAB_URL="https://gitlab.torproject.org" fetch_and_deploy_gl_release "tor-snowflake" "tpo/anti-censorship/pluggable-transports/snowflake" "tarball"
+    CLEAN_INSTALL=1 GITLAB_URL="https://gitlab.torproject.org" fetch_and_deploy_gl_release "tor-snowflake" "tpo/anti-censorship/pluggable-transports/snowflake" "tarball"
 
-		msg_info "Building Snowflake"
-		cd /opt/tor-snowflake/proxy
-		$STD go build -o snowflake-proxy .
-		msg_ok "Built Snowflake"
+    msg_info "Building Snowflake"
+    cd /opt/tor-snowflake/proxy
+    $STD go build -o snowflake-proxy .
+    msg_ok "Built Snowflake"
 
-		msg_info "Starting Service"
-		systemctl start snowflake-proxy
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start snowflake-proxy
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start
@@ -62,3 +65,4 @@ build_container
 description
 
 msg_ok "Completed Successfully!\n"
+

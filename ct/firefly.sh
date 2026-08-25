@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,77 +25,77 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/firefly ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/firefly ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	setup_mariadb
-	PHP_VERSION="8.5" PHP_APACHE="YES" setup_php
+  setup_mariadb
+  PHP_VERSION="8.5" PHP_APACHE="YES" setup_php
 
-	if check_for_gh_release "firefly" "firefly-iii/firefly-iii"; then
-		systemctl stop apache2
-		cp /opt/firefly/.env /opt/.env
-		rm -rf /opt/storage
-		cp -r /opt/firefly/storage /opt/storage
+  if check_for_gh_release "firefly" "firefly-iii/firefly-iii"; then
+    systemctl stop apache2
+    cp /opt/firefly/.env /opt/.env
+    rm -rf /opt/storage
+    cp -r /opt/firefly/storage /opt/storage
 
-		if [[ -d /opt/firefly/dataimporter ]]; then
-			cp /opt/firefly/dataimporter/.env /opt/dataimporter.env
-			IMPORTER_INSTALLED=1
-		fi
+    if [[ -d /opt/firefly/dataimporter ]]; then
+      cp /opt/firefly/dataimporter/.env /opt/dataimporter.env
+      IMPORTER_INSTALLED=1
+    fi
 
-		fetch_and_deploy_gh_release "firefly" "firefly-iii/firefly-iii" "prebuild" "latest" "/opt/firefly" "FireflyIII-*.zip"
-		setup_composer
+    fetch_and_deploy_gh_release "firefly" "firefly-iii/firefly-iii" "prebuild" "latest" "/opt/firefly" "FireflyIII-*.zip"
+    setup_composer
 
-		msg_info "Updating Firefly"
-		rm -rf /opt/firefly/storage
-		cp -r /opt/storage /opt/firefly/storage
-		cp /opt/.env /opt/firefly/.env
+    msg_info "Updating Firefly"
+    rm -rf /opt/firefly/storage
+    cp -r /opt/storage /opt/firefly/storage
+    cp /opt/.env /opt/firefly/.env
 
-		chown -R www-data:www-data /opt/firefly
-		chmod -R 775 /opt/firefly/storage
-		mkdir -p /opt/firefly/storage/framework/cache/data
-		mkdir -p /opt/firefly/storage/framework/sessions
-		mkdir -p /opt/firefly/storage/framework/views
-		mkdir -p /opt/firefly/storage/logs
-		mkdir -p /opt/firefly/bootstrap/cache
-		chown -R www-data:www-data /opt/firefly/{storage,bootstrap/cache}
-		cd /opt/firefly
-		$STD runuser -u www-data -- composer install --no-dev --optimize-autoloader
-		$STD runuser -u www-data -- composer dump-autoload -o
+    chown -R www-data:www-data /opt/firefly
+    chmod -R 775 /opt/firefly/storage
+    mkdir -p /opt/firefly/storage/framework/cache/data
+    mkdir -p /opt/firefly/storage/framework/sessions
+    mkdir -p /opt/firefly/storage/framework/views
+    mkdir -p /opt/firefly/storage/logs
+    mkdir -p /opt/firefly/bootstrap/cache
+    chown -R www-data:www-data /opt/firefly/{storage,bootstrap/cache}
+    cd /opt/firefly
+    $STD runuser -u www-data -- composer install --no-dev --optimize-autoloader
+    $STD runuser -u www-data -- composer dump-autoload -o
 
-		$STD runuser -u www-data -- php artisan cache:clear
-		$STD runuser -u www-data -- php artisan config:clear
-		$STD runuser -u www-data -- php artisan route:clear
-		$STD runuser -u www-data -- php artisan view:clear
+    $STD runuser -u www-data -- php artisan cache:clear
+    $STD runuser -u www-data -- php artisan config:clear
+    $STD runuser -u www-data -- php artisan route:clear
+    $STD runuser -u www-data -- php artisan view:clear
 
-		$STD runuser -u www-data -- php artisan migrate --seed --force
-		$STD runuser -u www-data -- php artisan firefly-iii:upgrade-database
-		$STD runuser -u www-data -- php artisan firefly-iii:laravel-passport-keys
+    $STD runuser -u www-data -- php artisan migrate --seed --force
+    $STD runuser -u www-data -- php artisan firefly-iii:upgrade-database
+    $STD runuser -u www-data -- php artisan firefly-iii:laravel-passport-keys
 
-		$STD runuser -u www-data -- php artisan storage:link || true
-		$STD runuser -u www-data -- php artisan optimize
-		msg_ok "Updated Firefly"
+    $STD runuser -u www-data -- php artisan storage:link || true
+    $STD runuser -u www-data -- php artisan optimize
+    msg_ok "Updated Firefly"
 
-		if [[ "${IMPORTER_INSTALLED:-0}" -eq 1 ]]; then
-			CLEAN_INSTALL=1 fetch_and_deploy_gh_release "dataimporter" "firefly-iii/data-importer" "prebuild" "latest" "/opt/firefly/dataimporter" "DataImporter-v*.tar.gz"
+    if [[ "${IMPORTER_INSTALLED:-0}" -eq 1 ]]; then
+      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "dataimporter" "firefly-iii/data-importer" "prebuild" "latest" "/opt/firefly/dataimporter" "DataImporter-v*.tar.gz"
 
-			msg_info "Updating Firefly Importer"
-			if [[ -f /opt/dataimporter.env ]]; then
-				cp /opt/dataimporter.env /opt/firefly/dataimporter/.env
-			fi
-			chown -R www-data:www-data /opt/firefly/dataimporter
-			msg_ok "Updated Firefly Importer"
-		fi
-		rm -rf /opt/storage /opt/.env /opt/dataimporter.env
-		systemctl start apache2
-		msg_ok "Updated successfully!"
-	fi
-	exit
+      msg_info "Updating Firefly Importer"
+      if [[ -f /opt/dataimporter.env ]]; then
+        cp /opt/dataimporter.env /opt/firefly/dataimporter/.env
+      fi
+      chown -R www-data:www-data /opt/firefly/dataimporter
+      msg_ok "Updated Firefly Importer"
+    fi
+    rm -rf /opt/storage /opt/.env /opt/dataimporter.env
+    systemctl start apache2
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

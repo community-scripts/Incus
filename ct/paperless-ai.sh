@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,51 +25,51 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/paperless-ai ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/paperless-ai ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "paperless-ai" "clusterzx/paperless-ai"; then
-		msg_info "Stopping Service"
-		systemctl stop paperless-ai paperless-rag
-		msg_ok "Stopped Service"
+  if check_for_gh_release "paperless-ai" "clusterzx/paperless-ai"; then
+    msg_info "Stopping Service"
+    systemctl stop paperless-ai paperless-rag
+    msg_ok "Stopped Service"
 
-		msg_info "Backing up data"
-		cp -r /opt/paperless-ai/data /opt/paperless-ai-data-backup
-		msg_ok "Backed up data"
+    msg_info "Backing up data"
+    cp -r /opt/paperless-ai/data /opt/paperless-ai-data-backup
+    msg_ok "Backed up data"
 
-		fetch_and_deploy_gh_release "paperless-ai" "clusterzx/paperless-ai" "tarball"
+    fetch_and_deploy_gh_release "paperless-ai" "clusterzx/paperless-ai" "tarball"
 
-		msg_info "Restoring data"
-		cp -r /opt/paperless-ai-data-backup/* /opt/paperless-ai/data/
-		rm -rf /opt/paperless-ai-data-backup
-		msg_ok "Restored data"
+    msg_info "Restoring data"
+    cp -r /opt/paperless-ai-data-backup/* /opt/paperless-ai/data/
+    rm -rf /opt/paperless-ai-data-backup
+    msg_ok "Restored data"
 
-		msg_info "Updating Paperless-AI"
-		cd /opt/paperless-ai
-		if [[ ! -d /opt/paperless-ai/venv ]]; then
-			msg_info "Recreating Python venv"
-			$STD python3 -m venv /opt/paperless-ai/venv
-		fi
-		source /opt/paperless-ai/venv/bin/activate
-		$STD pip install --upgrade pip
-		$STD pip install --no-cache-dir -r requirements.txt
-		mkdir -p data/chromadb
-		$STD npm ci --only=production
-		msg_ok "Updated Paperless-AI"
+    msg_info "Updating Paperless-AI"
+    cd /opt/paperless-ai
+    if [[ ! -d /opt/paperless-ai/venv ]]; then
+      msg_info "Recreating Python venv"
+      $STD python3 -m venv /opt/paperless-ai/venv
+    fi
+    source /opt/paperless-ai/venv/bin/activate
+    $STD pip install --upgrade pip
+    $STD pip install --no-cache-dir -r requirements.txt
+    mkdir -p data/chromadb
+    $STD npm ci --only=production
+    msg_ok "Updated Paperless-AI"
 
-		msg_info "Starting Service"
-		systemctl start paperless-rag
-		sleep 3
-		systemctl start paperless-ai
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start paperless-rag
+    sleep 3
+    systemctl start paperless-ai
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

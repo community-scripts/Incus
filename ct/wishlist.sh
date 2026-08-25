@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -21,47 +24,47 @@ variables
 color
 catch_errors
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/wishlist ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/wishlist ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "wishlist" "cmintey/wishlist"; then
-		NODE_VERSION="24" NODE_MODULE="pnpm@11" setup_nodejs
+  if check_for_gh_release "wishlist" "cmintey/wishlist"; then
+    NODE_VERSION="24" NODE_MODULE="pnpm@11" setup_nodejs
 
-		msg_info "Stopping Service"
-		systemctl stop wishlist
-		msg_ok "Stopped Service"
+    msg_info "Stopping Service"
+    systemctl stop wishlist
+    msg_ok "Stopped Service"
 
-		create_backup /opt/wishlist/.env /opt/wishlist/uploads /opt/wishlist/data
+    create_backup /opt/wishlist/.env /opt/wishlist/uploads /opt/wishlist/data
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "wishlist" "cmintey/wishlist" "tarball"
-		LATEST_APP_VERSION=$(get_latest_github_release "cmintey/wishlist")
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "wishlist" "cmintey/wishlist" "tarball"
+    LATEST_APP_VERSION=$(get_latest_github_release "cmintey/wishlist")
 
-		restore_backup
+    restore_backup
 
-		msg_info "Updating Wishlist"
-		cd /opt/wishlist
-		$STD pnpm install --frozen-lockfile
-		$STD pnpm svelte-kit sync
-		$STD pnpm prisma generate
-		sed -i 's|/usr/src/app/|/opt/wishlist/|g' $(grep -rl '/usr/src/app/' /opt/wishlist)
-		export VERSION="v${LATEST_APP_VERSION}"
-		export SHA="v${LATEST_APP_VERSION}"
-		$STD pnpm run build
-		$STD pnpm prune --prod
-		chmod +x /opt/wishlist/entrypoint.sh
-
-		msg_ok "Updated Wishlist"
-		msg_info "Starting Service"
-		systemctl start wishlist
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Updating Wishlist"
+    cd /opt/wishlist
+    $STD pnpm install --frozen-lockfile
+    $STD pnpm svelte-kit sync
+    $STD pnpm prisma generate
+    sed -i 's|/usr/src/app/|/opt/wishlist/|g' $(grep -rl '/usr/src/app/' /opt/wishlist)
+    export VERSION="v${LATEST_APP_VERSION}"
+    export SHA="v${LATEST_APP_VERSION}"
+    $STD pnpm run build
+    $STD pnpm prune --prod
+    chmod +x /opt/wishlist/entrypoint.sh
+    
+    msg_ok "Updated Wishlist"
+    msg_info "Starting Service"
+    systemctl start wishlist
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

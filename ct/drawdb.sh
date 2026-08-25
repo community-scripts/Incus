@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,27 +25,27 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/drawdb ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/drawdb ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_tag "drawdb" "drawdb-io/drawdb"; then
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_tag "drawdb" "drawdb-io/drawdb" "latest" "/opt/drawdb"
+  if check_for_gh_tag "drawdb" "drawdb-io/drawdb"; then
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_tag "drawdb" "drawdb-io/drawdb" "latest" "/opt/drawdb"
 
-		msg_info "Rebuilding Frontend"
-		cd /opt/drawdb
-		$STD npm ci
-		NODE_OPTIONS="--max-old-space-size=4096" $STD npm run build
-		sed -i '/<head>/a <script>if(!crypto.randomUUID){crypto.randomUUID=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,function(c){return(c^(crypto.getRandomValues(new Uint8Array(1))[0]&(15>>c/4))).toString(16)})}};</script>' /opt/drawdb/dist/index.html
-		msg_ok "Rebuilt Frontend"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Rebuilding Frontend"
+    cd /opt/drawdb
+    $STD npm ci
+    NODE_OPTIONS="--max-old-space-size=4096" $STD npm run build
+    sed -i '/<head>/a <script>if(!crypto.randomUUID){crypto.randomUUID=function(){return([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,function(c){return(c^(crypto.getRandomValues(new Uint8Array(1))[0]&(15>>c/4))).toString(16)})}};</script>' /opt/drawdb/dist/index.html
+    msg_ok "Rebuilt Frontend"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

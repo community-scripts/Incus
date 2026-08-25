@@ -22,40 +22,40 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/uptime-kuma ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/uptime-kuma ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="22" setup_nodejs
+  NODE_VERSION="22" setup_nodejs
 
-	ensure_dependencies chromium
-	if [[ ! -L /opt/uptime-kuma/chromium ]]; then
-		ln -s /usr/bin/chromium /opt/uptime-kuma/chromium
-	fi
+  ensure_dependencies chromium
+  if [[ ! -L /opt/uptime-kuma/chromium ]]; then
+    ln -s /usr/bin/chromium /opt/uptime-kuma/chromium
+  fi
 
-	if check_for_gh_release "uptime-kuma" "louislam/uptime-kuma"; then
-		msg_info "Stopping Service"
-		systemctl stop uptime-kuma
-		msg_ok "Stopped Service"
+  if check_for_gh_release "uptime-kuma" "louislam/uptime-kuma"; then
+    msg_info "Stopping Service"
+    systemctl stop uptime-kuma
+    msg_ok "Stopped Service"
 
-		fetch_and_deploy_gh_release "uptime-kuma" "louislam/uptime-kuma" "tarball"
+    fetch_and_deploy_gh_release "uptime-kuma" "louislam/uptime-kuma" "tarball"
 
-		msg_info "Updating Uptime Kuma"
-		cd /opt/uptime-kuma
-		$STD npm install --omit dev
-		$STD npm run download-dist
-		msg_ok "Updated Uptime Kuma"
+    msg_info "Updating Uptime Kuma"
+    cd /opt/uptime-kuma
+    $STD npm install --omit dev
+    $STD npm run download-dist
+    msg_ok "Updated Uptime Kuma"
 
-		msg_info "Starting Service"
-		systemctl start uptime-kuma
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start uptime-kuma
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

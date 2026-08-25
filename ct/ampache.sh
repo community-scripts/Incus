@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,45 +25,45 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/ampache ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "Ampache" "ampache/ampache"; then
-		msg_info "Stopping Service"
-		systemctl stop apache2
-		msg_ok "Stopped Service"
+  if [[ ! -d /opt/ampache ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "Ampache" "ampache/ampache"; then
+    msg_info "Stopping Service"
+    systemctl stop apache2
+    msg_ok "Stopped Service"
 
-		create_backup /opt/ampache/config/ampache.cfg.php \
-			/opt/ampache/public/rest/.htaccess \
-			/opt/ampache/public/play/.htaccess \
-			/opt/ampache/advanced-config
+    create_backup /opt/ampache/config/ampache.cfg.php \
+      /opt/ampache/public/rest/.htaccess \
+      /opt/ampache/public/play/.htaccess \
+      /opt/ampache/advanced-config
 
-		if ! dpkg -l 2>/dev/null | grep -q "libapache2-mod-php8.5"; then
-			PHP_VERSION="8.5" PHP_APACHE="YES" setup_php
-			sed -i -e 's/upload_max_filesize = .*/upload_max_filesize = 100M/' \
-				-e 's/post_max_size = .*/post_max_size = 100M/' \
-				-e 's/max_execution_time = .*/max_execution_time = 600/' \
-				-e 's/memory_limit = .*/memory_limit = 512M/' /etc/php/8.5/apache2/php.ini
-		fi
+    if ! dpkg -l 2>/dev/null | grep -q "libapache2-mod-php8.5"; then
+      PHP_VERSION="8.5" PHP_APACHE="YES" setup_php
+      sed -i -e 's/upload_max_filesize = .*/upload_max_filesize = 100M/' \
+        -e 's/post_max_size = .*/post_max_size = 100M/' \
+        -e 's/max_execution_time = .*/max_execution_time = 600/' \
+        -e 's/memory_limit = .*/memory_limit = 512M/' /etc/php/8.5/apache2/php.ini
+    fi
 
-		fetch_and_deploy_gh_release "Ampache" "ampache/ampache" "prebuild" "latest" "/opt/ampache" "ampache-*_all_php8.5.zip"
+    fetch_and_deploy_gh_release "Ampache" "ampache/ampache" "prebuild" "latest" "/opt/ampache" "ampache-*_all_php8.5.zip"
 
-		restore_backup
-		chmod 664 /opt/ampache/public/rest/.htaccess /opt/ampache/public/play/.htaccess
-		chown -R www-data:www-data /opt/ampache
+    restore_backup
+    chmod 664 /opt/ampache/public/rest/.htaccess /opt/ampache/public/play/.htaccess
+    chown -R www-data:www-data /opt/ampache
 
-		msg_info "Starting Service"
-		systemctl start apache2
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-		msg_custom "⚠️" "${YW}" "Complete database update by visiting: http://${LOCAL_IP}/update.php"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start apache2
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+    msg_custom "⚠️" "${YW}" "Complete database update by visiting: http://${LOCAL_IP}/update.php"
+  fi
+  exit
 }
 
 start

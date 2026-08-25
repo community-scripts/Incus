@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,37 +25,37 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/matter-server ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/matter-server ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="24" setup_nodejs
+  NODE_VERSION="24" setup_nodejs
 
-	CURRENT=$(cat /opt/matter-server/node_modules/matter-server/package.json | grep '"version"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-	LATEST=$(npm view matter-server version 2>/dev/null)
-	if [[ $CURRENT != "$LATEST" ]]; then
-		msg_info "Stopping Service"
-		systemctl stop matterjs-server
-		msg_ok "Stopped Service"
+  CURRENT=$(cat /opt/matter-server/node_modules/matter-server/package.json | grep '"version"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+  LATEST=$(npm view matter-server version 2>/dev/null)
+  if [[ $CURRENT != "$LATEST" ]]; then
+    msg_info "Stopping Service"
+    systemctl stop matterjs-server
+    msg_ok "Stopped Service"
 
-		msg_info "Updating ${APP} from v${CURRENT} to v${LATEST}"
-		cd /opt/matter-server
-		$STD npm install matter-server@latest
-		msg_ok "Updated ${APP}"
+    msg_info "Updating ${APP} from v${CURRENT} to v${LATEST}"
+    cd /opt/matter-server
+    $STD npm install matter-server@latest
+    msg_ok "Updated ${APP}"
 
-		msg_info "Starting Service"
-		systemctl start matterjs-server
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	else
-		msg_ok "No update required. ${APP} is already at v${LATEST}"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start matterjs-server
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  else
+    msg_ok "No update required. ${APP} is already at v${LATEST}"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -24,71 +27,73 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/bar-assistant ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "bar-assistant" "karlomikus/bar-assistant"; then
-		msg_info "Stopping nginx"
-		systemctl stop nginx
-		msg_ok "Stopped nginx"
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/bar-assistant ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "bar-assistant" "karlomikus/bar-assistant"; then
+    msg_info "Stopping nginx"
+    systemctl stop nginx
+    msg_ok "Stopped nginx"
 
-		PHP_VERSION="8.4" PHP_FPM="YES" PHP_MODULE="pdo-sqlite" setup_php
+    PHP_VERSION="8.4" PHP_FPM="YES" PHP_MODULE="pdo-sqlite" setup_php
 
-		create_backup /opt/bar-assistant/.env \
-			/opt/bar-assistant/storage/bar-assistant
+    create_backup /opt/bar-assistant/.env \
+      /opt/bar-assistant/storage/bar-assistant
 
-		fetch_and_deploy_gh_release "bar-assistant" "karlomikus/bar-assistant" "tarball" "latest" "/opt/bar-assistant"
-		setup_composer
+    fetch_and_deploy_gh_release "bar-assistant" "karlomikus/bar-assistant" "tarball" "latest" "/opt/bar-assistant"
+    setup_composer
 
-		restore_backup
+    restore_backup
 
-		msg_info "Configuring Bar-Assistant"
-		cd /opt/bar-assistant
-		$STD composer install --no-interaction
-		$STD php artisan migrate --force
-		$STD php artisan storage:link
-		$STD php artisan bar:setup-meilisearch
-		$STD php artisan scout:sync-index-settings
-		$STD php artisan config:cache
-		$STD php artisan route:cache
-		$STD php artisan event:cache
-		chown -R www-data:www-data /opt/bar-assistant
-		msg_ok "Configured Bar-Assistant"
+    msg_info "Configuring Bar-Assistant"
+    cd /opt/bar-assistant
+    $STD composer install --no-interaction
+    $STD php artisan migrate --force
+    $STD php artisan storage:link
+    $STD php artisan bar:setup-meilisearch
+    $STD php artisan scout:sync-index-settings
+    $STD php artisan config:cache
+    $STD php artisan route:cache
+    $STD php artisan event:cache
+    chown -R www-data:www-data /opt/bar-assistant
+    msg_ok "Configured Bar-Assistant"
 
-		msg_info "Starting nginx"
-		systemctl start nginx
-		msg_ok "Started nginx"
-	fi
+    msg_info "Starting nginx"
+    systemctl start nginx
+    msg_ok "Started nginx"
+  fi
 
-	if check_for_gh_release "vue-salt-rim" "karlomikus/vue-salt-rim"; then
+  if check_for_gh_release "vue-salt-rim" "karlomikus/vue-salt-rim"; then
 
-		create_backup /opt/vue-salt-rim/public/config.js
+    create_backup /opt/vue-salt-rim/public/config.js
 
-		msg_info "Stopping nginx"
-		systemctl stop nginx
-		msg_ok "Stopped nginx"
+    msg_info "Stopping nginx"
+    systemctl stop nginx
+    msg_ok "Stopped nginx"
 
-		fetch_and_deploy_gh_release "vue-salt-rim" "karlomikus/vue-salt-rim" "tarball" "latest" "/opt/vue-salt-rim"
-		restore_backup
+    NODE_VERSION="22" NODE_MODULE="bun" setup_nodejs
 
-		msg_info "Configuring Vue Salt Rim"
-		cd /opt/vue-salt-rim
-		$STD npm install
-		$STD npm run build
-		msg_ok "Configured Vue Salt Rim"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "vue-salt-rim" "karlomikus/vue-salt-rim" "tarball" "latest" "/opt/vue-salt-rim"
+    restore_backup
 
-		msg_info "Starting nginx"
-		systemctl start nginx
-		msg_ok "Started nginx"
-	fi
+    msg_info "Configuring Vue Salt Rim"
+    cd /opt/vue-salt-rim
+    $STD bun install
+    $STD bun run build
+    msg_ok "Configured Vue Salt Rim"
 
-	setup_meilisearch
+    msg_info "Starting nginx"
+    systemctl start nginx
+    msg_ok "Started nginx"
+  fi
 
-	exit
+  setup_meilisearch
+
+  exit
 }
 
 start

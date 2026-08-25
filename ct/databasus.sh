@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,87 +25,87 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -f /opt/databasus/databasus ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -f /opt/databasus/databasus ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="24" NODE_MODULE="corepack" setup_nodejs
+  NODE_VERSION="24" NODE_MODULE="corepack" setup_nodejs
 
-	if check_for_gh_release "databasus" "databasus/databasus"; then
-		msg_info "Stopping Databasus"
-		$STD systemctl stop databasus
-		msg_ok "Stopped Databasus"
+  if check_for_gh_release "databasus" "databasus/databasus"; then
+    msg_info "Stopping Databasus"
+    $STD systemctl stop databasus
+    msg_ok "Stopped Databasus"
 
-		create_backup /opt/databasus/.env
+    create_backup /opt/databasus/.env
 
-		msg_info "Ensuring Database Clients"
-		# Create PostgreSQL version symlinks for compatibility
-		for v in 12 13 14 15 16 18; do
-			ln -sf /usr/lib/postgresql/17 /usr/lib/postgresql/$v
-		done
-		# Install MongoDB Database Tools via direct .deb (no APT repo for Debian 13)
-		if ! command -v mongodump &>/dev/null; then
-			[[ "$(get_os_info id)" == "ubuntu" ]] && MONGO_DIST="ubuntu2204" || MONGO_DIST="debian12"
-			MONGO_ARCH=$(arch_resolve "x86_64" "arm64")
-			# MongoDB only publishes arm64 builds for Ubuntu
-			[[ "$MONGO_ARCH" == "arm64" ]] && MONGO_DIST="ubuntu2204"
-			fetch_and_deploy_from_url "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-${MONGO_DIST}-${MONGO_ARCH}-100.16.1.deb"
-		fi
-		ensure_dependencies mariadb-client
-		mkdir -p /usr/local/mariadb-{10.6,12.1}/bin /usr/local/mysql-{5.7,8.0,8.4,9}/bin /usr/local/mongodb-database-tools/bin
-		[[ -f /usr/bin/mongodump ]] && ln -sf /usr/bin/mongodump /usr/local/mongodb-database-tools/bin/mongodump
-		[[ -f /usr/bin/mongorestore ]] && ln -sf /usr/bin/mongorestore /usr/local/mongodb-database-tools/bin/mongorestore
-		# Create MariaDB and MySQL client symlinks for compatibility
-		for dir in /usr/local/mariadb-{10.6,12.1}/bin; do
-			ln -sf /usr/bin/mariadb-dump "$dir/mariadb-dump"
-			ln -sf /usr/bin/mariadb "$dir/mariadb"
-		done
-		for dir in /usr/local/mysql-{5.7,8.0,8.4,9}/bin; do
-			ln -sf /usr/bin/mariadb-dump "$dir/mysqldump"
-			ln -sf /usr/bin/mariadb "$dir/mysql"
-		done
-		msg_ok "Ensured Database Clients"
+    msg_info "Ensuring Database Clients"
+    # Create PostgreSQL version symlinks for compatibility
+    for v in 12 13 14 15 16 18; do
+      ln -sf /usr/lib/postgresql/17 /usr/lib/postgresql/$v
+    done
+    # Install MongoDB Database Tools via direct .deb (no APT repo for Debian 13)
+    if ! command -v mongodump &>/dev/null; then
+      [[ "$(get_os_info id)" == "ubuntu" ]] && MONGO_DIST="ubuntu2204" || MONGO_DIST="debian12"
+      MONGO_ARCH=$(arch_resolve "x86_64" "arm64")
+      # MongoDB only publishes arm64 builds for Ubuntu
+      [[ "$MONGO_ARCH" == "arm64" ]] && MONGO_DIST="ubuntu2204"
+      fetch_and_deploy_from_url "https://fastdl.mongodb.org/tools/db/mongodb-database-tools-${MONGO_DIST}-${MONGO_ARCH}-100.16.1.deb"
+    fi
+    ensure_dependencies mariadb-client
+    mkdir -p /usr/local/mariadb-{10.6,12.1}/bin /usr/local/mysql-{5.7,8.0,8.4,9}/bin /usr/local/mongodb-database-tools/bin
+    [[ -f /usr/bin/mongodump ]] && ln -sf /usr/bin/mongodump /usr/local/mongodb-database-tools/bin/mongodump
+    [[ -f /usr/bin/mongorestore ]] && ln -sf /usr/bin/mongorestore /usr/local/mongodb-database-tools/bin/mongorestore
+    # Create MariaDB and MySQL client symlinks for compatibility
+    for dir in /usr/local/mariadb-{10.6,12.1}/bin; do
+      ln -sf /usr/bin/mariadb-dump "$dir/mariadb-dump"
+      ln -sf /usr/bin/mariadb "$dir/mariadb"
+    done
+    for dir in /usr/local/mysql-{5.7,8.0,8.4,9}/bin; do
+      ln -sf /usr/bin/mariadb-dump "$dir/mysqldump"
+      ln -sf /usr/bin/mariadb "$dir/mysql"
+    done
+    msg_ok "Ensured Database Clients"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "databasus" "databasus/databasus" "tarball" "latest" "/opt/databasus"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "databasus" "databasus/databasus" "tarball" "latest" "/opt/databasus"
 
-		msg_info "Updating Databasus"
-		export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-		cd /opt/databasus/frontend
+    msg_info "Updating Databasus"
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    cd /opt/databasus/frontend
 
-		$STD corepack prepare pnpm@latest --activate
-		$STD pnpm install --frozen-lockfile
-		$STD pnpm run build
-		cd /opt/databasus/backend
-		$STD go mod download
-		$STD /root/go/bin/swag init -g cmd/main.go -o swagger
-		$STD env CGO_ENABLED=0 GOOS=linux GOARCH=$(arch_resolve) go build -o databasus ./cmd
-		mv /opt/databasus/backend/databasus /opt/databasus/databasus
-		mkdir -p /opt/databasus/ui/build
-		cp -r /opt/databasus/frontend/dist/* /opt/databasus/ui/build/
-		cp -r /opt/databasus/backend/migrations /opt/databasus/
-		chown -R postgres:postgres /opt/databasus
-		msg_ok "Updated Databasus"
+    $STD corepack prepare pnpm@latest --activate
+    $STD pnpm install --frozen-lockfile
+    $STD pnpm run build
+    cd /opt/databasus/backend
+    $STD go mod download
+    $STD /root/go/bin/swag init -g cmd/main.go -o swagger
+    $STD env CGO_ENABLED=0 GOOS=linux GOARCH=$(arch_resolve) go build -o databasus ./cmd
+    mv /opt/databasus/backend/databasus /opt/databasus/databasus
+    mkdir -p /opt/databasus/ui/build
+    cp -r /opt/databasus/frontend/dist/* /opt/databasus/ui/build/
+    cp -r /opt/databasus/backend/migrations /opt/databasus/
+    chown -R postgres:postgres /opt/databasus
+    msg_ok "Updated Databasus"
 
-		restore_backup
+    restore_backup
 
-		if ! grep -q "EnvironmentFile=/.env" /etc/systemd/system/databasus.service; then
-			msg_info "Updating Service"
-			sed -i 's|EnvironmentFile=.*|EnvironmentFile=/.env|' /etc/systemd/system/databasus.service
-			$STD systemctl daemon-reload
-			msg_ok "Updated Service"
-		fi
+    if ! grep -q "EnvironmentFile=/.env" /etc/systemd/system/databasus.service; then
+      msg_info "Updating Service"
+      sed -i 's|EnvironmentFile=.*|EnvironmentFile=/.env|' /etc/systemd/system/databasus.service
+      $STD systemctl daemon-reload
+      msg_ok "Updated Service"
+    fi
 
-		msg_info "Starting Databasus"
-		$STD systemctl start databasus
-		msg_ok "Started Databasus"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Databasus"
+    $STD systemctl start databasus
+    msg_ok "Started Databasus"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

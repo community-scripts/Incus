@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -21,54 +24,54 @@ variables
 color
 catch_errors
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/tianji ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/tianji ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	setup_uv
-	if check_for_gh_release "tianji" "msgbyte/tianji"; then
-		NODE_VERSION="22" NODE_MODULE="pnpm@$(curl -s https://raw.githubusercontent.com/msgbyte/tianji/master/package.json | jq -r '.packageManager | split("@")[1]')" setup_nodejs
+  setup_uv
+  if check_for_gh_release "tianji" "msgbyte/tianji"; then
+    NODE_VERSION="22" NODE_MODULE="pnpm@$(curl -s https://raw.githubusercontent.com/msgbyte/tianji/master/package.json | jq -r '.packageManager | split("@")[1]')" setup_nodejs
 
-		msg_info "Stopping Service"
-		systemctl stop tianji
-		msg_ok "Stopped Service"
+    msg_info "Stopping Service"
+    systemctl stop tianji
+    msg_ok "Stopped Service"
 
-		create_backup /opt/tianji/src/server/.env
+    create_backup /opt/tianji/src/server/.env
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "tianji" "msgbyte/tianji" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "tianji" "msgbyte/tianji" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Updating Tianji"
-		cd /opt/tianji
-		export NODE_OPTIONS="--max_old_space_size=4096"
-		$STD pnpm install --filter @tianji/client... --config.dedupe-peer-dependents=false --frozen-lockfile
-		$STD pnpm build:static
-		$STD pnpm install --filter @tianji/server... --config.dedupe-peer-dependents=false
-		mkdir -p ./src/server/public
-		cp -r ./geo ./src/server/public
-		$STD pnpm build:server
-		cd src/server
-		$STD pnpm db:migrate:apply
-		rm -rf /opt/tianji/src/client
-		rm -rf /opt/tianji/website
-		rm -rf /opt/tianji/reporter
-		msg_ok "Updated Tianji"
+    msg_info "Updating Tianji"
+    cd /opt/tianji
+    export NODE_OPTIONS="--max_old_space_size=4096"
+    $STD pnpm install --filter @tianji/client... --config.dedupe-peer-dependents=false --frozen-lockfile
+    $STD pnpm build:static
+    $STD pnpm install --filter @tianji/server... --config.dedupe-peer-dependents=false
+    mkdir -p ./src/server/public
+    cp -r ./geo ./src/server/public
+    $STD pnpm build:server
+    cd src/server
+    $STD pnpm db:migrate:apply
+    rm -rf /opt/tianji/src/client
+    rm -rf /opt/tianji/website
+    rm -rf /opt/tianji/reporter
+    msg_ok "Updated Tianji"
 
-		msg_info "Updating AppRise"
-		$STD uv pip install apprise cryptography --system
-		msg_ok "Updated AppRise"
+    msg_info "Updating AppRise"
+    $STD uv pip install apprise cryptography --system
+    msg_ok "Updated AppRise"
 
-		msg_info "Starting Service"
-		systemctl start tianji
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start tianji
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

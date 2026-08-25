@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,43 +25,43 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/suggestarr ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/suggestarr ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "suggestarr" "giuseppe99barchetta/SuggestArr"; then
-		msg_info "Stopping Service"
-		systemctl stop suggestarr
-		msg_ok "Stopped Service"
+  if check_for_gh_release "suggestarr" "giuseppe99barchetta/SuggestArr"; then
+    msg_info "Stopping Service"
+    systemctl stop suggestarr
+    msg_ok "Stopped Service"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "suggestarr" "giuseppe99barchetta/SuggestArr" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "suggestarr" "giuseppe99barchetta/SuggestArr" "tarball"
 
-		msg_info "Building Frontend"
-		cd /opt/suggestarr/client
-		$STD npm install
-		$STD npm run build
-		mkdir -p /opt/suggestarr/static
-		cp -r /opt/suggestarr/client/dist/* /opt/suggestarr/static/
-		cp -r /opt/suggestarr/client/node_modules/swagger-ui-dist /opt/suggestarr/static/swagger-ui
-		msg_ok "Built Frontend"
+    msg_info "Building Frontend"
+    cd /opt/suggestarr/client
+    $STD npm install
+    $STD npm run build
+    mkdir -p /opt/suggestarr/static
+    cp -r /opt/suggestarr/client/dist/* /opt/suggestarr/static/
+    cp -r /opt/suggestarr/client/node_modules/swagger-ui-dist /opt/suggestarr/static/swagger-ui
+    msg_ok "Built Frontend"
 
-		msg_info "Updating Python Environment"
-		cd /opt/suggestarr
-		$STD uv venv --python 3.12 /opt/suggestarr/.venv
-		$STD uv pip install --python /opt/suggestarr/.venv -r /opt/suggestarr/api_service/requirements.txt
-		msg_ok "Updated Python Environment"
+    msg_info "Updating Python Environment"
+    cd /opt/suggestarr
+    $STD uv venv --python 3.12 /opt/suggestarr/.venv
+    $STD uv pip install --python /opt/suggestarr/.venv -r /opt/suggestarr/api_service/requirements.txt
+    msg_ok "Updated Python Environment"
 
-		msg_info "Starting Service"
-		systemctl start suggestarr
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start suggestarr
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

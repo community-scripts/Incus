@@ -22,38 +22,38 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /usr/local/lib/ollama ]]; then
-		msg_error "No Ollama Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /usr/local/lib/ollama ]]; then
+    msg_error "No Ollama Installation Found!"
+    exit
+  fi
 
-	[[ -f /root/.ollama ]] && rm -f /root/.ollama
+  [[ -f /root/.ollama ]] && rm -f /root/.ollama
 
-	if check_for_gh_release "ollama-com" "ollama/ollama"; then
-		ensure_dependencies zstd
-		msg_info "Stopping Services"
-		systemctl stop ollama
-		msg_ok "Services Stopped"
+  if check_for_gh_release "ollama-com" "ollama/ollama"; then
+    ensure_dependencies zstd
+    msg_info "Stopping Services"
+    systemctl stop ollama
+    msg_ok "Services Stopped"
 
-		OLLAMA_INSTALL_DIR="/usr/local/lib/ollama"
-		rm -rf "$OLLAMA_INSTALL_DIR" /usr/local/bin/ollama
-		mkdir -p "$OLLAMA_INSTALL_DIR"
-		if ! fetch_and_deploy_gh_release "ollama-com" "ollama/ollama" "prebuild" "latest" "$OLLAMA_INSTALL_DIR" "ollama-linux-$(arch_resolve).tar.zst"; then
-			msg_error "Download or deployment failed – check network connectivity and GitHub API availability"
-			exit 250
-		fi
-		ln -sf "$OLLAMA_INSTALL_DIR/bin/ollama" /usr/local/bin/ollama
-		msg_ok "Updated Ollama"
+    OLLAMA_INSTALL_DIR="/usr/local/lib/ollama"
+    rm -rf "$OLLAMA_INSTALL_DIR" /usr/local/bin/ollama
+    mkdir -p "$OLLAMA_INSTALL_DIR"
+    if ! fetch_and_deploy_gh_release "ollama-com" "ollama/ollama" "prebuild" "latest" "$OLLAMA_INSTALL_DIR" "ollama-linux-$(arch_resolve).tar.zst"; then
+      msg_error "Download or deployment failed – check network connectivity and GitHub API availability"
+      exit 250
+    fi
+    ln -sf "$OLLAMA_INSTALL_DIR/bin/ollama" /usr/local/bin/ollama
+    msg_ok "Updated Ollama"
 
-		msg_info "Starting Services"
-		systemctl start ollama
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start ollama
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

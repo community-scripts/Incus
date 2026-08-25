@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,45 +25,46 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/wallos ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/wallos ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "wallos" "ellite/Wallos"; then
-		msg_info "Creating backup"
-		mkdir -p /opt/logos
-		mv /opt/wallos/db/wallos.db /opt/wallos.db
-		mv /opt/wallos/images/uploads/logos /opt/logos/
-		msg_ok "Backup created"
+  if check_for_gh_release "wallos" "ellite/Wallos"; then
+    msg_info "Creating backup"
+    mkdir -p /opt/logos
+    mv /opt/wallos/db/wallos.db /opt/wallos.db
+    mv /opt/wallos/images/uploads/logos /opt/logos/
+    msg_ok "Backup created"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "wallos" "ellite/Wallos" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "wallos" "ellite/Wallos" "tarball"
 
-		msg_info "Configuring Wallos"
-		rm -rf /opt/wallos/db/wallos.empty.db
-		mv /opt/wallos.db /opt/wallos/db/wallos.db
-		mv /opt/logos/* /opt/wallos/images/uploads/logos
-		if ! grep -q "storetotalyearlycost.php" /opt/wallos.cron; then
-			echo "30 1 * * 1 php /opt/wallos/endpoints/cronjobs/storetotalyearlycost.php >> /var/log/cron/storetotalyearlycost.log 2>&1" >>/opt/wallos.cron
-		fi
-		chown -R www-data:www-data /opt/wallos
-		chmod -R 755 /opt/wallos
-		mkdir -p /var/log/cron
-		msg_ok "Configured Wallos"
+    msg_info "Configuring Wallos"
+    rm -rf /opt/wallos/db/wallos.empty.db
+    mv /opt/wallos.db /opt/wallos/db/wallos.db
+    mv /opt/logos/* /opt/wallos/images/uploads/logos
+    if ! grep -q "storetotalyearlycost.php" /opt/wallos.cron; then
+      echo "30 1 * * 1 php /opt/wallos/endpoints/cronjobs/storetotalyearlycost.php >> /var/log/cron/storetotalyearlycost.log 2>&1" >>/opt/wallos.cron
+    fi
+    chown -R www-data:www-data /opt/wallos
+    chmod -R 755 /opt/wallos
+    mkdir -p /var/log/cron
+    msg_ok "Configured Wallos"
 
-		msg_info "Reload Apache2"
-		systemctl reload apache2
-		msg_ok "Apache2 Reloaded"
+    msg_info "Reload Apache2"
+    systemctl reload apache2
+    msg_ok "Apache2 Reloaded"
 
-		msg_info "Running Database Migration"
-		$STD curl http://localhost/endpoints/db/migrate.php
-		msg_ok "Ran Database Migration"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Running Database Migration"
+    cd /opt/wallos
+    $STD sudo -u www-data php /opt/wallos/endpoints/db/migrate.php
+    msg_ok "Ran Database Migration"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

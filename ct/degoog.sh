@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,56 +25,56 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/degoog ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/degoog ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "degoog" "fccview/degoog"; then
-		msg_info "Stopping Service"
-		systemctl stop degoog
-		msg_ok "Stopped Service"
+  if check_for_gh_release "degoog" "fccview/degoog"; then
+    msg_info "Stopping Service"
+    systemctl stop degoog
+    msg_ok "Stopped Service"
 
-		create_backup /opt/degoog/.env \
-			/opt/degoog/data
+    create_backup /opt/degoog/.env \
+      /opt/degoog/data
 
-		if [[ ! -x /root/.bun/bin/bun ]]; then
-			msg_info "Installing Bun"
-			export BUN_INSTALL="/root/.bun"
-			curl -fsSL https://bun.sh/install | $STD bash
-			ln -sf /root/.bun/bin/bun /usr/local/bin/bun
-			ln -sf /root/.bun/bin/bunx /usr/local/bin/bunx
-			msg_ok "Installed Bun"
-		fi
+    if [[ ! -x /root/.bun/bin/bun ]]; then
+      msg_info "Installing Bun"
+      export BUN_INSTALL="/root/.bun"
+      curl -fsSL https://bun.sh/install | $STD bash
+      ln -sf /root/.bun/bin/bun /usr/local/bin/bun
+      ln -sf /root/.bun/bin/bunx /usr/local/bin/bunx
+      msg_ok "Installed Bun"
+    fi
 
-		msg_info "Updating Valkey"
-		ensure_dependencies valkey
-		msg_ok "Updated Valkey"
+    msg_info "Updating Valkey"
+    ensure_dependencies valkey
+    msg_ok "Updated Valkey"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "degoog" "fccview/degoog" "prebuild" "latest" "/opt/degoog" "degoog_*_prebuild.tar.gz"
-		fetch_and_deploy_gh_release "curl-impersonate" "lexiforest/curl-impersonate" "prebuild" "latest" "/usr/local/bin" "curl-impersonate-v*.$(uname -m)-linux-gnu.tar.gz"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "degoog" "fccview/degoog" "prebuild" "latest" "/opt/degoog" "degoog_*_prebuild.tar.gz"
+    fetch_and_deploy_gh_release "curl-impersonate" "lexiforest/curl-impersonate" "prebuild" "latest" "/usr/local/bin" "curl-impersonate-v*.$(uname -m)-linux-gnu.tar.gz"
 
-		restore_backup
+    restore_backup
 
-		if [[ -f /opt/degoog/.env ]]; then
-			grep -q "^DEGOOG_VALKEY_URL=" /opt/degoog/.env && sed -i "s|^DEGOOG_VALKEY_URL=.*|DEGOOG_VALKEY_URL=redis://127.0.0.1:6379|" /opt/degoog/.env || echo "DEGOOG_VALKEY_URL=redis://127.0.0.1:6379" >>/opt/degoog/.env
-			grep -q "^DEGOOG_CACHE_MAX_ENTRIES=" /opt/degoog/.env && sed -i "s|^DEGOOG_CACHE_MAX_ENTRIES=.*|DEGOOG_CACHE_MAX_ENTRIES=1000|" /opt/degoog/.env || echo "DEGOOG_CACHE_MAX_ENTRIES=1000" >>/opt/degoog/.env
-			grep -q "^DEGOOG_CACHE_TTL_MS=" /opt/degoog/.env && sed -i "s|^DEGOOG_CACHE_TTL_MS=.*|DEGOOG_CACHE_TTL_MS=43200000|" /opt/degoog/.env || echo "DEGOOG_CACHE_TTL_MS=43200000" >>/opt/degoog/.env
-			grep -q "^# DEGOOG_SETTINGS_PASSWORDS" /opt/degoog/.env && sed -i "s|^# DEGOOG_SETTINGS_PASSWORDS=.*|DEGOOG_SETTINGS_PASSWORDS=$(openssl rand -hex 32)|" /opt/degoog/.env &&
-				msg_warn "Mandatory Settings Password created - check /opt/degoog/.env"
-		fi
-		msg_ok "Restored Configuration & Data"
+    if [[ -f /opt/degoog/.env ]]; then
+      grep -q "^DEGOOG_VALKEY_URL=" /opt/degoog/.env && sed -i "s|^DEGOOG_VALKEY_URL=.*|DEGOOG_VALKEY_URL=redis://127.0.0.1:6379|" /opt/degoog/.env || echo "DEGOOG_VALKEY_URL=redis://127.0.0.1:6379" >>/opt/degoog/.env
+      grep -q "^DEGOOG_CACHE_MAX_ENTRIES=" /opt/degoog/.env && sed -i "s|^DEGOOG_CACHE_MAX_ENTRIES=.*|DEGOOG_CACHE_MAX_ENTRIES=1000|" /opt/degoog/.env || echo "DEGOOG_CACHE_MAX_ENTRIES=1000" >>/opt/degoog/.env
+      grep -q "^DEGOOG_CACHE_TTL_MS=" /opt/degoog/.env && sed -i "s|^DEGOOG_CACHE_TTL_MS=.*|DEGOOG_CACHE_TTL_MS=43200000|" /opt/degoog/.env || echo "DEGOOG_CACHE_TTL_MS=43200000" >>/opt/degoog/.env
+      grep -q "^# DEGOOG_SETTINGS_PASSWORDS" /opt/degoog/.env && sed -i "s|^# DEGOOG_SETTINGS_PASSWORDS=.*|DEGOOG_SETTINGS_PASSWORDS=$(openssl rand -hex 32)|" /opt/degoog/.env &&
+        msg_warn "Mandatory Settings Password created - check /opt/degoog/.env"
+    fi
+    msg_ok "Restored Configuration & Data"
 
-		msg_info "Starting Service"
-		systemctl start degoog
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start degoog
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

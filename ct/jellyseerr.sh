@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,59 +25,59 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/jellyseerr ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/jellyseerr ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if [[ -f "/opt/jellyseerr/package.json" ]] && [[ "$(grep -m1 '"version"' /opt/jellyseerr/package.json | awk -F'"' '{print $4}')" == "2.7.3" ]]; then
-		echo
-		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-		echo "Jellyseerr v2.7.3 detected."
-		echo
-		echo "Seerr is the new unified Jellyseerr and Overseerr."
-		echo "More info: https://docs.seerr.dev/blog/seerr-release"
-		echo
-		read -rp "Do you want to migrate to Seerr now? (y/N): " MIGRATE
-		echo
-		if [[ ! "$MIGRATE" =~ ^[Yy]$ ]]; then
-			msg_info "Migration cancelled. Exiting."
-			exit 0
-		fi
+  if [[ -f "/opt/jellyseerr/package.json" ]] && [[ "$(grep -m1 '"version"' /opt/jellyseerr/package.json | awk -F'"' '{print $4}')" == "2.7.3" ]]; then
+    echo
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Jellyseerr v2.7.3 detected."
+    echo
+    echo "Seerr is the new unified Jellyseerr and Overseerr."
+    echo "More info: https://docs.seerr.dev/blog/seerr-release"
+    echo
+    read -rp "Do you want to migrate to Seerr now? (y/N): " MIGRATE
+    echo
+    if [[ ! "$MIGRATE" =~ ^[Yy]$ ]]; then
+      msg_info "Migration cancelled. Exiting."
+      exit 0
+    fi
 
-		msg_info "Switching update script to Seerr"
-		TMP_UPDATE=$(mktemp)
-		cat <<'EOF' >"$TMP_UPDATE"
+    msg_info "Switching update script to Seerr"
+    TMP_UPDATE=$(mktemp)
+    cat <<'EOF' >"$TMP_UPDATE"
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/seerr.sh)"
 EOF
-		mv "$TMP_UPDATE" /usr/bin/update
-		chmod +x /usr/bin/update
-		msg_ok "Switched update script to Seerr"
-		msg_warn "Please type 'update' again to complete the migration"
-		exit 0
-	fi
+    mv "$TMP_UPDATE" /usr/bin/update
+    chmod +x /usr/bin/update
+    msg_ok "Switched update script to Seerr"
+    msg_warn "Please type 'update' again to complete the migration"
+    exit 0
+  fi
 
-	msg_info "Updating Jellyseerr"
-	cd /opt/jellyseerr
-	systemctl stop jellyseerr
-	output=$(git pull --no-rebase)
-	pnpm_desired=$(grep -Po '"pnpm":\s*"\K[^"]+' /opt/jellyseerr/package.json)
-	NODE_VERSION="22" NODE_MODULE="pnpm@$pnpm_desired" setup_nodejs
-	if echo "$output" | grep -q "Already up to date."; then
-		msg_ok "$APP is already up to date."
-		exit
-	fi
-	rm -rf dist .next node_modules
-	export CYPRESS_INSTALL_BINARY=0
-	cd /opt/jellyseerr
-	$STD pnpm install --frozen-lockfile
-	export NODE_OPTIONS="--max-old-space-size=3072"
-	$STD pnpm build
-	cat <<EOF >/etc/systemd/system/jellyseerr.service
+  msg_info "Updating Jellyseerr"
+  cd /opt/jellyseerr
+  systemctl stop jellyseerr
+  output=$(git pull --no-rebase)
+  pnpm_desired=$(grep -Po '"pnpm":\s*"\K[^"]+' /opt/jellyseerr/package.json)
+  NODE_VERSION="22" NODE_MODULE="pnpm@$pnpm_desired" setup_nodejs
+  if echo "$output" | grep -q "Already up to date."; then
+    msg_ok "$APP is already up to date."
+    exit
+  fi
+  rm -rf dist .next node_modules
+  export CYPRESS_INSTALL_BINARY=0
+  cd /opt/jellyseerr
+  $STD pnpm install --frozen-lockfile
+  export NODE_OPTIONS="--max-old-space-size=3072"
+  $STD pnpm build
+  cat <<EOF >/etc/systemd/system/jellyseerr.service
 [Unit]
 Description=jellyseerr Service
 After=network.target
@@ -89,11 +92,11 @@ ExecStart=/usr/bin/node dist/index.js
 [Install]
 WantedBy=multi-user.target
 EOF
-	systemctl daemon-reload
-	systemctl start jellyseerr
-	msg_ok "Updated Jellyseerr"
-	msg_ok "Updated successfully!"
-	exit
+  systemctl daemon-reload
+  systemctl start jellyseerr
+  msg_ok "Updated Jellyseerr"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,29 +25,29 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/wastebin ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	ensure_dependencies zstd
-	RELEASE=$(curl -fsSL https://api.github.com/repos/matze/wastebin/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
-	# Dirty-Fix 03/2025 for missing APP_version.txt on old installations, set to pre-latest release
-	msg_info "Running Migration"
-	if [[ ! -f /opt/${APP}_version.txt ]]; then
-		echo "2.7.1" >/opt/${APP}_version.txt
-		mkdir -p /opt/wastebin-data
-		cat <<EOF >/opt/wastebin-data/.env
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/wastebin ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  ensure_dependencies zstd
+  RELEASE=$(curl -fsSL https://api.github.com/repos/matze/wastebin/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3) }')
+  # Dirty-Fix 03/2025 for missing APP_version.txt on old installations, set to pre-latest release
+  msg_info "Running Migration"
+  if [[ ! -f /opt/${APP}_version.txt ]]; then
+    echo "2.7.1" >/opt/${APP}_version.txt
+    mkdir -p /opt/wastebin-data
+    cat <<EOF >/opt/wastebin-data/.env
 WASTEBIN_DATABASE_PATH=/opt/wastebin-data/wastebin.db
 WASTEBIN_CACHE_SIZE=1024
 WASTEBIN_HTTP_TIMEOUT=30
 WASTEBIN_SIGNING_KEY=$(openssl rand -hex 32)
 WASTEBIN_PASTE_EXPIRATIONS=0,600,3600=d,86400,604800,2419200,29030400
 EOF
-		systemctl stop wastebin
-		cat <<EOF >/etc/systemd/system/wastebin.service
+    systemctl stop wastebin
+    cat <<EOF >/etc/systemd/system/wastebin.service
 [Unit]
 Description=Wastebin Service
 After=network.target
@@ -57,33 +60,33 @@ EnvironmentFile=/opt/wastebin-data/.env
 [Install]
 WantedBy=multi-user.target
 EOF
-		systemctl daemon-reload
-	fi
-	msg_ok "Migration Done"
-	if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
-		msg_info "Stopping Wastebin"
-		systemctl stop wastebin
-		msg_ok "Wastebin Stopped"
+    systemctl daemon-reload
+  fi
+  msg_ok "Migration Done"
+  if [[ ! -f /opt/${APP}_version.txt ]] || [[ "${RELEASE}" != "$(cat /opt/${APP}_version.txt)" ]]; then
+    msg_info "Stopping Wastebin"
+    systemctl stop wastebin
+    msg_ok "Wastebin Stopped"
 
-		msg_info "Updating Wastebin"
-		temp_file=$(mktemp)
-		curl -fsSL "https://github.com/matze/wastebin/releases/download/${RELEASE}/wastebin_${RELEASE}_$(arch_resolve "x86_64" "aarch64")-unknown-linux-musl.tar.zst" -o "$temp_file"
-		tar -xf "$temp_file"
-		cp -f wastebin* /opt/wastebin/
-		chmod +x /opt/wastebin/wastebin
-		chmod +x /opt/wastebin/wastebin-ctl
-		rm -f "$temp_file"
-		echo "${RELEASE}" >/opt/${APP}_version.txt
-		msg_ok "Updated Wastebin"
+    msg_info "Updating Wastebin"
+    temp_file=$(mktemp)
+    curl -fsSL "https://github.com/matze/wastebin/releases/download/${RELEASE}/wastebin_${RELEASE}_$(arch_resolve "x86_64" "aarch64")-unknown-linux-musl.tar.zst" -o "$temp_file"
+    tar -xf "$temp_file"
+    cp -f wastebin* /opt/wastebin/
+    chmod +x /opt/wastebin/wastebin
+    chmod +x /opt/wastebin/wastebin-ctl
+    rm -f "$temp_file"
+    echo "${RELEASE}" >/opt/${APP}_version.txt
+    msg_ok "Updated Wastebin"
 
-		msg_info "Starting Wastebin"
-		systemctl start wastebin
-		msg_ok "Started Wastebin"
-		msg_ok "Updated successfully!"
-	else
-		msg_ok "No update required. ${APP} is already at v${RELEASE}"
-	fi
-	exit
+    msg_info "Starting Wastebin"
+    systemctl start wastebin
+    msg_ok "Started Wastebin"
+    msg_ok "Updated successfully!"
+  else
+    msg_ok "No update required. ${APP} is already at v${RELEASE}"
+  fi
+  exit
 }
 
 start

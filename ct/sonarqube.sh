@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,46 +25,46 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/sonarqube ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/sonarqube ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "sonarqube" "SonarSource/sonarqube"; then
-		msg_info "Stopping Service"
-		systemctl stop sonarqube
-		msg_ok "Stopped Service"
+  if check_for_gh_release "sonarqube" "SonarSource/sonarqube"; then
+    msg_info "Stopping Service"
+    systemctl stop sonarqube
+    msg_ok "Stopped Service"
 
-		msg_info "Creating Backup"
-		BACKUP_DIR="/opt/sonarqube-backup"
-		mv /opt/sonarqube ${BACKUP_DIR}
-		msg_ok "Created Backup"
+    msg_info "Creating Backup"
+    BACKUP_DIR="/opt/sonarqube-backup"
+    mv /opt/sonarqube ${BACKUP_DIR}
+    msg_ok "Created Backup"
 
-		msg_info "Updating SonarQube"
-		RELEASE=$(curl -fsSL "https://binaries.sonarsource.com/s3api?prefix=Distribution/sonarqube/sonarqube-&delimiter=/" |
-			grep -oP 'sonarqube-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.zip' |
-			sort -V | tail -n1)
-		fetch_and_deploy_from_url "https://binaries.sonarsource.com/Distribution/sonarqube/${RELEASE}" /opt/sonarqube
-		echo "${RELEASE}" >~/.sonarqube
-		msg_ok "Updated SonarQube"
+    msg_info "Updating SonarQube"
+    RELEASE=$(curl -fsSL "https://binaries.sonarsource.com/s3api?prefix=Distribution/sonarqube/sonarqube-&delimiter=/" |
+      grep -oP 'sonarqube-[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\.zip' |
+      sort -V | tail -n1)
+    fetch_and_deploy_from_url "https://binaries.sonarsource.com/Distribution/sonarqube/${RELEASE}" /opt/sonarqube
+    echo "${RELEASE}" >~/.sonarqube
+    msg_ok "Updated SonarQube"
 
-		msg_info "Restoring Backup"
-		cp -rp ${BACKUP_DIR}/data/ /opt/sonarqube/data/
-		cp -rp ${BACKUP_DIR}/extensions/ /opt/sonarqube/extensions/
-		cp -p ${BACKUP_DIR}/conf/sonar.properties /opt/sonarqube/conf/sonar.properties
-		rm -rf ${BACKUP_DIR}
-		chown -R sonarqube:sonarqube /opt/sonarqube
-		msg_ok "Restored Backup"
+    msg_info "Restoring Backup"
+    cp -rp ${BACKUP_DIR}/data/ /opt/sonarqube/data/
+    cp -rp ${BACKUP_DIR}/extensions/ /opt/sonarqube/extensions/
+    cp -p ${BACKUP_DIR}/conf/sonar.properties /opt/sonarqube/conf/sonar.properties
+    rm -rf ${BACKUP_DIR}
+    chown -R sonarqube:sonarqube /opt/sonarqube
+    msg_ok "Restored Backup"
 
-		msg_info "Starting Service"
-		systemctl start sonarqube
-		msg_ok "Service Started"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start sonarqube
+    msg_ok "Service Started"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

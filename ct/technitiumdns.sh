@@ -22,41 +22,41 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /etc/dns ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if [[ -f /etc/systemd/system/dns.service ]]; then
-		mv /etc/systemd/system/dns.service /etc/systemd/system/technitium.service
-		systemctl daemon-reload
-		systemctl enable -q --now technitium
-	fi
-	if ! is_package_installed "aspnetcore-runtime-10.0"; then
-		$STD apt remove -y aspnetcore-runtime-8.0 aspnetcore-runtime-9.0 2>/dev/null || true
-		[ -f /etc/apt/sources.list.d/microsoft-prod.list ] && rm -f /etc/apt/sources.list.d/microsoft-prod.list
-		[ -f /usr/share/keyrings/microsoft-prod.gpg ] && rm -f /usr/share/keyrings/microsoft-prod.gpg
-		setup_deb822_repo \
-			"microsoft" \
-			"https://packages.microsoft.com/keys/microsoft-2025.asc" \
-			"https://packages.microsoft.com/debian/13/prod/" \
-			"trixie" \
-			"main"
-		$STD apt install -y aspnetcore-runtime-10.0
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /etc/dns ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if [[ -f /etc/systemd/system/dns.service ]]; then
+    mv /etc/systemd/system/dns.service /etc/systemd/system/technitium.service
+    systemctl daemon-reload
+    systemctl enable -q --now technitium
+  fi
+  if ! is_package_installed "aspnetcore-runtime-10.0"; then
+    $STD apt remove -y aspnetcore-runtime-8.0 aspnetcore-runtime-9.0 2>/dev/null || true
+    [ -f /etc/apt/sources.list.d/microsoft-prod.list ] && rm -f /etc/apt/sources.list.d/microsoft-prod.list
+    [ -f /usr/share/keyrings/microsoft-prod.gpg ] && rm -f /usr/share/keyrings/microsoft-prod.gpg
+    setup_deb822_repo \
+      "microsoft" \
+      "https://packages.microsoft.com/keys/microsoft-2025.asc" \
+      "https://packages.microsoft.com/debian/13/prod/" \
+      "trixie" \
+      "main"
+    $STD apt install -y aspnetcore-runtime-10.0
+  fi
 
-	RELEASE=$(curl -fsSL https://technitium.com/dns/ | grep -oP 'Version \K[\d.]+')
-	if [[ ! -f ~/.technitium || ${RELEASE} != "$(cat ~/.technitium 2>/dev/null)" ]]; then
-		fetch_and_deploy_from_url "https://download.technitium.com/dns/DnsServerPortable.tar.gz" /opt/technitium/dns
-		echo "${RELEASE}" >~/.technitium
-		systemctl restart technitium
-		msg_ok "Updated successfully!"
-	else
-		msg_ok "No update required.  Technitium DNS is already at v${RELEASE}."
-	fi
-	exit
+  RELEASE=$(curl -fsSL https://technitium.com/dns/ | grep -oP 'Version \K[\d.]+')
+  if [[ ! -f ~/.technitium || ${RELEASE} != "$(cat ~/.technitium 2>/dev/null)" ]]; then
+    fetch_and_deploy_from_url "https://download.technitium.com/dns/DnsServerPortable.tar.gz" /opt/technitium/dns
+    echo "${RELEASE}" >~/.technitium
+    systemctl restart technitium
+    msg_ok "Updated successfully!"
+  else
+    msg_ok "No update required.  Technitium DNS is already at v${RELEASE}."
+  fi
+  exit
 }
 
 start

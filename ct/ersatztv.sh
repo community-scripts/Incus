@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,47 +25,47 @@ variables
 color
 catch_errors
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/ErsatzTV ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "ersatztv" "ErsatzTV/ErsatzTV"; then
-		msg_info "Stopping ErsatzTV"
-		systemctl stop ersatzTV
-		msg_ok "Stopped ErsatzTV"
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/ErsatzTV ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "ersatztv" "ErsatzTV/ErsatzTV"; then
+    msg_info "Stopping ErsatzTV"
+    systemctl stop ersatzTV
+    msg_ok "Stopped ErsatzTV"
 
-		fetch_and_deploy_gh_release "ersatztv" "ErsatzTV/ErsatzTV" "prebuild" "latest" "/opt/ErsatzTV" "*linux-$(arch_resolve "x64" "arm64").tar.gz"
+    fetch_and_deploy_gh_release "ersatztv" "ErsatzTV/ErsatzTV" "prebuild" "latest" "/opt/ErsatzTV" "*linux-$(arch_resolve "x64" "arm64").tar.gz"
 
-		msg_info "Starting ErsatzTV"
-		systemctl start ersatzTV
-		msg_ok "Started ErsatzTV"
+    msg_info "Starting ErsatzTV"
+    systemctl start ersatzTV
+    msg_ok "Started ErsatzTV"
 
-		msg_ok "Updated successfully!"
-	fi
+    msg_ok "Updated successfully!"
+  fi
 
-	if check_for_gh_release "ersatztv-ffmpeg" "ErsatzTV/ErsatzTV-ffmpeg"; then
-		msg_info "Stopping ErsatzTV"
-		systemctl stop ersatzTV
-		msg_ok "Stopped ErsatzTV"
+  if check_for_gh_release "ersatztv-ffmpeg" "ErsatzTV/ErsatzTV-ffmpeg"; then
+    msg_info "Stopping ErsatzTV"
+    systemctl stop ersatzTV
+    msg_ok "Stopped ErsatzTV"
 
-		fetch_and_deploy_gh_release "ersatztv-ffmpeg" "ErsatzTV/ErsatzTV-ffmpeg" "prebuild" "latest" "/opt/ErsatzTV-ffmpeg" "*-$(arch_resolve "linux64" "linuxarm64")-gpl-8.1.tar.xz"
+    fetch_and_deploy_gh_release "ersatztv-ffmpeg" "ErsatzTV/ErsatzTV-ffmpeg" "prebuild" "latest" "/opt/ErsatzTV-ffmpeg" "*-$(arch_resolve "linux64" "linuxarm64")-gpl-8.1.tar.xz"
 
-		msg_info "Set ErsatzTV-ffmpeg links"
-		chmod +x /opt/ErsatzTV-ffmpeg/bin/*
-		ln -sf /opt/ErsatzTV-ffmpeg/bin/ffmpeg /usr/local/bin/ffmpeg
-		ln -sf /opt/ErsatzTV-ffmpeg/bin/ffplay /usr/local/bin/ffplay
-		ln -sf /opt/ErsatzTV-ffmpeg/bin/ffprobe /usr/local/bin/ffprobe
-		msg_ok "ffmpeg links set"
+    msg_info "Set ErsatzTV-ffmpeg links"
+    chmod +x /opt/ErsatzTV-ffmpeg/bin/*
+    ln -sf /opt/ErsatzTV-ffmpeg/bin/ffmpeg /usr/local/bin/ffmpeg
+    ln -sf /opt/ErsatzTV-ffmpeg/bin/ffplay /usr/local/bin/ffplay
+    ln -sf /opt/ErsatzTV-ffmpeg/bin/ffprobe /usr/local/bin/ffprobe
+    msg_ok "ffmpeg links set"
 
-		msg_info "Starting ErsatzTV"
-		systemctl start ersatzTV
-		msg_ok "Started ErsatzTV"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting ErsatzTV"
+    systemctl start ersatzTV
+    msg_ok "Started ErsatzTV"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

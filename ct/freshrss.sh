@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,57 +25,57 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/freshrss ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/freshrss ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if [ ! -x /opt/freshrss/cli/sensitive-log.sh ]; then
-		msg_info "Fixing wrong permissions"
-		chmod +x /opt/freshrss/cli/sensitive-log.sh
-		systemctl restart apache2
-		msg_ok "Fixed wrong permissions"
-	fi
+  if [ ! -x /opt/freshrss/cli/sensitive-log.sh ]; then
+    msg_info "Fixing wrong permissions"
+    chmod +x /opt/freshrss/cli/sensitive-log.sh
+    systemctl restart apache2
+    msg_ok "Fixed wrong permissions"
+  fi
 
-	if check_for_gh_release "freshrss" "FreshRSS/FreshRSS"; then
-		msg_info "Stopping Apache2"
-		systemctl stop apache2
-		msg_ok "Stopped Apache2"
+  if check_for_gh_release "freshrss" "FreshRSS/FreshRSS"; then
+    msg_info "Stopping Apache2"
+    systemctl stop apache2
+    msg_ok "Stopped Apache2"
 
-		msg_info "Backing up FreshRSS"
-		mv /opt/freshrss /opt/freshrss-backup
-		msg_ok "Backup Created"
+    msg_info "Backing up FreshRSS"
+    mv /opt/freshrss /opt/freshrss-backup
+    msg_ok "Backup Created"
 
-		fetch_and_deploy_gh_release "freshrss" "FreshRSS/FreshRSS" "tarball"
+    fetch_and_deploy_gh_release "freshrss" "FreshRSS/FreshRSS" "tarball"
 
-		msg_info "Restoring data and configuration"
-		if [[ -d /opt/freshrss-backup/data ]]; then
-			cp -a /opt/freshrss-backup/data/. /opt/freshrss/data/
-		fi
-		if [[ -d /opt/freshrss-backup/extensions ]]; then
-			cp -a /opt/freshrss-backup/extensions/. /opt/freshrss/extensions/
-		fi
-		msg_ok "Data Restored"
+    msg_info "Restoring data and configuration"
+    if [[ -d /opt/freshrss-backup/data ]]; then
+      cp -a /opt/freshrss-backup/data/. /opt/freshrss/data/
+    fi
+    if [[ -d /opt/freshrss-backup/extensions ]]; then
+      cp -a /opt/freshrss-backup/extensions/. /opt/freshrss/extensions/
+    fi
+    msg_ok "Data Restored"
 
-		msg_info "Setting permissions"
-		chown -R www-data:www-data /opt/freshrss
-		chmod -R g+rX /opt/freshrss
-		chmod -R g+w /opt/freshrss/data/
-		msg_ok "Permissions Set"
+    msg_info "Setting permissions"
+    chown -R www-data:www-data /opt/freshrss
+    chmod -R g+rX /opt/freshrss
+    chmod -R g+w /opt/freshrss/data/
+    msg_ok "Permissions Set"
 
-		msg_info "Starting Apache2"
-		systemctl start apache2
-		msg_ok "Started Apache2"
+    msg_info "Starting Apache2"
+    systemctl start apache2
+    msg_ok "Started Apache2"
 
-		msg_info "Cleaning up backup"
-		rm -rf /opt/freshrss-backup
-		msg_ok "Cleaned up backup"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Cleaning up backup"
+    rm -rf /opt/freshrss-backup
+    msg_ok "Cleaned up backup"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

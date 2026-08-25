@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,42 +25,42 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/librenms ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/librenms ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  
+  ensure_dependencies ipmitool
+  
+  if check_for_gh_release "librenms" "librenms/librenms"; then
+    msg_info "Stopping Services"
+    systemctl stop php8.4-fpm librenms-scheduler.timer
+    msg_ok "Stopped Services"
 
-	ensure_dependencies ipmitool
+    create_backup /opt/librenms/.env /opt/librenms/config.php /opt/librenms/rrd
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "librenms" "librenms/librenms" "tarball"
+    restore_backup
 
-	if check_for_gh_release "librenms" "librenms/librenms"; then
-		msg_info "Stopping Services"
-		systemctl stop php8.4-fpm librenms-scheduler.timer
-		msg_ok "Stopped Services"
+    msg_info "Updating LibreNMS"
+    mkdir -p /opt/librenms/{rrd,logs,bootstrap/cache,storage}
+    chown -R librenms:librenms /opt/librenms
+    chmod 771 /opt/librenms
+    chmod -R ug=rwX /opt/librenms/bootstrap/cache /opt/librenms/storage /opt/librenms/logs /opt/librenms/rrd
+    $STD su - librenms -s /bin/bash -c "cd /opt/librenms && uv venv --clear .venv && source .venv/bin/activate && uv pip install -r requirements.txt"
+    $STD su - librenms -s /bin/bash -c "cd /opt/librenms && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev"
+    $STD su - librenms -s /bin/bash -c "cd /opt/librenms && php8.4 artisan optimize:clear"
+    $STD su - librenms -s /bin/bash -c "cd /opt/librenms && php8.4 artisan migrate --force --isolated"
+    msg_ok "Updated LibreNMS"
 
-		create_backup /opt/librenms/.env /opt/librenms/config.php /opt/librenms/rrd
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "librenms" "librenms/librenms" "tarball"
-		restore_backup
-
-		msg_info "Updating LibreNMS"
-		mkdir -p /opt/librenms/{rrd,logs,bootstrap/cache,storage}
-		chown -R librenms:librenms /opt/librenms
-		chmod 771 /opt/librenms
-		chmod -R ug=rwX /opt/librenms/bootstrap/cache /opt/librenms/storage /opt/librenms/logs /opt/librenms/rrd
-		$STD su - librenms -s /bin/bash -c "cd /opt/librenms && uv venv --clear .venv && source .venv/bin/activate && uv pip install -r requirements.txt"
-		$STD su - librenms -s /bin/bash -c "cd /opt/librenms && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev"
-		$STD su - librenms -s /bin/bash -c "cd /opt/librenms && php8.4 artisan optimize:clear"
-		$STD su - librenms -s /bin/bash -c "cd /opt/librenms && php8.4 artisan migrate --force --isolated"
-		msg_ok "Updated LibreNMS"
-
-		msg_info "Starting Services"
-		systemctl start php8.4-fpm librenms-scheduler.timer
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start php8.4-fpm librenms-scheduler.timer
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start
