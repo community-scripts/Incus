@@ -76,25 +76,37 @@ jobs:
           already = re.compile(r'^_cs_boot=.*core/build\.func', re.M)
 
           # ProxmoxVE pins its own scripts base. Carried over verbatim it would send
-          # an Incus container to ProxmoxVE for its install/ script -- exactly the
-          # silent breakage the check below exists to prevent.
+          # an Incus container to ProxmoxVE for its install/ script. Dropping it is
+          # not enough either: build.func then falls back to ProxmoxVED, which 404s
+          # for most apps and silently installs the testbed version of the ~70 it
+          # does carry. Every script has to name THIS repo, so replace rather than
+          # remove. It must sit before the bootstrap, which reads the variable.
           pin = re.compile(r'^_CS_DEFAULT_URL=.*\n', re.M)
+          INCUS_PIN = '_CS_DEFAULT_URL="https://raw.githubusercontent.com/community-scripts/Incus/main"\n'
+
+          def set_pin(s):
+              s = pin.sub("", s)
+              if s.startswith("#!"):
+                  head, sep, rest = s.partition("\n")
+                  return head + sep + INCUS_PIN + rest
+              return INCUS_PIN + s
 
           scripts = sorted(glob.glob("ct/*.sh"))
           done, kept, miss = 0, 0, []
           for p in scripts:
-              s = open(p, encoding="utf-8", newline="").read()
-              s, dropped = pin.subn("", s)
+              orig = open(p, encoding="utf-8", newline="").read()
+              s = set_pin(orig)
               s2, n = pat.subn(NEW, s, count=1)
               if n:
-                  open(p, "w", encoding="utf-8", newline="").write(s2)
+                  s = s2
                   done += 1
               elif already.search(s):
-                  if dropped:
-                      open(p, "w", encoding="utf-8", newline="").write(s)
                   kept += 1
               else:
                   miss.append(p)
+                  continue
+              if s != orig:
+                  open(p, "w", encoding="utf-8", newline="").write(s)
 
           print(f"rewritten {done}, already on core {kept}, of {len(scripts)}")
           if miss:
