@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🐞 General script bug (not Incus-specific)
+    url: https://github.com/community-scripts/ProxmoxVE/issues/new?template=bug_report.yml
+    about: >-
+      This repo only mirrors the scripts. If a script misbehaves in the same way
+      it would on Proxmox (logic, install steps, app config), report it in the
+      upstream community-scripts/ProxmoxVE repository so the fix reaches everyone.
+  - name: 🌟 New script request
+    url: https://github.com/community-scripts/ProxmoxVE/discussions/new?category=request-script
+    about: For feature/script requests, please use the ProxmoxVE Discussions section.
+  - name: 🤔 Questions and Help
+    url: https://github.com/community-scripts/ProxmoxVE/discussions
+    about: For suggestions or questions, please use the ProxmoxVE Discussions section.
+  - name: 💻 Discord
+    url: https://discord.gg/jsYVk5JBxq
+    about: Join our Discord server to chat with other users in the community.
