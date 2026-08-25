@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -23,44 +26,44 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/gitea-mirror ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/gitea-mirror ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	APP_VERSION=$(grep -o '"version": *"[^"]*"' /opt/gitea-mirror/package.json | cut -d'"' -f4)
-	if [[ $APP_VERSION =~ ^2\. ]]; then
-		if [[ "${PHS_SILENT:-0}" == "1" ]]; then
-			msg_warn "Version $APP_VERSION detected. Major version upgrade requires interactive confirmation, skipping."
-			exit 75
-		fi
-		msg_warn "WARNING: Version $APP_VERSION detected!"
-		msg_warn "Updating from version 2.x will CLEAR ALL CONFIGURATION."
-		msg_warn "This includes: API tokens, User settings, Repository configurations, All custom settings"
-		echo ""
-		read -r -p "Do you want to continue? (y/N): " CONFIRM
-		if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-			exit 0
-		fi
-		msg_warn "FINAL WARNING: This update WILL clear all configuration!"
-		msg_warn "Please ensure you have backed up API tokens, custom configurations, and repository settings."
-		echo ""
-		read -r -p "Final confirmation - proceed? (y/N): " CONFIRM2
-		if [[ ! "$CONFIRM2" =~ ^[Yy]$ ]]; then
-			msg_info "Update cancelled. Please backup your configuration before proceeding."
-			exit 0
-		fi
-		msg_info "Proceeding with version $APP_VERSION update. All configuration will be cleared as warned."
-		rm -rf /opt/gitea-mirror
-	fi
+  APP_VERSION=$(grep -o '"version": *"[^"]*"' /opt/gitea-mirror/package.json | cut -d'"' -f4)
+  if [[ $APP_VERSION =~ ^2\. ]]; then
+    if [[ "${PHS_SILENT:-0}" == "1" ]]; then
+      msg_warn "Version $APP_VERSION detected. Major version upgrade requires interactive confirmation, skipping."
+      exit 75
+    fi
+    msg_warn "WARNING: Version $APP_VERSION detected!"
+    msg_warn "Updating from version 2.x will CLEAR ALL CONFIGURATION."
+    msg_warn "This includes: API tokens, User settings, Repository configurations, All custom settings"
+    echo ""
+    read -r -p "Do you want to continue? (y/N): " CONFIRM
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+      exit 0
+    fi
+    msg_warn "FINAL WARNING: This update WILL clear all configuration!"
+    msg_warn "Please ensure you have backed up API tokens, custom configurations, and repository settings."
+    echo ""
+    read -r -p "Final confirmation - proceed? (y/N): " CONFIRM2
+    if [[ ! "$CONFIRM2" =~ ^[Yy]$ ]]; then
+      msg_info "Update cancelled. Please backup your configuration before proceeding."
+      exit 0
+    fi
+    msg_info "Proceeding with version $APP_VERSION update. All configuration will be cleared as warned."
+    rm -rf /opt/gitea-mirror
+  fi
 
-	if [[ ! -f /opt/gitea-mirror.env ]]; then
-		msg_info "Detected old Enviroment, updating files"
-		APP_SECRET=$(openssl rand -base64 32)
-		cat <<EOF >/opt/gitea-mirror.env
+  if [[ ! -f /opt/gitea-mirror.env ]]; then
+    msg_info "Detected old Enviroment, updating files"
+    APP_SECRET=$(openssl rand -base64 32)
+    cat <<EOF >/opt/gitea-mirror.env
 # See here for config options: https://github.com/RayLabsHQ/gitea-mirror/blob/main/docs/ENVIRONMENT_VARIABLES.md
 NODE_ENV=production
 HOST=0.0.0.0
@@ -70,8 +73,8 @@ BETTER_AUTH_URL=http://${LOCAL_IP}:4321
 BETTER_AUTH_SECRET=${APP_SECRET}
 npm_package_version=${APP_VERSION}
 EOF
-		rm /etc/systemd/system/gitea-mirror.service
-		cat <<EOF >/etc/systemd/system/gitea-mirror.service
+    rm /etc/systemd/system/gitea-mirror.service
+    cat <<EOF >/etc/systemd/system/gitea-mirror.service
 [Unit]
 Description=Gitea Mirror
 After=network.target
@@ -85,49 +88,49 @@ EnvironmentFile=/opt/gitea-mirror.env
 [Install]
 WantedBy=multi-user.target
 EOF
-		systemctl daemon-reload
-		msg_ok "Old Enviroment fixed"
-	fi
+    systemctl daemon-reload
+    msg_ok "Old Enviroment fixed"
+  fi
 
-	ensure_dependencies git
+  ensure_dependencies git
 
-	if check_for_gh_release "gitea-mirror" "RayLabsHQ/gitea-mirror"; then
-		msg_info "Stopping Services"
-		systemctl stop gitea-mirror
-		msg_ok "Services Stopped"
+  if check_for_gh_release "gitea-mirror" "RayLabsHQ/gitea-mirror"; then
+    msg_info "Stopping Services"
+    systemctl stop gitea-mirror
+    msg_ok "Services Stopped"
 
-		msg_info "Backup Data"
-		mkdir -p /opt/gitea-mirror-backup/data
-		cp -r /opt/gitea-mirror/data/* /opt/gitea-mirror-backup/data/
-		msg_ok "Backup Data"
+    msg_info "Backup Data"
+    mkdir -p /opt/gitea-mirror-backup/data
+    cp -r /opt/gitea-mirror/data/* /opt/gitea-mirror-backup/data/
+    msg_ok "Backup Data"
 
-		msg_info "Installing Bun"
-		export BUN_INSTALL=/opt/bun
-		curl -fsSL https://bun.sh/install | $STD bash
-		ln -sf /opt/bun/bin/bun /usr/local/bin/bun
-		ln -sf /opt/bun/bin/bun /usr/local/bin/bunx
-		msg_ok "Installed Bun"
+    msg_info "Installing Bun"
+    export BUN_INSTALL=/opt/bun
+    curl -fsSL https://bun.sh/install | $STD bash
+    ln -sf /opt/bun/bin/bun /usr/local/bin/bun
+    ln -sf /opt/bun/bin/bun /usr/local/bin/bunx
+    msg_ok "Installed Bun"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gitea-mirror" "RayLabsHQ/gitea-mirror" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "gitea-mirror" "RayLabsHQ/gitea-mirror" "tarball"
 
-		msg_info "Updating and rebuilding ${APP}"
-		cd /opt/gitea-mirror
-		$STD bun run setup
-		$STD bun run build
-		APP_VERSION=$(grep -o '"version": *"[^"]*"' package.json | cut -d'"' -f4)
-		sed -i.bak "s|^npm_package_version=.*|npm_package_version=${APP_VERSION}|" /opt/gitea-mirror.env
-		msg_ok "Updated and rebuilt ${APP}"
+    msg_info "Updating and rebuilding ${APP}"
+    cd /opt/gitea-mirror
+    $STD bun run setup
+    $STD bun run build
+    APP_VERSION=$(grep -o '"version": *"[^"]*"' package.json | cut -d'"' -f4)
+    sed -i.bak "s|^npm_package_version=.*|npm_package_version=${APP_VERSION}|" /opt/gitea-mirror.env
+    msg_ok "Updated and rebuilt ${APP}"
 
-		msg_info "Restoring Data"
-		cp -r /opt/gitea-mirror-backup/data/* /opt/gitea-mirror/data
-		msg_ok "Restored Data"
+    msg_info "Restoring Data"
+    cp -r /opt/gitea-mirror-backup/data/* /opt/gitea-mirror/data
+    msg_ok "Restored Data"
 
-		msg_info "Starting Service"
-		systemctl start gitea-mirror
-		msg_ok "Service Started"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start gitea-mirror
+    msg_ok "Service Started"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

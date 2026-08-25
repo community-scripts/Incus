@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,35 +25,35 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/papra ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/papra ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "papra" "papra-hq/papra"; then
-		msg_info "Stopping Service"
-		systemctl stop papra
-		msg_ok "Stopped Service"
+  if check_for_gh_release "papra" "papra-hq/papra"; then
+    msg_info "Stopping Service"
+    systemctl stop papra
+    msg_ok "Stopped Service"
 
-		create_backup /opt/papra/apps/papra-server/.env
+    create_backup /opt/papra/apps/papra-server/.env
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "papra" "papra-hq/papra" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "papra" "papra-hq/papra" "tarball"
 
-		restore_backup
+    restore_backup
 
-		pnpm_version=$(grep -oP '"packageManager":\s*"pnpm@\K[^"]+' /opt/papra/package.json)
-		NODE_VERSION="26" NODE_MODULE="pnpm@$pnpm_version" setup_nodejs
+    pnpm_version=$(grep -oP '"packageManager":\s*"pnpm@\K[^"]+' /opt/papra/package.json)
+    NODE_VERSION="26" NODE_MODULE="pnpm@$pnpm_version" setup_nodejs
 
-		msg_info "Building Application"
-		cd /opt/papra
-		if [[ ! -f /opt/papra/apps/papra-server/.env ]]; then
-			msg_warn ".env missing, regenerating from defaults"
-			LOCAL_IP=$(hostname -I | awk '{print $1}')
-			cat <<EOF >/opt/papra/apps/papra-server/.env
+    msg_info "Building Application"
+    cd /opt/papra
+    if [[ ! -f /opt/papra/apps/papra-server/.env ]]; then
+      msg_warn ".env missing, regenerating from defaults"
+      LOCAL_IP=$(hostname -I | awk '{print $1}')
+      cat <<EOF >/opt/papra/apps/papra-server/.env
 NODE_ENV=production
 SERVER_SERVE_PUBLIC_DIR=true
 PORT=1221
@@ -66,19 +69,19 @@ EMAILS_DRY_RUN=true
 INGESTION_FOLDER_IS_ENABLED=true
 INGESTION_FOLDER_ROOT_PATH=/opt/papra_data/ingestion
 EOF
-		fi
-		$STD pnpm install --frozen-lockfile
-		$STD pnpm --filter "@papra/app-client..." run build
-		$STD pnpm --filter "@papra/app-server..." run build
-		ln -sf /opt/papra/apps/papra-client/dist /opt/papra/apps/papra-server/public
-		msg_ok "Built Application"
+    fi
+    $STD pnpm install --frozen-lockfile
+    $STD pnpm --filter "@papra/app-client..." run build
+    $STD pnpm --filter "@papra/app-server..." run build
+    ln -sf /opt/papra/apps/papra-client/dist /opt/papra/apps/papra-server/public
+    msg_ok "Built Application"
 
-		msg_info "Starting Service"
-		systemctl start papra
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start papra
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

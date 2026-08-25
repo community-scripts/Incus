@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,59 +25,59 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/vikunja ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/vikunja ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	INSTALLED_VERSION="$([[ -f "$HOME/.vikunja" ]] && cat "$HOME/.vikunja" 2>/dev/null || [[ -f /opt/Vikunja_version ]] && cat /opt/Vikunja_version 2>/dev/null || true)"
-	if [[ -z "$INSTALLED_VERSION" ]] || [[ "$INSTALLED_VERSION" == "unstable" ]] || dpkg --compare-versions "${INSTALLED_VERSION:-0.0.0}" lt "1.0.0"; then
-		msg_warn "You are upgrading from Vikunja '$INSTALLED_VERSION'."
-		msg_warn "This requires MANUAL config changes in /etc/vikunja/config.yml."
-		msg_warn "See: https://vikunja.io/changelog/whats-new-in-vikunja-1.0.0/#config-changes"
+  INSTALLED_VERSION="$( [[ -f "$HOME/.vikunja" ]] && cat "$HOME/.vikunja" 2>/dev/null || [[ -f /opt/Vikunja_version ]] && cat /opt/Vikunja_version 2>/dev/null || true)"
+  if [[ -z "$INSTALLED_VERSION" ]] || [[ "$INSTALLED_VERSION" == "unstable" ]] || dpkg --compare-versions "${INSTALLED_VERSION:-0.0.0}" lt "1.0.0"; then
+    msg_warn "You are upgrading from Vikunja '$INSTALLED_VERSION'."
+    msg_warn "This requires MANUAL config changes in /etc/vikunja/config.yml."
+    msg_warn "See: https://vikunja.io/changelog/whats-new-in-vikunja-1.0.0/#config-changes"
 
-		read -rp "Continue with update? (y to proceed): " -t 30 CONFIRM1 || exit 254
-		[[ "$CONFIRM1" =~ ^[yY]$ ]] || exit 0
+    read -rp "Continue with update? (y to proceed): " -t 30 CONFIRM1 || exit 254
+    [[ "$CONFIRM1" =~ ^[yY]$ ]] || exit 0
 
-		echo
-		msg_warn "Vikunja may not start after the update until you manually adjust the config."
-		msg_warn "Details: https://vikunja.io/changelog/whats-new-in-vikunja-1.0.0/#config-changes"
+    echo
+    msg_warn "Vikunja may not start after the update until you manually adjust the config."
+    msg_warn "Details: https://vikunja.io/changelog/whats-new-in-vikunja-1.0.0/#config-changes"
 
-		read -rp "Acknowledge and continue? (y): " -t 30 CONFIRM2 || exit 254
-		[[ "$CONFIRM2" =~ ^[yY]$ ]] || exit 0
-	fi
+    read -rp "Acknowledge and continue? (y): " -t 30 CONFIRM2 || exit 254
+    [[ "$CONFIRM2" =~ ^[yY]$ ]] || exit 0
+  fi
 
-	if check_for_gh_release "vikunja" "go-vikunja/vikunja"; then
-		echo
-		msg_warn "The package update may include config file changes."
-		echo -e "${TAB}${YW}How do you want to handle /etc/vikunja/config.yml?${CL}"
-		echo -e "${TAB}  1) Keep your current config"
-		echo -e "${TAB}  2) Install the new package maintainer's config"
-		read -rp "  Choose [1/2] (default: 1): " -t 60 CONFIG_CHOICE || CONFIG_CHOICE="1"
-		[[ -z "$CONFIG_CHOICE" ]] && CONFIG_CHOICE="1"
+  if check_for_gh_release "vikunja" "go-vikunja/vikunja"; then
+    echo
+    msg_warn "The package update may include config file changes."
+    echo -e "${TAB}${YW}How do you want to handle /etc/vikunja/config.yml?${CL}"
+    echo -e "${TAB}  1) Keep your current config"
+    echo -e "${TAB}  2) Install the new package maintainer's config"
+    read -rp "  Choose [1/2] (default: 1): " -t 60 CONFIG_CHOICE || CONFIG_CHOICE="1"
+    [[ -z "$CONFIG_CHOICE" ]] && CONFIG_CHOICE="1"
 
-		if [[ "$CONFIG_CHOICE" == "2" ]]; then
-			export DPKG_FORCE_CONFNEW="1"
-		else
-			export DPKG_FORCE_CONFOLD="1"
-		fi
+    if [[ "$CONFIG_CHOICE" == "2" ]]; then
+      export DPKG_FORCE_CONFNEW="1"
+    else
+      export DPKG_FORCE_CONFOLD="1"
+    fi
 
-		msg_info "Stopping Service"
-		systemctl stop vikunja
-		msg_ok "Stopped Service"
+    msg_info "Stopping Service"
+    systemctl stop vikunja
+    msg_ok "Stopped Service"
 
-		fetch_and_deploy_gh_release "vikunja" "go-vikunja/vikunja" "binary" "latest" "" "vikunja-*-$(arch_resolve "x86_64" "aarch64").deb"
-		$STD systemctl daemon-reload
+    fetch_and_deploy_gh_release "vikunja" "go-vikunja/vikunja" "binary" "latest" "" "vikunja-*-$(arch_resolve "x86_64" "aarch64").deb"
+    $STD systemctl daemon-reload
 
-		msg_info "Starting Service"
-		systemctl start vikunja
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit 0
+    msg_info "Starting Service"
+    systemctl start vikunja
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit 0
 }
 
 start

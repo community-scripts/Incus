@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -23,71 +26,71 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if ! dpkg -l plexmediaserver &>/dev/null; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if ! dpkg -l plexmediaserver &>/dev/null; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	# Migrate from old repository to new one if needed
-	if [[ -f /etc/apt/sources.list.d/plexmediaserver.sources ]]; then
-		local current_uri
-		current_uri=$(grep -oP '(?<=URIs: ).*' /etc/apt/sources.list.d/plexmediaserver.sources 2>/dev/null || true)
-		if [[ "$current_uri" == *"downloads.plex.tv/repo/deb"* ]]; then
-			msg_info "Migrating to new Plex repository"
-			rm -f /etc/apt/sources.list.d/plexmediaserver.sources
-			rm -f /usr/share/keyrings/PlexSign.asc
-			setup_deb822_repo \
-				"plexmediaserver" \
-				"https://downloads.plex.tv/plex-keys/PlexSign.v2.key" \
-				"https://repo.plex.tv/deb/" \
-				"public" \
-				"main"
-			msg_ok "Migrated to new Plex repository"
-		fi
-	elif compgen -G "/etc/apt/sources.list.d/plex*.list" >/dev/null; then
-		msg_info "Migrating to new Plex repository (deb822)"
-		rm -f /etc/apt/sources.list.d/plex*.list
-		rm -f /usr/share/keyrings/PlexSign.asc
-		rm -f /usr/share/keyrings/plexmediaserver.v2.gpg
-		setup_deb822_repo \
-			"plexmediaserver" \
-			"https://downloads.plex.tv/plex-keys/PlexSign.v2.key" \
-			"https://repo.plex.tv/deb/" \
-			"public" \
-			"main"
-		msg_ok "Migrated to new Plex repository (deb822)"
-	elif [[ ! -f /etc/apt/sources.list.d/plexmediaserver.sources ]]; then
-		msg_info "Setting up Plex repository"
-		setup_deb822_repo \
-			"plexmediaserver" \
-			"https://downloads.plex.tv/plex-keys/PlexSign.v2.key" \
-			"https://repo.plex.tv/deb/" \
-			"public" \
-			"main"
-		msg_ok "Set up Plex repository"
-	fi
-	if [[ -f /usr/local/bin/plexupdate ]] || [[ -d /opt/plexupdate ]]; then
-		msg_info "Removing legacy plexupdate"
-		rm -rf /opt/plexupdate /usr/local/bin/plexupdate
-		crontab -l 2>/dev/null | grep -v plexupdate | crontab - 2>/dev/null || true
-		msg_ok "Removed legacy plexupdate"
-	fi
+  # Migrate from old repository to new one if needed
+  if [[ -f /etc/apt/sources.list.d/plexmediaserver.sources ]]; then
+    local current_uri
+    current_uri=$(grep -oP '(?<=URIs: ).*' /etc/apt/sources.list.d/plexmediaserver.sources 2>/dev/null || true)
+    if [[ "$current_uri" == *"downloads.plex.tv/repo/deb"* ]]; then
+      msg_info "Migrating to new Plex repository"
+      rm -f /etc/apt/sources.list.d/plexmediaserver.sources
+      rm -f /usr/share/keyrings/PlexSign.asc
+      setup_deb822_repo \
+        "plexmediaserver" \
+        "https://downloads.plex.tv/plex-keys/PlexSign.v2.key" \
+        "https://repo.plex.tv/deb/" \
+        "public" \
+        "main"
+      msg_ok "Migrated to new Plex repository"
+    fi
+  elif compgen -G "/etc/apt/sources.list.d/plex*.list" >/dev/null; then
+    msg_info "Migrating to new Plex repository (deb822)"
+    rm -f /etc/apt/sources.list.d/plex*.list
+    rm -f /usr/share/keyrings/PlexSign.asc
+    rm -f /usr/share/keyrings/plexmediaserver.v2.gpg
+    setup_deb822_repo \
+      "plexmediaserver" \
+      "https://downloads.plex.tv/plex-keys/PlexSign.v2.key" \
+      "https://repo.plex.tv/deb/" \
+      "public" \
+      "main"
+    msg_ok "Migrated to new Plex repository (deb822)"
+  elif [[ ! -f /etc/apt/sources.list.d/plexmediaserver.sources ]]; then
+    msg_info "Setting up Plex repository"
+    setup_deb822_repo \
+      "plexmediaserver" \
+      "https://downloads.plex.tv/plex-keys/PlexSign.v2.key" \
+      "https://repo.plex.tv/deb/" \
+      "public" \
+      "main"
+    msg_ok "Set up Plex repository"
+  fi
+  if [[ -f /usr/local/bin/plexupdate ]] || [[ -d /opt/plexupdate ]]; then
+    msg_info "Removing legacy plexupdate"
+    rm -rf /opt/plexupdate /usr/local/bin/plexupdate
+    crontab -l 2>/dev/null | grep -v plexupdate | crontab - 2>/dev/null || true
+    msg_ok "Removed legacy plexupdate"
+  fi
 
-	msg_info "Updating Plex Media Server"
-	$STD apt update
-	$STD apt install -y plexmediaserver
-	msg_ok "Updated Plex Media Server"
+  msg_info "Updating Plex Media Server"
+  $STD apt update
+  $STD apt install -y plexmediaserver
+  msg_ok "Updated Plex Media Server"
 
-	msg_info "Restarting Plex Media Server"
-	systemctl restart plexmediaserver
-	msg_ok "Restarted Plex Media Server"
+  msg_info "Restarting Plex Media Server"
+  systemctl restart plexmediaserver
+  msg_ok "Restarted Plex Media Server"
 
-	msg_ok "Updated successfully!"
-	exit
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

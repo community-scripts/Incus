@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,37 +25,37 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/rdtc/ ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if check_for_gh_release "rdt-client" "rogerfar/rdt-client"; then
-		msg_info "Stopping Service"
-		systemctl stop rdtc
-		msg_ok "Stopped Service"
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/rdtc/ ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if check_for_gh_release "rdt-client" "rogerfar/rdt-client"; then
+    msg_info "Stopping Service"
+    systemctl stop rdtc
+    msg_ok "Stopped Service"
 
-		msg_info "Creating backup"
-		mkdir -p /opt/rdtc-backup
-		cp -R /opt/rdtc/appsettings.json /opt/rdtc-backup/
-		msg_ok "Backup created"
+    msg_info "Creating backup"
+    mkdir -p /opt/rdtc-backup
+    cp -R /opt/rdtc/appsettings.json /opt/rdtc-backup/
+    msg_ok "Backup created"
 
-		fetch_and_deploy_gh_release "rdt-client" "rogerfar/rdt-client" "prebuild" "latest" "/opt/rdtc" "RealDebridClient.zip"
-		cp -R /opt/rdtc-backup/appsettings.json /opt/rdtc/
-		if dpkg-query -W aspnetcore-runtime-9.0 >/dev/null 2>&1; then
-			$STD apt remove --purge -y aspnetcore-runtime-9.0
-			ensure_dependencies aspnetcore-runtime-10.0
-		fi
-		rm -rf /opt/rdtc-backup
+    fetch_and_deploy_gh_release "rdt-client" "rogerfar/rdt-client" "prebuild" "latest" "/opt/rdtc" "RealDebridClient.zip"
+    cp -R /opt/rdtc-backup/appsettings.json /opt/rdtc/
+    if dpkg-query -W aspnetcore-runtime-9.0 >/dev/null 2>&1; then
+      $STD apt remove --purge -y aspnetcore-runtime-9.0
+      ensure_dependencies aspnetcore-runtime-10.0
+    fi
+    rm -rf /opt/rdtc-backup
 
-		msg_info "Starting Service"
-		systemctl start rdtc
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start rdtc
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

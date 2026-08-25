@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,58 +25,58 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/storyteller ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/storyteller ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="24" NODE_MODULE="corepack,yarn" setup_nodejs
+  NODE_VERSION="24" NODE_MODULE="corepack,yarn" setup_nodejs
 
-	if check_for_gl_release "storyteller" "storyteller-platform/storyteller" "" "" "web-v2"; then
-		msg_info "Stopping Service"
-		systemctl stop storyteller
-		msg_ok "Stopped Service"
+  if check_for_gl_release "storyteller" "storyteller-platform/storyteller" "" "" "web-v2"; then
+    msg_info "Stopping Service"
+    systemctl stop storyteller
+    msg_ok "Stopped Service"
 
-		create_backup /opt/storyteller/.env
+    create_backup /opt/storyteller/.env
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gl_release "storyteller" "storyteller-platform/storyteller" "tarball" "latest" "/opt/storyteller" "" "web-v2"
+    CLEAN_INSTALL=1 fetch_and_deploy_gl_release "storyteller" "storyteller-platform/storyteller" "tarball" "latest" "/opt/storyteller" "" "web-v2"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Rebuilding Storyteller"
-		cd /opt/storyteller
-		export NODE_OPTIONS="--max-old-space-size=4096"
+    msg_info "Rebuilding Storyteller"
+    cd /opt/storyteller
+    export NODE_OPTIONS="--max-old-space-size=4096"
 
-		$STD corepack yarn install --network-timeout 600000
-		$STD gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
-		export CI=1
-		export NODE_ENV=production
-		export NEXT_TELEMETRY_DISABLED=1
-		export SQLITE_NATIVE_BINDING=/opt/storyteller/node_modules/better-sqlite3/build/Release/better_sqlite3.node
-		$STD corepack yarn workspaces foreach -Rpt --from @storyteller-platform/web --exclude @storyteller-platform/eslint run build
-		mkdir -p /opt/storyteller/web/.next/standalone/web/.next/static
-		cp -rT /opt/storyteller/web/.next/static /opt/storyteller/web/.next/standalone/web/.next/static
-		if [[ -d /opt/storyteller/web/public ]]; then
-			mkdir -p /opt/storyteller/web/.next/standalone/web/public
-			cp -rT /opt/storyteller/web/public /opt/storyteller/web/.next/standalone/web/public
-		fi
-		mkdir -p /opt/storyteller/web/.next/standalone/web/migrations
-		cp -rT /opt/storyteller/web/migrations /opt/storyteller/web/.next/standalone/web/migrations
-		mkdir -p /opt/storyteller/web/.next/standalone/web/sqlite
-		cp -rT /opt/storyteller/web/sqlite /opt/storyteller/web/.next/standalone/web/sqlite
-		ln -sf /opt/storyteller/.env /opt/storyteller/web/.next/standalone/web/.env
-		msg_ok "Rebuilt Storyteller"
+    $STD corepack yarn install --network-timeout 600000
+    $STD gcc -g -fPIC -rdynamic -shared web/sqlite/uuid.c -o web/sqlite/uuid.c.so
+    export CI=1
+    export NODE_ENV=production
+    export NEXT_TELEMETRY_DISABLED=1
+    export SQLITE_NATIVE_BINDING=/opt/storyteller/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+    $STD corepack yarn workspaces foreach -Rpt --from @storyteller-platform/web --exclude @storyteller-platform/eslint run build
+    mkdir -p /opt/storyteller/web/.next/standalone/web/.next/static
+    cp -rT /opt/storyteller/web/.next/static /opt/storyteller/web/.next/standalone/web/.next/static
+    if [[ -d /opt/storyteller/web/public ]]; then
+      mkdir -p /opt/storyteller/web/.next/standalone/web/public
+      cp -rT /opt/storyteller/web/public /opt/storyteller/web/.next/standalone/web/public
+    fi
+    mkdir -p /opt/storyteller/web/.next/standalone/web/migrations
+    cp -rT /opt/storyteller/web/migrations /opt/storyteller/web/.next/standalone/web/migrations
+    mkdir -p /opt/storyteller/web/.next/standalone/web/sqlite
+    cp -rT /opt/storyteller/web/sqlite /opt/storyteller/web/.next/standalone/web/sqlite
+    ln -sf /opt/storyteller/.env /opt/storyteller/web/.next/standalone/web/.env
+    msg_ok "Rebuilt Storyteller"
 
-		msg_info "Starting Service"
-		systemctl start storyteller
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start storyteller
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,60 +25,60 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/metube ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/metube ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if [[ $(echo ":$PATH:" != *":/usr/local/bin:"*) ]]; then
-		echo -e "\nexport PATH=\"/usr/local/bin:\$PATH\"" >>~/.bashrc
-		source ~/.bashrc
-		if ! command -v deno &>/dev/null; then
-			export DENO_INSTALL="/usr/local"
-			curl -fsSL https://deno.land/install.sh | $STD sh -s -- -y
-		else
-			$STD deno upgrade
-		fi
-	fi
+  if [[ $(echo ":$PATH:" != *":/usr/local/bin:"*) ]]; then
+    echo -e "\nexport PATH=\"/usr/local/bin:\$PATH\"" >>~/.bashrc
+    source ~/.bashrc
+    if ! command -v deno &>/dev/null; then
+      export DENO_INSTALL="/usr/local"
+      curl -fsSL https://deno.land/install.sh | $STD sh -s -- -y
+    else
+      $STD deno upgrade
+    fi
+  fi
 
-	NODE_VERSION="24" NODE_MODULE="corepack,pnpm" setup_nodejs
+  NODE_VERSION="24" NODE_MODULE="corepack,pnpm" setup_nodejs
 
-	if check_for_gh_release "metube" "alexta69/metube"; then
-		msg_info "Stopping Service"
-		systemctl stop metube
-		msg_ok "Stopped Service"
+  if check_for_gh_release "metube" "alexta69/metube"; then
+    msg_info "Stopping Service"
+    systemctl stop metube
+    msg_ok "Stopped Service"
 
-		create_backup /opt/metube/.env
+    create_backup /opt/metube/.env
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "metube" "alexta69/metube" "tarball" "latest"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "metube" "alexta69/metube" "tarball" "latest"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Building Frontend"
-		cd /opt/metube/ui
-		if command -v corepack >/dev/null 2>&1; then
+    msg_info "Building Frontend"
+    cd /opt/metube/ui
+    if command -v corepack >/dev/null 2>&1; then
 
-			$STD corepack prepare pnpm --activate || true
-		fi
-		echo 'onlyBuiltDependencies=*' >>.npmrc
-		$STD pnpm install --frozen-lockfile
-		$STD pnpm run build
-		msg_ok "Built Frontend"
+      $STD corepack prepare pnpm --activate || true
+    fi
+    echo 'onlyBuiltDependencies=*' >> .npmrc
+    $STD pnpm install --frozen-lockfile
+    $STD pnpm run build
+    msg_ok "Built Frontend"
 
-		PYTHON_VERSION="3.13" setup_uv
+    PYTHON_VERSION="3.13" setup_uv
 
-		msg_info "Installing Backend Requirements"
-		cd /opt/metube
-		$STD uv sync
-		msg_ok "Installed Backend"
+    msg_info "Installing Backend Requirements"
+    cd /opt/metube
+    $STD uv sync
+    msg_ok "Installed Backend"
 
-		if grep -q 'pipenv' /etc/systemd/system/metube.service; then
-			msg_info "Patching systemd Service"
-			cat <<EOF >/etc/systemd/system/metube.service
+    if grep -q 'pipenv' /etc/systemd/system/metube.service; then
+      msg_info "Patching systemd Service"
+      cat <<EOF >/etc/systemd/system/metube.service
 [Unit]
 Description=Metube - YouTube Downloader
 After=network.target
@@ -89,17 +92,17 @@ User=root
 [Install]
 WantedBy=multi-user.target
 EOF
-			msg_ok "Patched systemd Service"
-		fi
-		$STD systemctl daemon-reload
-		msg_ok "Service Updated"
+      msg_ok "Patched systemd Service"
+    fi
+    $STD systemctl daemon-reload
+    msg_ok "Service Updated"
 
-		msg_info "Starting Service"
-		systemctl start metube
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start metube
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

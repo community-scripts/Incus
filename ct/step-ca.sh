@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,46 +25,46 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /etc/apt/sources.list.d/smallstep.sources ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	msg_info "Updating step-ca and step-cli"
-	$STD apt update
-	$STD apt upgrade -y step-ca step-cli
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/apt/sources.list.d/smallstep.sources ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  msg_info "Updating step-ca and step-cli"
+  $STD apt update
+  $STD apt upgrade -y step-ca step-cli
 
-	# Patch for making $STD happy (/usr/bin/step is a symlink to /usr/bin/step-cli)
-	STEPBIN="$(which step)"
-	rm -f "$STEPBIN"
-	cp -f "$(which step-cli)" "$STEPBIN"
+  # Patch for making $STD happy (/usr/bin/step is a symlink to /usr/bin/step-cli)
+  STEPBIN="$(which step)"
+  rm -f "$STEPBIN"
+  cp -f "$(which step-cli)" "$STEPBIN"
 
-	# Patch for leaf_data.tpl - Issue: #14810
-	sed -i \
-		-e 's/\[//' \
-		-e 's/\]//' \
-		"$STEPPATH/templates/x509/leaf_data.tpl"
+  # Patch for leaf_data.tpl - Issue: #14810
+  sed -i \
+  -e 's/\[//' \
+  -e 's/\]//' \
+  "$STEPPATH/templates/x509/leaf_data.tpl"
 
-	# Patch for provisioners templateData - Issue: #14810
-	step ca provisioner list | jq -c '.[] | select(.options.x509.templateData != null) | .name' >/tmp/provisioner_names.json
-	for i in $(cat /tmp/provisioner_names.json); do
-		prov=$(echo $i | tr -d '"')
-		echo
-		echo "Updating provisioner $prov ..."
-		$STD step ca provisioner update $prov --x509-template-data=$STEPPATH/templates/x509/leaf_data.tpl
-	done
-	rm /tmp/provisioner_names.json
+  # Patch for provisioners templateData - Issue: #14810
+  step ca provisioner list | jq -c '.[] | select(.options.x509.templateData != null) | .name' > /tmp/provisioner_names.json
+  for i in $(cat /tmp/provisioner_names.json); do
+    prov=`echo $i | tr -d '"'`
+    echo
+    echo "Updating provisioner $prov ..."
+    $STD step ca provisioner update $prov --x509-template-data=$STEPPATH/templates/x509/leaf_data.tpl
+  done
+  rm /tmp/provisioner_names.json
 
-	$STD systemctl restart step-ca
-	msg_ok "Updated step-ca and step-cli"
+  $STD systemctl restart step-ca
+  msg_ok "Updated step-ca and step-cli"
 
-	if check_for_gh_release "step-badger" "lukasz-lobocki/step-badger"; then
-		fetch_and_deploy_gh_release "step-badger" "lukasz-lobocki/step-badger" "prebuild" "latest" "/opt/step-badger" "step-badger_Linux_$(arch_resolve "x86_64" "arm64").tar.gz"
-		msg_ok "Updated step-badger"
-	fi
-	exit
+  if check_for_gh_release "step-badger" "lukasz-lobocki/step-badger"; then
+    fetch_and_deploy_gh_release "step-badger" "lukasz-lobocki/step-badger" "prebuild" "latest" "/opt/step-badger" "step-badger_Linux_$(arch_resolve "x86_64" "arm64").tar.gz"
+    msg_ok "Updated step-badger"
+  fi
+  exit
 }
 
 start

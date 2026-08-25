@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,35 +25,35 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /etc/rabbitmq ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	if grep -q "dl.cloudsmith.io" /etc/apt/sources.list.d/rabbitmq.list; then
-		rm -f /etc/apt/sources.list.d/rabbitmq.list
-		setup_deb822_repo \
-			"rabbitmq" \
-			"https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" \
-			"https://deb1.rabbitmq.com/rabbitmq-server/debian/trixie" \
-			"trixie"
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /etc/rabbitmq ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  if grep -q "dl.cloudsmith.io" /etc/apt/sources.list.d/rabbitmq.list; then
+    rm -f /etc/apt/sources.list.d/rabbitmq.list
+    setup_deb822_repo \
+      "rabbitmq" \
+      "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" \
+      "https://deb1.rabbitmq.com/rabbitmq-server/debian/trixie" \
+      "trixie"
+  fi
 
-	msg_info "Stopping Service"
-	systemctl stop rabbitmq-server
-	msg_ok "Stopped Service"
+  msg_info "Stopping Service"
+  systemctl stop rabbitmq-server
+  msg_ok "Stopped Service"
 
-	msg_info "Updating..."
-	$STD apt install --only-upgrade rabbitmq-server
-	msg_ok "Updated successfully!"
+  msg_info "Updating..."
+  $STD apt install --only-upgrade rabbitmq-server
+  msg_ok "Updated successfully!"
 
-	msg_info "Starting Service"
-	systemctl start rabbitmq-server
-	msg_ok "Started Service"
-	msg_ok "Updated successfully!"
-	exit
+  msg_info "Starting Service"
+  systemctl start rabbitmq-server
+  msg_ok "Started Service"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

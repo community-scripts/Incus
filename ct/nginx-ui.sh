@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,42 +25,42 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -f /usr/local/bin/nginx-ui ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -f /usr/local/bin/nginx-ui ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "nginx-ui" "0xJacky/nginx-ui"; then
-		msg_info "Stopping Service"
-		systemctl stop nginx-ui
-		msg_ok "Stopped Service"
+  if check_for_gh_release "nginx-ui" "0xJacky/nginx-ui"; then
+    msg_info "Stopping Service"
+    systemctl stop nginx-ui
+    msg_ok "Stopped Service"
 
-		msg_info "Backing up Configuration"
-		cp /usr/local/etc/nginx-ui/app.ini /tmp/nginx-ui-app.ini.bak
-		msg_ok "Backed up Configuration"
+    msg_info "Backing up Configuration"
+    cp /usr/local/etc/nginx-ui/app.ini /tmp/nginx-ui-app.ini.bak
+    msg_ok "Backed up Configuration"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nginx-ui" "0xJacky/nginx-ui" "prebuild" "latest" "/opt/nginx-ui" "nginx-ui-linux-$(arch_resolve "64" "arm64-v8a").tar.gz"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nginx-ui" "0xJacky/nginx-ui" "prebuild" "latest" "/opt/nginx-ui" "nginx-ui-linux-$(arch_resolve "64" "arm64-v8a").tar.gz"
 
-		msg_info "Updating Binary"
-		cp /opt/nginx-ui/nginx-ui /usr/local/bin/nginx-ui
-		chmod +x /usr/local/bin/nginx-ui
-		rm -rf /opt/nginx-ui
-		msg_ok "Updated Binary"
+    msg_info "Updating Binary"
+    cp /opt/nginx-ui/nginx-ui /usr/local/bin/nginx-ui
+    chmod +x /usr/local/bin/nginx-ui
+    rm -rf /opt/nginx-ui
+    msg_ok "Updated Binary"
 
-		msg_info "Restoring Configuration"
-		mv /tmp/nginx-ui-app.ini.bak /usr/local/etc/nginx-ui/app.ini
-		msg_ok "Restored Configuration"
+    msg_info "Restoring Configuration"
+    mv /tmp/nginx-ui-app.ini.bak /usr/local/etc/nginx-ui/app.ini
+    msg_ok "Restored Configuration"
 
-		msg_info "Starting Service"
-		systemctl start nginx-ui
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start nginx-ui
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

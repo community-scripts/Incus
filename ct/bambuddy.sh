@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,53 +25,53 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/bambuddy ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/bambuddy ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	ensure_dependencies ffmpeg
+  ensure_dependencies ffmpeg
 
-	if check_for_gh_release "bambuddy" "maziggy/bambuddy"; then
-		msg_info "Stopping Service"
-		systemctl stop bambuddy
-		msg_ok "Stopped Service"
+  if check_for_gh_release "bambuddy" "maziggy/bambuddy"; then
+    msg_info "Stopping Service"
+    systemctl stop bambuddy
+    msg_ok "Stopped Service"
 
-		msg_info "Backing up Configuration and Data"
-		create_backup /opt/bambuddy/.env \
-			/opt/bambuddy/data \
-			/opt/bambuddy/bambuddy.db \
-			/opt/bambuddy/bambutrack.db \
-			/opt/bambuddy/archive \
-			/opt/bambuddy/virtual_printer
-		msg_ok "Backed up Configuration and Data"
+    msg_info "Backing up Configuration and Data"
+    create_backup /opt/bambuddy/.env \
+      /opt/bambuddy/data \
+      /opt/bambuddy/bambuddy.db \
+      /opt/bambuddy/bambutrack.db \
+      /opt/bambuddy/archive \
+      /opt/bambuddy/virtual_printer
+    msg_ok "Backed up Configuration and Data"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "bambuddy" "maziggy/bambuddy" "tarball" "latest" "/opt/bambuddy"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "bambuddy" "maziggy/bambuddy" "tarball" "latest" "/opt/bambuddy"
 
-		msg_info "Updating Python Dependencies"
-		cd /opt/bambuddy
-		$STD uv venv --clear
-		$STD uv pip install -r requirements.txt
-		msg_ok "Updated Python Dependencies"
+    msg_info "Updating Python Dependencies"
+    cd /opt/bambuddy
+    $STD uv venv --clear
+    $STD uv pip install -r requirements.txt
+    msg_ok "Updated Python Dependencies"
 
-		msg_info "Rebuilding Frontend"
-		cd /opt/bambuddy/frontend
-		$STD npm install
-		$STD npm run build
-		msg_ok "Rebuilt Frontend"
+    msg_info "Rebuilding Frontend"
+    cd /opt/bambuddy/frontend
+    $STD npm install
+    $STD npm run build
+    msg_ok "Rebuilt Frontend"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Starting Service"
-		systemctl start bambuddy
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start bambuddy
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

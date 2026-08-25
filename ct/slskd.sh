@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,65 +25,65 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/slskd ]]; then
-		msg_error "No Slskd Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/slskd ]]; then
+    msg_error "No Slskd Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "Slskd" "slskd/slskd"; then
-		msg_info "Stopping Service(s)"
-		systemctl stop slskd
-		[[ -f /etc/systemd/system/soularr.service ]] && systemctl stop soularr.timer soularr.service
-		msg_ok "Stopped Service(s)"
+  if check_for_gh_release "Slskd" "slskd/slskd"; then
+    msg_info "Stopping Service(s)"
+    systemctl stop slskd
+    [[ -f /etc/systemd/system/soularr.service ]] && systemctl stop soularr.timer soularr.service
+    msg_ok "Stopped Service(s)"
 
-		create_backup /opt/slskd/config/slskd.yml
+    create_backup /opt/slskd/config/slskd.yml
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Slskd" "slskd/slskd" "prebuild" "latest" "/opt/slskd" "slskd-*-linux-$(arch_resolve "x64" "arm64").zip"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Slskd" "slskd/slskd" "prebuild" "latest" "/opt/slskd" "slskd-*-linux-$(arch_resolve "x64" "arm64").zip"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Migrating config"
-		# Migrate 0.25.0 breaking config key renames
-		sed -i 's/^global:/transfers:/' /opt/slskd/config/slskd.yml
-		sed -i 's/^integration:/integrations:/' /opt/slskd/config/slskd.yml
-		msg_ok "Migrated config"
+    msg_info "Migrating config"
+    # Migrate 0.25.0 breaking config key renames
+    sed -i 's/^global:/transfers:/' /opt/slskd/config/slskd.yml
+    sed -i 's/^integration:/integrations:/' /opt/slskd/config/slskd.yml
+    msg_ok "Migrated config"
 
-		msg_info "Starting Service(s)"
-		systemctl start slskd
-		[[ -f /etc/systemd/system/soularr.service ]] && systemctl start soularr.timer
-		msg_ok "Started Service(s)"
-		msg_ok "Updated Slskd successfully!"
-	fi
-	[[ -d /opt/soularr ]] && if check_for_gh_release "Soularr" "mrusse/soularr"; then
-		if systemctl is-active soularr.timer >/dev/null; then
-			msg_info "Stopping Timer and Service"
-			systemctl stop soularr.timer soularr.service
-			msg_ok "Stopped Timer and Service"
-		fi
+    msg_info "Starting Service(s)"
+    systemctl start slskd
+    [[ -f /etc/systemd/system/soularr.service ]] && systemctl start soularr.timer
+    msg_ok "Started Service(s)"
+    msg_ok "Updated Slskd successfully!"
+  fi
+  [[ -d /opt/soularr ]] && if check_for_gh_release "Soularr" "mrusse/soularr"; then
+    if systemctl is-active soularr.timer >/dev/null; then
+      msg_info "Stopping Timer and Service"
+      systemctl stop soularr.timer soularr.service
+      msg_ok "Stopped Timer and Service"
+    fi
 
-		create_backup /opt/soularr/config.ini /opt/soularr/run.sh
+    create_backup /opt/soularr/config.ini /opt/soularr/run.sh
 
-		PYTHON_VERSION="3.11" setup_uv
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Soularr" "mrusse/soularr" "tarball" "latest" "/opt/soularr"
-		restore_backup
-		msg_info "Updating Soularr"
-		cd /opt/soularr
-		$STD uv venv -c venv
-		$STD source venv/bin/activate
-		$STD uv pip install -r requirements.txt
-		deactivate
-		msg_ok "Updated Soularr"
+    PYTHON_VERSION="3.11" setup_uv
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Soularr" "mrusse/soularr" "tarball" "latest" "/opt/soularr"
+    restore_backup
+    msg_info "Updating Soularr"
+    cd /opt/soularr
+    $STD uv venv -c venv
+    $STD source venv/bin/activate
+    $STD uv pip install -r requirements.txt
+    deactivate
+    msg_ok "Updated Soularr"
 
-		msg_info "Starting Soularr Timer"
-		systemctl restart soularr.timer
-		msg_ok "Started Soularr Timer"
-		msg_ok "Updated Soularr successfully!"
-	fi
-	exit
+    msg_info "Starting Soularr Timer"
+    systemctl restart soularr.timer
+    msg_ok "Started Soularr Timer"
+    msg_ok "Updated Soularr successfully!"
+  fi
+  exit
 }
 
 start

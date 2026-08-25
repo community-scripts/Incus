@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,49 +26,49 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/nextExplorer ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/nextExplorer ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="24" setup_nodejs
+  NODE_VERSION="24" setup_nodejs
 
-	if check_for_gh_release "nextExplorer" "nxzai/nextExplorer"; then
-		msg_info "Stopping nextExplorer"
-		$STD systemctl stop nextexplorer
-		msg_ok "Stopped nextExplorer"
+  if check_for_gh_release "nextExplorer" "nxzai/nextExplorer"; then
+    msg_info "Stopping nextExplorer"
+    $STD systemctl stop nextexplorer
+    msg_ok "Stopped nextExplorer"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nextExplorer" "nxzai/nextExplorer" "tarball" "latest" "/opt/nextExplorer"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nextExplorer" "nxzai/nextExplorer" "tarball" "latest" "/opt/nextExplorer"
 
-		msg_info "Updating nextExplorer"
-		APP_DIR="/opt/nextExplorer/app"
-		mkdir -p "$APP_DIR"
-		cd /opt/nextExplorer
-		export NODE_ENV=production
-		$STD npm ci --omit=dev --workspace backend
-		mv node_modules "$APP_DIR"
-		mv backend/{src,package.json} "$APP_DIR"
-		unset NODE_ENV
-		export NODE_ENV=development
-		$STD npm ci --workspace frontend
-		$STD npm run -w frontend build -- --sourcemap false
-		unset NODE_ENV
-		mv frontend/dist/ "$APP_DIR"/src/public
-		chown -R explorer:explorer "$APP_DIR" /etc/nextExplorer
-		sed -i "\|version|s|$(jq -cr '.version' ${APP_DIR}/package.json)|$(cat ~/.nextexplorer)|" "$APP_DIR"/package.json
-		sed -i 's/app.js/server.js/' /etc/systemd/system/nextexplorer.service && systemctl daemon-reload
-		msg_ok "Updated nextExplorer"
+    msg_info "Updating nextExplorer"
+    APP_DIR="/opt/nextExplorer/app"
+    mkdir -p "$APP_DIR"
+    cd /opt/nextExplorer
+    export NODE_ENV=production
+    $STD npm ci --omit=dev --workspace backend
+    mv node_modules "$APP_DIR"
+    mv backend/{src,package.json} "$APP_DIR"
+    unset NODE_ENV
+    export NODE_ENV=development
+    $STD npm ci --workspace frontend
+    $STD npm run -w frontend build -- --sourcemap false
+    unset NODE_ENV
+    mv frontend/dist/ "$APP_DIR"/src/public
+    chown -R explorer:explorer "$APP_DIR" /etc/nextExplorer
+    sed -i "\|version|s|$(jq -cr '.version' ${APP_DIR}/package.json)|$(cat ~/.nextexplorer)|" "$APP_DIR"/package.json
+    sed -i 's/app.js/server.js/' /etc/systemd/system/nextexplorer.service && systemctl daemon-reload
+    msg_ok "Updated nextExplorer"
 
-		msg_info "Starting nextExplorer"
-		$STD systemctl start nextexplorer
-		msg_ok "Started nextExplorer"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting nextExplorer"
+    $STD systemctl start nextexplorer
+    msg_ok "Started nextExplorer"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

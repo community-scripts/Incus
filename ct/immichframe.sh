@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,68 +25,69 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/immichframe ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/immichframe ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
-		msg_info "Installing .NET SDK 8.0"
-		if [[ "$(arch_resolve)" == "arm64" ]]; then
-			curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
-			$STD bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/lib/dotnet8
-			ln -sf /usr/lib/dotnet8/dotnet /usr/bin/dotnet
-			rm -f /tmp/dotnet-install.sh
-		else
-			setup_deb822_repo \
-				"microsoft" \
-				"https://packages.microsoft.com/keys/microsoft-2025.asc" \
-				"https://packages.microsoft.com/debian/13/prod/" \
-				"trixie" \
-				"main"
-			$STD apt install -y dotnet-sdk-8.0
-		fi
-		msg_ok "Installed .NET SDK 8.0"
-	fi
+  if ! dotnet --list-sdks 2>/dev/null | grep -q '^8\.'; then
+    msg_info "Installing .NET SDK 8.0"
+    if [[ "$(arch_resolve)" == "arm64" ]]; then
+      curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+      $STD bash /tmp/dotnet-install.sh --channel 8.0 --install-dir /usr/lib/dotnet8
+      ln -sf /usr/lib/dotnet8/dotnet /usr/bin/dotnet
+      rm -f /tmp/dotnet-install.sh
+    else
+      setup_deb822_repo \
+        "microsoft" \
+        "https://packages.microsoft.com/keys/microsoft-2025.asc" \
+        "https://packages.microsoft.com/debian/13/prod/" \
+        "trixie" \
+        "main"
+      $STD apt install -y dotnet-sdk-8.0
+    fi
+    msg_ok "Installed .NET SDK 8.0"
+  fi
 
-	if check_for_gh_release "immichframe" "immichFrame/ImmichFrame"; then
-		msg_info "Stopping Service"
-		systemctl stop immichframe
-		msg_ok "Stopped Service"
+  if check_for_gh_release "immichframe" "immichFrame/ImmichFrame"; then
+    msg_info "Stopping Service"
+    systemctl stop immichframe
+    msg_ok "Stopped Service"
 
-		create_backup /opt/immichframe/Config
+    create_backup /opt/immichframe/Config
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "immichframe" "immichFrame/ImmichFrame" "tarball" "latest" "/tmp/immichframe"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "immichframe" "immichFrame/ImmichFrame" "tarball" "latest" "/tmp/immichframe"
 
-		msg_info "Setting up ImmichFrame"
-		cd /tmp/immichframe
-		$STD dotnet publish ImmichFrame.WebApi/ImmichFrame.WebApi.csproj \
-			--configuration Release \
-			--runtime "$(arch_resolve "linux-x64" "linux-arm64")" \
-			--self-contained false \
-			--output /opt/immichframe
+    msg_info "Setting up ImmichFrame"
+    cd /tmp/immichframe
+    $STD dotnet publish ImmichFrame.WebApi/ImmichFrame.WebApi.csproj \
+      --configuration Release \
+      --runtime "$(arch_resolve "linux-x64" "linux-arm64")" \
+      --self-contained false \
+      --output /opt/immichframe
 
-		cd /tmp/immichframe/immichFrame.Web
-		$STD npm ci --silent
-		$STD npm run build
-		rm -rf /opt/immichframe/wwwroot/*
-		cp -r build/* /opt/immichframe/wwwroot
-		rm -rf /tmp/immichframe
-		msg_ok "Setup ImmichFrame"
+    cd /tmp/immichframe/immichFrame.Web
+    $STD npm ci --silent
+    $STD npm run build
+    rm -rf /opt/immichframe/wwwroot/*
+    cp -r build/* /opt/immichframe/wwwroot
+    rm -rf /tmp/immichframe
+    msg_ok "Setup ImmichFrame"
 
-		restore_backup
-		chown -R immichframe:immichframe /opt/immichframe
+    restore_backup
+    chown -R immichframe:immichframe /opt/immichframe
 
-		msg_info "Starting Service"
-		systemctl start immichframe
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+
+    msg_info "Starting Service"
+    systemctl start immichframe
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,46 +25,46 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	RELEASE=$(curl -fsSL https://www.emqx.com/en/downloads/enterprise | grep -oP '/en/downloads/enterprise/v\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n1)
-	if [[ "$RELEASE" != "$(cat ~/.emqx 2>/dev/null)" ]] || [[ ! -f ~/.emqx ]]; then
-		msg_info "Stopping EMQX"
-		systemctl stop emqx
-		msg_ok "Stopped EMQX"
+  RELEASE=$(curl -fsSL https://www.emqx.com/en/downloads/enterprise | grep -oP '/en/downloads/enterprise/v\K[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n1)
+  if [[ "$RELEASE" != "$(cat ~/.emqx 2>/dev/null)" ]] || [[ ! -f ~/.emqx ]]; then
+    msg_info "Stopping EMQX"
+    systemctl stop emqx
+    msg_ok "Stopped EMQX"
 
-		msg_info "Removing old EMQX"
-		if dpkg -l | grep -q "^ii\s\+emqx\s"; then
-			$STD apt remove --purge -y emqx
-		elif dpkg -l | grep -q "^ii\s\+emqx-enterprise\s"; then
-			$STD apt remove --purge -y emqx-enterprise
-		else
-			msg_ok "No old EMQX package found"
-		fi
-		msg_ok "Removed old EMQX"
+    msg_info "Removing old EMQX"
+    if dpkg -l | grep -q "^ii\s\+emqx\s"; then
+      $STD apt remove --purge -y emqx
+    elif dpkg -l | grep -q "^ii\s\+emqx-enterprise\s"; then
+      $STD apt remove --purge -y emqx-enterprise
+    else
+      msg_ok "No old EMQX package found"
+    fi
+    msg_ok "Removed old EMQX"
 
-		msg_info "Downloading EMQX v${RELEASE}"
-		DEB_FILE="/tmp/emqx-enterprise-${RELEASE}-debian12-$(arch_resolve).deb"
-		curl -fsSL -o "$DEB_FILE" "https://www.emqx.com/en/downloads/enterprise/v${RELEASE}/emqx-enterprise-${RELEASE}-debian12-$(arch_resolve).deb"
-		msg_ok "Downloaded EMQX"
+    msg_info "Downloading EMQX v${RELEASE}"
+    DEB_FILE="/tmp/emqx-enterprise-${RELEASE}-debian12-$(arch_resolve).deb"
+    curl -fsSL -o "$DEB_FILE" "https://www.emqx.com/en/downloads/enterprise/v${RELEASE}/emqx-enterprise-${RELEASE}-debian12-$(arch_resolve).deb"
+    msg_ok "Downloaded EMQX"
 
-		msg_info "Installing EMQX"
-		$STD apt install -y "$DEB_FILE"
-		rm -f "$DEB_FILE"
-		echo "$RELEASE" >~/.emqx
-		msg_ok "Installed EMQX v${RELEASE}"
+    msg_info "Installing EMQX"
+    $STD apt install -y "$DEB_FILE"
+    rm -f "$DEB_FILE"
+    echo "$RELEASE" >~/.emqx
+    msg_ok "Installed EMQX v${RELEASE}"
 
-		msg_info "Starting EMQX"
-		systemctl start emqx
-		msg_ok "Started EMQX"
-		msg_ok "Updated successfully!"
-	else
-		msg_ok "No update required. EMQX is already at v${RELEASE}"
-	fi
+    msg_info "Starting EMQX"
+    systemctl start emqx
+    msg_ok "Started EMQX"
+    msg_ok "Updated successfully!"
+  else
+    msg_ok "No update required. EMQX is already at v${RELEASE}"
+  fi
 
-	exit
+  exit
 }
 
 start

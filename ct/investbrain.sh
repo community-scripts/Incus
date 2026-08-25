@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,57 +25,57 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/investbrain ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/investbrain ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "Investbrain" "investbrainapp/investbrain"; then
-		PHP_VERSION="8.4"
-		msg_info "Stopping Services"
-		systemctl stop nginx php${PHP_VERSION}-fpm
-		$STD supervisorctl stop all
-		msg_ok "Services Stopped"
+  if check_for_gh_release "Investbrain" "investbrainapp/investbrain"; then
+    PHP_VERSION="8.4"
+    msg_info "Stopping Services"
+    systemctl stop nginx php${PHP_VERSION}-fpm
+    $STD supervisorctl stop all
+    msg_ok "Services Stopped"
 
-		setup_composer
-		NODE_VERSION="22" setup_nodejs
-		PG_VERSION="17" setup_postgresql
+    setup_composer
+    NODE_VERSION="22" setup_nodejs
+    PG_VERSION="17" setup_postgresql
 
-		create_backup /opt/investbrain/.env /opt/investbrain/storage
+    create_backup /opt/investbrain/.env /opt/investbrain/storage
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Investbrain" "investbrainapp/investbrain" "tarball" "latest" "/opt/investbrain"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Investbrain" "investbrainapp/investbrain" "tarball" "latest" "/opt/investbrain"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Updating Investbrain"
-		cd /opt/investbrain
-		export COMPOSER_ALLOW_SUPERUSER=1
-		$STD /usr/local/bin/composer install --no-interaction --no-dev --optimize-autoloader
-		$STD npm install
-		$STD npm run build
-		$STD php artisan storage:link
-		$STD php artisan migrate --force
-		$STD php artisan cache:clear
-		$STD php artisan view:clear
-		$STD php artisan route:clear
-		$STD php artisan event:clear
-		$STD php artisan route:cache
-		$STD php artisan event:cache
-		chown -R www-data:www-data /opt/investbrain
-		chmod -R 775 /opt/investbrain/storage /opt/investbrain/bootstrap/cache
-		msg_ok "Updated Investbrain"
+    msg_info "Updating Investbrain"
+    cd /opt/investbrain
+    export COMPOSER_ALLOW_SUPERUSER=1
+    $STD /usr/local/bin/composer install --no-interaction --no-dev --optimize-autoloader
+    $STD npm install
+    $STD npm run build
+    $STD php artisan storage:link
+    $STD php artisan migrate --force
+    $STD php artisan cache:clear
+    $STD php artisan view:clear
+    $STD php artisan route:clear
+    $STD php artisan event:clear
+    $STD php artisan route:cache
+    $STD php artisan event:cache
+    chown -R www-data:www-data /opt/investbrain
+    chmod -R 775 /opt/investbrain/storage /opt/investbrain/bootstrap/cache
+    msg_ok "Updated Investbrain"
 
-		msg_info "Starting Services"
-		systemctl start php${PHP_VERSION}-fpm nginx
-		$STD supervisorctl start all
-		msg_ok "Services Started"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start php${PHP_VERSION}-fpm nginx
+    $STD supervisorctl start all
+    msg_ok "Services Started"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

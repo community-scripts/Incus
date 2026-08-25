@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,59 +26,59 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/oxicloud ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/oxicloud ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="26" setup_nodejs
+  NODE_VERSION="26" setup_nodejs
 
-	if check_for_gh_release "OxiCloud" "DioCrafts/OxiCloud"; then
-		msg_info "Stopping OxiCloud"
-		systemctl stop oxicloud
-		msg_ok "Stopped OxiCloud"
+  if check_for_gh_release "OxiCloud" "DioCrafts/OxiCloud"; then
+    msg_info "Stopping OxiCloud"
+    systemctl stop oxicloud
+    msg_ok "Stopped OxiCloud"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "OxiCloud" "DioCrafts/OxiCloud" "tarball" "latest" "/opt/oxicloud"
-		TOOLCHAIN="$(grep -oP 'FROM\s+rust:\K[0-9]+\.[0-9]+(\.[0-9]+)?' /opt/oxicloud/Dockerfile | head -1)"
-		RUST_TOOLCHAIN="${TOOLCHAIN:-stable}" setup_rust
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "OxiCloud" "DioCrafts/OxiCloud" "tarball" "latest" "/opt/oxicloud"
+    TOOLCHAIN="$(grep -oP 'FROM\s+rust:\K[0-9]+\.[0-9]+(\.[0-9]+)?' /opt/oxicloud/Dockerfile | head -1)"
+    RUST_TOOLCHAIN="${TOOLCHAIN:-stable}" setup_rust
 
-		msg_info "Building Frontend SPA"
-		cd /opt/oxicloud/frontend
-		$STD npm ci
-		$STD npm run build
-		msg_ok "Built Frontend SPA"
+    msg_info "Building Frontend SPA"
+    cd /opt/oxicloud/frontend
+    $STD npm ci
+    $STD npm run build
+    msg_ok "Built Frontend SPA"
 
-		msg_info "Updating OxiCloud (Patience)"
-		set -a
-		source /etc/oxicloud/.env
-		set +a
-		cd /opt/oxicloud
-		export DATABASE_URL
-		export RUSTFLAGS="-C target-cpu=native"
-		RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
-		CARGO_JOBS=$((RAM_MB / 2560))
-		[[ $CARGO_JOBS -lt 1 ]] && CARGO_JOBS=1
-		[[ $CARGO_JOBS -gt $(nproc) ]] && CARGO_JOBS=$(nproc)
-		$STD cargo build --release -j "$CARGO_JOBS" --bin oxicloud --bin migrate-nfc-filenames
-		mv target/release/oxicloud /usr/local/bin/oxicloud
-		mv target/release/migrate-nfc-filenames /usr/local/bin/migrate-nfc-filenames
-		chmod +x /usr/local/bin/oxicloud /usr/local/bin/migrate-nfc-filenames
-		rm -f /usr/bin/oxicloud
-		rm -rf /opt/oxicloud/static
-		mv /opt/oxicloud/static-dist /opt/oxicloud/static
-		rm -rf /opt/oxicloud/target /opt/oxicloud/frontend/node_modules
-		msg_ok "Updated OxiCloud"
+    msg_info "Updating OxiCloud (Patience)"
+    set -a
+    source /etc/oxicloud/.env
+    set +a
+    cd /opt/oxicloud
+    export DATABASE_URL
+    export RUSTFLAGS="-C target-cpu=native"
+    RAM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
+    CARGO_JOBS=$((RAM_MB / 2560))
+    [[ $CARGO_JOBS -lt 1 ]] && CARGO_JOBS=1
+    [[ $CARGO_JOBS -gt $(nproc) ]] && CARGO_JOBS=$(nproc)
+    $STD cargo build --release -j "$CARGO_JOBS" --bin oxicloud --bin migrate-nfc-filenames
+    mv target/release/oxicloud /usr/local/bin/oxicloud
+    mv target/release/migrate-nfc-filenames /usr/local/bin/migrate-nfc-filenames
+    chmod +x /usr/local/bin/oxicloud /usr/local/bin/migrate-nfc-filenames
+    rm -f /usr/bin/oxicloud
+    rm -rf /opt/oxicloud/static
+    mv /opt/oxicloud/static-dist /opt/oxicloud/static
+    rm -rf /opt/oxicloud/target /opt/oxicloud/frontend/node_modules
+    msg_ok "Updated OxiCloud"
 
-		msg_info "Starting OxiCloud"
-		systemctl start oxicloud
-		msg_ok "Started OxiCloud"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting OxiCloud"
+    systemctl start oxicloud
+    msg_ok "Started OxiCloud"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

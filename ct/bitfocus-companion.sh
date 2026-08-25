@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,49 +25,49 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -f /opt/bitfocus-companion/companion_headless.sh ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit 1
-	fi
+  if [[ ! -f /opt/bitfocus-companion/companion_headless.sh ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit 1
+  fi
 
-	ensure_dependencies libatomic1
+  ensure_dependencies libatomic1
 
-	RELEASE_JSON=$(curl -fsSL "https://api.bitfocus.io/v1/product/companion/packages?limit=20")
-	PACKAGE_JSON=$(echo "$RELEASE_JSON" | jq -c \
-		--arg target "linux-$(arch_resolve "tgz" "arm64-tgz")" \
-		--arg arch "linux-$(arch_resolve "x64" "arm64")" \
-		'(if type == "array" then . else .packages end) | [.[] | select(.target==$target and (.uri | contains($arch)))] | first')
-	RELEASE=$(echo "$PACKAGE_JSON" | jq -r '.version // empty')
-	ASSET_URL=$(echo "$PACKAGE_JSON" | jq -r '.uri // empty')
-	if [[ -z "$RELEASE" || -z "$ASSET_URL" ]]; then
-		msg_error "Could not resolve a matching Linux $(arch_resolve "x64" "arm64") Companion package from the Bitfocus API."
-		exit 1
-	fi
+  RELEASE_JSON=$(curl -fsSL "https://api.bitfocus.io/v1/product/companion/packages?limit=20")
+  PACKAGE_JSON=$(echo "$RELEASE_JSON" | jq -c \
+    --arg target "linux-$(arch_resolve "tgz" "arm64-tgz")" \
+    --arg arch "linux-$(arch_resolve "x64" "arm64")" \
+    '(if type == "array" then . else .packages end) | [.[] | select(.target==$target and (.uri | contains($arch)))] | first')
+  RELEASE=$(echo "$PACKAGE_JSON" | jq -r '.version // empty')
+  ASSET_URL=$(echo "$PACKAGE_JSON" | jq -r '.uri // empty')
+  if [[ -z "$RELEASE" || -z "$ASSET_URL" ]]; then
+    msg_error "Could not resolve a matching Linux $(arch_resolve "x64" "arm64") Companion package from the Bitfocus API."
+    exit 1
+  fi
 
-	if [[ "${RELEASE}" == "$(cat ~/.bitfocus-companion 2>/dev/null)" ]]; then
-		msg_ok "No update required. ${APP} is already at v${RELEASE}"
-		exit
-	fi
+  if [[ "${RELEASE}" == "$(cat ~/.bitfocus-companion 2>/dev/null)" ]]; then
+    msg_ok "No update required. ${APP} is already at v${RELEASE}"
+    exit
+  fi
 
-	msg_info "Stopping ${APP}"
-	systemctl stop bitfocus-companion
-	msg_ok "Stopped ${APP}"
+  msg_info "Stopping ${APP}"
+  systemctl stop bitfocus-companion
+  msg_ok "Stopped ${APP}"
 
-	msg_info "Updating ${APP} to v${RELEASE}"
-	CLEAN_INSTALL=1 fetch_and_deploy_from_url "$ASSET_URL" "/opt/bitfocus-companion"
-	echo "${RELEASE}" >~/.bitfocus-companion
-	msg_ok "Updated ${APP} to v${RELEASE}"
+  msg_info "Updating ${APP} to v${RELEASE}"
+  CLEAN_INSTALL=1 fetch_and_deploy_from_url "$ASSET_URL" "/opt/bitfocus-companion"
+  echo "${RELEASE}" >~/.bitfocus-companion
+  msg_ok "Updated ${APP} to v${RELEASE}"
 
-	msg_info "Starting ${APP}"
-	systemctl start bitfocus-companion
-	msg_ok "Started ${APP}"
+  msg_info "Starting ${APP}"
+  systemctl start bitfocus-companion
+  msg_ok "Started ${APP}"
 
-	msg_ok "Update Successful"
-	exit
+  msg_ok "Update Successful"
+  exit
 }
 
 start

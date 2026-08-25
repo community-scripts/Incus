@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,43 +25,43 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -e /usr/sbin/proxmox-datacenter-manager-admin ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -e /usr/sbin/proxmox-datacenter-manager-admin ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if grep -q 'Debian GNU/Linux 12' /etc/os-release && [ -f /etc/apt/sources.list.d/proxmox-release-bookworm.list ] && [ -f /etc/apt/sources.list.d/pdm-test.list ]; then
-		msg_info "Updating outdated outdated source formats"
-		echo "deb [signed-by=/usr/share/keyrings/proxmox-archive-keyring.gpg] http://download.proxmox.com/debian/pdm bookworm pdm-test" >/etc/apt/sources.list.d/pdm-test.list
-		curl -fsSL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg -o /usr/share/keyrings/proxmox-archive-keyring.gpg
-		rm -f /etc/apt/keyrings/proxmox-release-bookworm.gpg /etc/apt/sources.list.d/proxmox-release-bookworm.list
-		$STD apt update
-		msg_ok "Updated old sources"
-	fi
+  if grep -q 'Debian GNU/Linux 12' /etc/os-release && [ -f /etc/apt/sources.list.d/proxmox-release-bookworm.list ] && [ -f /etc/apt/sources.list.d/pdm-test.list ]; then
+    msg_info "Updating outdated outdated source formats"
+    echo "deb [signed-by=/usr/share/keyrings/proxmox-archive-keyring.gpg] http://download.proxmox.com/debian/pdm bookworm pdm-test" >/etc/apt/sources.list.d/pdm-test.list
+    curl -fsSL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg -o /usr/share/keyrings/proxmox-archive-keyring.gpg
+    rm -f /etc/apt/keyrings/proxmox-release-bookworm.gpg /etc/apt/sources.list.d/proxmox-release-bookworm.list
+    $STD apt update
+    msg_ok "Updated old sources"
+  fi
 
-	if grep -q 'Debian GNU/Linux 13' /etc/os-release; then
-		if [ -f "/etc/apt/sources.list.d/pdm-test.sources" ]; then
-			if ! grep -qx "Enabled: false" "/etc/apt/sources.list.d/pdm-test.sources"; then
-				echo "Enabled: false" >>"/etc/apt/sources.list.d/pdm-test.sources"
-				setup_deb822_repo \
-					"pdm" \
-					"https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg" \
-					"http://download.proxmox.com/debian/pdm" \
-					"trixie" \
-					"pdm-no-subscription"
-			fi
-		fi
-	fi
+  if grep -q 'Debian GNU/Linux 13' /etc/os-release; then
+    if [ -f "/etc/apt/sources.list.d/pdm-test.sources" ]; then
+      if ! grep -qx "Enabled: false" "/etc/apt/sources.list.d/pdm-test.sources"; then
+          echo "Enabled: false" >> "/etc/apt/sources.list.d/pdm-test.sources"
+          setup_deb822_repo \
+            "pdm" \
+            "https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg" \
+            "http://download.proxmox.com/debian/pdm" \
+            "trixie" \
+            "pdm-no-subscription"
+      fi
+    fi
+  fi
 
-	msg_info "Updating $APP LXC"
-	$STD apt update
-	$STD apt -y upgrade
-	msg_ok "Updated $APP LXC"
-	msg_ok "Updated successfully!"
-	exit
+  msg_info "Updating $APP LXC"
+  $STD apt update
+  $STD apt -y upgrade
+  msg_ok "Updated $APP LXC"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

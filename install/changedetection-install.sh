@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Copyright (c) 2021-2026 tteck
-# Author: tteck (tteckster)
+# Author: tteck (tteckster) | Co-Author: CrazyWolf13, MickLesk
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://changedetection.io/ | Github: https://github.com/dgtlmoon/changedetection.io
 
@@ -18,7 +18,6 @@ $STD apt-get install -y \
   git \
   build-essential \
   dumb-init \
-  gconf-service \
   libjpeg-dev \
   libatk-bridge2.0-0 \
   libasound2 \
@@ -29,8 +28,7 @@ $STD apt-get install -y \
   libexpat1 \
   libgbm-dev \
   libgbm1 \
-  libgconf-2-4 \
-  libgdk-pixbuf2.0-0 \
+  libgdk-pixbuf-2.0-0 \
   libglib2.0-0 \
   libgtk-3-0 \
   libnspr4 \
@@ -80,7 +78,7 @@ $STD apt-get install -y \
   fonts-freefont-ttf \
   fonts-gfs-neohellenic \
   fonts-indic fonts-ipafont-gothic \
-  fonts-kacst fonts-liberation \
+  fonts-kacst-one fonts-liberation \
   fonts-noto-cjk \
   fonts-noto-color-emoji \
   fonts-roboto \

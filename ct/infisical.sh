@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,35 +25,35 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /etc/infisical ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /etc/infisical ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	msg_info "Stopping service"
-	$STD infisical-ctl stop
-	msg_ok "Service stopped"
+  msg_info "Stopping service"
+  $STD infisical-ctl stop
+  msg_ok "Service stopped"
 
-	msg_info "Creating backup"
-	[[ -f /opt/infisical_backup.sql ]] && rm -f /opt/infisical_backup.sql
-	DB_PASS=$(grep -Po '(?<=^Password:\s).*' ~/infisical.creds | head -n1)
-	PGPASSWORD=$DB_PASS pg_dump -U infisical -h localhost -d infisical_db >/opt/infisical_backup.sql
-	msg_ok "Created backup"
+  msg_info "Creating backup"
+  [[ -f /opt/infisical_backup.sql ]] && rm -f /opt/infisical_backup.sql
+  DB_PASS=$(grep -Po '(?<=^Password:\s).*' ~/infisical.creds | head -n1)
+  PGPASSWORD=$DB_PASS pg_dump -U infisical -h localhost -d infisical_db > /opt/infisical_backup.sql
+  msg_ok "Created backup"
 
-	msg_info "Updating Infisical"
-	$STD apt update
-	$STD apt install -y infisical-core
-	$STD infisical-ctl reconfigure
-	msg_ok "Updated Infisical"
+  msg_info "Updating Infisical"
+  $STD apt update
+  $STD apt install -y infisical-core
+  $STD infisical-ctl reconfigure
+  msg_ok "Updated Infisical"
 
-	msg_info "Starting service"
-	infisical-ctl start
-	msg_ok "Started service"
-	msg_ok "Updated successfully!"
-	exit
+  msg_info "Starting service"
+  infisical-ctl start
+  msg_ok "Started service"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

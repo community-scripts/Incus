@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,65 +25,65 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -f /usr/local/nagios/etc/nagios.cfg ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -f /usr/local/nagios/etc/nagios.cfg ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	msg_info "Backing up Configuration"
-	cp -a /usr/local/nagios/etc /opt/nagios-etc-backup
-	msg_ok "Backed up Configuration"
+  msg_info "Backing up Configuration"
+  cp -a /usr/local/nagios/etc /opt/nagios-etc-backup
+  msg_ok "Backed up Configuration"
 
-	if check_for_gh_release "nagios" "NagiosEnterprises/nagioscore"; then
-		msg_info "Stopping Nagios"
-		systemctl stop nagios
-		msg_ok "Stopped Nagios"
+  if check_for_gh_release "nagios" "NagiosEnterprises/nagioscore"; then
+    msg_info "Stopping Nagios"
+    systemctl stop nagios
+    msg_ok "Stopped Nagios"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nagios" "NagiosEnterprises/nagioscore" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nagios" "NagiosEnterprises/nagioscore" "tarball"
 
-		msg_info "Building Nagios Core"
-		cd /opt/nagios
-		$STD ./configure --with-httpd-conf=/etc/apache2/sites-enabled
-		$STD make all
-		$STD make install-groups-users
-		usermod -a -G nagios www-data
-		$STD make install
-		$STD make install-daemoninit
-		$STD make install-commandmode
-		$STD make install-webconf
-		$STD a2enmod rewrite
-		$STD a2enmod cgi
-		setcap cap_net_raw+p /bin/ping
-		msg_ok "Built Nagios Core"
+    msg_info "Building Nagios Core"
+    cd /opt/nagios
+    $STD ./configure --with-httpd-conf=/etc/apache2/sites-enabled
+    $STD make all
+    $STD make install-groups-users
+    usermod -a -G nagios www-data
+    $STD make install
+    $STD make install-daemoninit
+    $STD make install-commandmode
+    $STD make install-webconf
+    $STD a2enmod rewrite
+    $STD a2enmod cgi
+    setcap cap_net_raw+p /bin/ping
+    msg_ok "Built Nagios Core"
 
-		msg_info "Starting Nagios"
-		systemctl restart apache2
-		systemctl start nagios
-		msg_ok "Started Nagios"
-	fi
+    msg_info "Starting Nagios"
+    systemctl restart apache2
+    systemctl start nagios
+    msg_ok "Started Nagios"
+  fi
 
-	if check_for_gh_release "nagios-plugins" "nagios-plugins/nagios-plugins"; then
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nagios-plugins" "nagios-plugins/nagios-plugins" "tarball"
-		msg_info "Building Nagios Plugins"
-		cd /opt/nagios-plugins
-		$STD ./tools/setup
-		$STD ./configure
-		$STD make
-		$STD make install
-		msg_ok "Built Nagios Plugins"
-	fi
+  if check_for_gh_release "nagios-plugins" "nagios-plugins/nagios-plugins"; then
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nagios-plugins" "nagios-plugins/nagios-plugins" "tarball"
+    msg_info "Building Nagios Plugins"
+    cd /opt/nagios-plugins
+    $STD ./tools/setup
+    $STD ./configure
+    $STD make
+    $STD make install
+    msg_ok "Built Nagios Plugins"
+  fi
 
-	msg_info "Restoring Configuration"
-	rm -rf /usr/local/nagios/etc
-	cp -a /opt/nagios-etc-backup /usr/local/nagios/etc
-	rm -rf /opt/nagios-etc-backup
-	msg_ok "Restored Configuration"
-	msg_ok "Updated successfully!"
-	exit
+  msg_info "Restoring Configuration"
+  rm -rf /usr/local/nagios/etc
+  cp -a /opt/nagios-etc-backup /usr/local/nagios/etc
+  rm -rf /opt/nagios-etc-backup
+  msg_ok "Restored Configuration"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

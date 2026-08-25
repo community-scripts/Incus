@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -24,37 +26,37 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/agentdvr ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/agentdvr ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	RELEASE=$(curl -fsSL "https://www.ispyconnect.com/api/Agent/DownloadLocation4?platform=$(arch_resolve "Linux64" "LinuxARM64")&fromVersion=0" | grep -o 'https://.*\.zip')
-	if [[ "${RELEASE}" != "$(cat ~/.agentdvr 2>/dev/null)" ]] || [[ ! -f ~/.agentdvr ]]; then
-		msg_info "Stopping service"
-		systemctl stop AgentDVR
-		msg_ok "Service stopped"
+  RELEASE=$(curl -fsSL "https://www.ispyconnect.com/api/Agent/DownloadLocation4?platform=$(arch_resolve "Linux64" "LinuxARM64")&fromVersion=0" | grep -o 'https://.*\.zip')
+  if [[ "${RELEASE}" != "$(cat ~/.agentdvr 2>/dev/null)" ]] || [[ ! -f ~/.agentdvr ]]; then
+    msg_info "Stopping service"
+    systemctl stop AgentDVR
+    msg_ok "Service stopped"
 
-		msg_info "Updating AgentDVR"
-		cd /opt/agentdvr/agent
-		curl -fsSL "$RELEASE" -o $(basename "$RELEASE")
-		$STD unzip -o Agent_$(arch_resolve "Linux64" "LinuxARM64")*.zip
-		chmod +x ./Agent
-		echo $RELEASE >~/.agentdvr
-		rm -rf Agent_$(arch_resolve "Linux64" "LinuxARM64")*.zip
-		msg_ok "Updated AgentDVR"
+    msg_info "Updating AgentDVR"
+    cd /opt/agentdvr/agent
+    curl -fsSL "$RELEASE" -o $(basename "$RELEASE")
+    $STD unzip -o Agent_$(arch_resolve "Linux64" "LinuxARM64")*.zip
+    chmod +x ./Agent
+    echo $RELEASE >~/.agentdvr
+    rm -rf Agent_$(arch_resolve "Linux64" "LinuxARM64")*.zip
+    msg_ok "Updated AgentDVR"
 
-		msg_info "Starting service"
-		systemctl start AgentDVR
-		msg_ok "Service started"
-		msg_ok "Updated successfully!"
-	else
-		msg_ok "No update required. ${APP} is already at ${RELEASE}"
-	fi
-	exit
+    msg_info "Starting service"
+    systemctl start AgentDVR
+    msg_ok "Service started"
+    msg_ok "Updated successfully!"
+  else
+    msg_ok "No update required. ${APP} is already at ${RELEASE}"
+  fi
+  exit
 }
 
 start

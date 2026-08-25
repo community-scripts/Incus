@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -23,111 +25,111 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/affine ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/affine ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	RELEASE="v0.27.3"
-	if check_for_gh_release "affine_app" "toeverything/AFFiNE" "${RELEASE}" "each release is tested individually before the version is updated. Please do not open issues for this"; then
-		msg_info "Stopping Services"
-		systemctl stop affine-web affine-worker
-		msg_ok "Stopped Services"
+  RELEASE="v0.27.3"
+  if check_for_gh_release "affine_app" "toeverything/AFFiNE" "${RELEASE}" "each release is tested individually before the version is updated. Please do not open issues for this"; then
+    msg_info "Stopping Services"
+    systemctl stop affine-web affine-worker
+    msg_ok "Stopped Services"
 
-		ensure_dependencies cmake
+    ensure_dependencies cmake
 
-		create_backup /opt/affine/.env /root/.affine/config /root/.affine/storage
+    create_backup /opt/affine/.env /root/.affine/config /root/.affine/storage
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "affine_app" "toeverything/AFFiNE" "tarball" "${RELEASE}" "/opt/affine"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "affine_app" "toeverything/AFFiNE" "tarball" "${RELEASE}" "/opt/affine"
 
-		restore_backup
+    restore_backup
 
-		if [[ ! -f /opt/affine/.env ]]; then
-			msg_error "/opt/affine/.env is missing (lost by an earlier update). Recreate it before retrying — see the AFFiNE install script for the expected variables."
-			exit 1
-		fi
+    if [[ ! -f /opt/affine/.env ]]; then
+      msg_error "/opt/affine/.env is missing (lost by an earlier update). Recreate it before retrying — see the AFFiNE install script for the expected variables."
+      exit 1
+    fi
 
-		msg_info "Rebuilding Application (Patience ~25 mins, don't close the console!)"
-		cd /opt/affine
-		source /root/.profile
-		export PATH="/root/.cargo/bin:/root/.rbenv/shims:$PATH"
+    msg_info "Rebuilding Application (Patience ~25 mins, don't close the console!)"
+    cd /opt/affine
+    source /root/.profile
+    export PATH="/root/.cargo/bin:/root/.rbenv/shims:$PATH"
 
-		set -a && source /opt/affine/.env && set +a
+    set -a && source /opt/affine/.env && set +a
 
-		export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-		export VITE_CORE_COMMIT_SHA=$(cat ~/.affine_app)
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    export VITE_CORE_COMMIT_SHA=$(cat ~/.affine_app)
 
-		# Initialize git repo (required for build process)
-		export HUSKY=0
-		$STD git init -q
-		$STD git config user.email "build@local"
-		$STD git config user.name "Build"
-		$STD git add -A
-		$STD git commit -q -m "update" --no-verify --allow-empty
+    # Initialize git repo (required for build process)
+    export HUSKY=0
+    $STD git init -q
+    $STD git config user.email "build@local"
+    $STD git config user.name "Build"
+    $STD git add -A
+    $STD git commit -q -m "update" --no-verify --allow-empty
 
-		# Force Turbo to run sequentially
-		mkdir -p /opt/affine/.turbo
-		cat <<TURBO >/opt/affine/.turbo/config.json
+    # Force Turbo to run sequentially
+    mkdir -p /opt/affine/.turbo
+    cat <<TURBO >/opt/affine/.turbo/config.json
 {
   "concurrency": 1
 }
 TURBO
 
-		$STD corepack enable
-		$STD corepack prepare yarn@4.13.0 --activate
-		$STD yarn config set enableTelemetry 0
+    $STD corepack enable
+    $STD corepack prepare yarn@4.13.0 --activate
+    $STD yarn config set enableTelemetry 0
 
-		export NODE_OPTIONS="--max-old-space-size=2048"
-		$STD yarn install
-		$STD bash ./scripts/set-version.sh "$(cat ~/.affine_app)"
-		export BUILD_TYPE=stable
-		$STD npm install -g typescript
+    export NODE_OPTIONS="--max-old-space-size=2048"
+    $STD yarn install
+    $STD bash ./scripts/set-version.sh "$(cat ~/.affine_app)"
+    export BUILD_TYPE=stable
+    $STD npm install -g typescript
 
-		$STD yarn affine @affine/native build
-		$STD yarn affine @affine/server-native build
+    $STD yarn affine @affine/native build
+    $STD yarn affine @affine/server-native build
 
-		# Create architecture-specific symlinks
-		ln -sf /opt/affine/packages/backend/native/server-native.node \
-			/opt/affine/packages/backend/native/server-native.x64.node
-		ln -sf /opt/affine/packages/backend/native/server-native.node \
-			/opt/affine/packages/backend/native/server-native.arm64.node
-		ln -sf /opt/affine/packages/backend/native/server-native.node \
-			/opt/affine/packages/backend/native/server-native.armv7.node
+    # Create architecture-specific symlinks
+    ln -sf /opt/affine/packages/backend/native/server-native.node \
+      /opt/affine/packages/backend/native/server-native.x64.node
+    ln -sf /opt/affine/packages/backend/native/server-native.node \
+      /opt/affine/packages/backend/native/server-native.arm64.node
+    ln -sf /opt/affine/packages/backend/native/server-native.node \
+      /opt/affine/packages/backend/native/server-native.armv7.node
 
-		$STD yarn affine init
-		$STD yarn affine build -p @affine/reader
-		$STD yarn affine build -p @affine/server
+    $STD yarn affine init
+    $STD yarn affine build -p @affine/reader
+    $STD yarn affine build -p @affine/server
 
-		export NODE_OPTIONS="--max-old-space-size=4096"
-		$STD yarn affine build -p @affine/web
-		$STD yarn affine build -p @affine/admin
+    export NODE_OPTIONS="--max-old-space-size=4096"
+    $STD yarn affine build -p @affine/web
+    $STD yarn affine build -p @affine/admin
 
-		# Copy web assets
-		mkdir -p /opt/affine/packages/backend/server/static
-		cp -r /opt/affine/packages/frontend/apps/web/dist/* /opt/affine/packages/backend/server/static/
-		mkdir -p /opt/affine/packages/backend/server/static/admin
-		cp -r /opt/affine/packages/frontend/admin/dist/* /opt/affine/packages/backend/server/static/admin/
+    # Copy web assets
+    mkdir -p /opt/affine/packages/backend/server/static
+    cp -r /opt/affine/packages/frontend/apps/web/dist/* /opt/affine/packages/backend/server/static/
+    mkdir -p /opt/affine/packages/backend/server/static/admin
+    cp -r /opt/affine/packages/frontend/admin/dist/* /opt/affine/packages/backend/server/static/admin/
 
-		# Mobile manifest placeholder
-		mkdir -p /opt/affine/packages/backend/server/static/mobile
-		echo '{"publicPath":"/","js":[],"css":[],"gitHash":"","description":""}' \
-			>/opt/affine/packages/backend/server/static/mobile/assets-manifest.json
+    # Mobile manifest placeholder
+    mkdir -p /opt/affine/packages/backend/server/static/mobile
+    echo '{"publicPath":"/","js":[],"css":[],"gitHash":"","description":""}' \
+      >/opt/affine/packages/backend/server/static/mobile/assets-manifest.json
 
-		# Run migrations
-		cd /opt/affine/packages/backend/server
-		set -a && source /opt/affine/.env && set +a
-		$STD node ./scripts/self-host-predeploy.js
+    # Run migrations
+    cd /opt/affine/packages/backend/server
+    set -a && source /opt/affine/.env && set +a
+    $STD node ./scripts/self-host-predeploy.js
 
-		msg_info "Starting Services"
-		systemctl start affine-web affine-worker
-		msg_ok "Started Services"
-		msg_ok "Updated Successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start affine-web affine-worker
+    msg_ok "Started Services"
+    msg_ok "Updated Successfully!"
+  fi
+  exit
 }
 
 start

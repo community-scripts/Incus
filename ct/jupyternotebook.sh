@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,35 +25,35 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	INSTALL_DIR="/opt/jupyter"
-	VENV_PYTHON="${INSTALL_DIR}/.venv/bin/python"
-	VENV_JUPYTER="${INSTALL_DIR}/.venv/bin/jupyter"
-	SERVICE_FILE="/etc/systemd/system/jupyternotebook.service"
+  INSTALL_DIR="/opt/jupyter"
+  VENV_PYTHON="${INSTALL_DIR}/.venv/bin/python"
+  VENV_JUPYTER="${INSTALL_DIR}/.venv/bin/jupyter"
+  SERVICE_FILE="/etc/systemd/system/jupyternotebook.service"
 
-	if [[ ! -x "$VENV_JUPYTER" ]]; then
-		msg_info "Migrating to uv venv"
-		PYTHON_VERSION="3.12" setup_uv
-		mkdir -p "$INSTALL_DIR"
-		cd "$INSTALL_DIR"
-		$STD uv venv --clear .venv
-		$STD "$VENV_PYTHON" -m ensurepip --upgrade
-		$STD "$VENV_PYTHON" -m pip install --upgrade pip
-		$STD "$VENV_PYTHON" -m pip install jupyter
-		msg_ok "Migrated to uv and installed Jupyter"
-	else
-		msg_info "Updating Jupyter"
-		$STD "$VENV_PYTHON" -m pip install --upgrade pip
-		$STD "$VENV_PYTHON" -m pip install --upgrade jupyter
-		msg_ok "Jupyter updated"
-	fi
+  if [[ ! -x "$VENV_JUPYTER" ]]; then
+    msg_info "Migrating to uv venv"
+    PYTHON_VERSION="3.12" setup_uv
+    mkdir -p "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+    $STD uv venv --clear .venv
+    $STD "$VENV_PYTHON" -m ensurepip --upgrade
+    $STD "$VENV_PYTHON" -m pip install --upgrade pip
+    $STD "$VENV_PYTHON" -m pip install jupyter
+    msg_ok "Migrated to uv and installed Jupyter"
+  else
+    msg_info "Updating Jupyter"
+    $STD "$VENV_PYTHON" -m pip install --upgrade pip
+    $STD "$VENV_PYTHON" -m pip install --upgrade jupyter
+    msg_ok "Jupyter updated"
+  fi
 
-	if [[ -f "$SERVICE_FILE" && "$(grep ExecStart "$SERVICE_FILE")" != *".venv/bin/jupyter"* ]]; then
-		msg_info "Updating systemd service to use .venv"
-		cat <<EOF >"$SERVICE_FILE"
+  if [[ -f "$SERVICE_FILE" && "$(grep ExecStart "$SERVICE_FILE")" != *".venv/bin/jupyter"* ]]; then
+    msg_info "Updating systemd service to use .venv"
+    cat <<EOF >"$SERVICE_FILE"
 [Unit]
 Description=Jupyter Notebook Server
 After=network.target
@@ -63,11 +66,11 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 EOF
-		systemctl daemon-reexec
-		systemctl restart jupyternotebook
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    systemctl daemon-reexec
+    systemctl restart jupyternotebook
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

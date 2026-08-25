@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,53 +26,53 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/twenty ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/twenty ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="24" NODE_MODULE="corepack" setup_nodejs
+  NODE_VERSION="24" NODE_MODULE="corepack" setup_nodejs
 
-	if check_for_gh_release "twenty" "twentyhq/twenty"; then
-		msg_info "Stopping Services"
-		systemctl stop twenty-worker twenty-server
-		msg_ok "Stopped Services"
+  if check_for_gh_release "twenty" "twentyhq/twenty"; then
+    msg_info "Stopping Services"
+    systemctl stop twenty-worker twenty-server
+    msg_ok "Stopped Services"
 
-		create_backup /opt/twenty/.env \
-			/opt/twenty/packages/twenty-server/.local-storage
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "twenty" "twentyhq/twenty" "tarball"
-		restore_backup
+    create_backup /opt/twenty/.env \
+      /opt/twenty/packages/twenty-server/.local-storage
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "twenty" "twentyhq/twenty" "tarball"
+    restore_backup
 
-		msg_info "Building Application"
-		cd /opt/twenty
-		export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    msg_info "Building Application"
+    cd /opt/twenty
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-		$STD corepack prepare yarn@4.9.2 --activate
-		export NODE_OPTIONS="--max-old-space-size=3072"
-		$STD yarn install --immutable || $STD yarn install
-		$STD npx nx run twenty-server:build
-		$STD npx nx build twenty-front
-		cp -r /opt/twenty/packages/twenty-front/build /opt/twenty/packages/twenty-server/dist/front
-		unset NODE_OPTIONS
-		msg_ok "Built Application"
+    $STD corepack prepare yarn@4.9.2 --activate
+    export NODE_OPTIONS="--max-old-space-size=3072"
+    $STD yarn install --immutable || $STD yarn install
+    $STD npx nx run twenty-server:build
+    $STD npx nx build twenty-front
+    cp -r /opt/twenty/packages/twenty-front/build /opt/twenty/packages/twenty-server/dist/front
+    unset NODE_OPTIONS
+    msg_ok "Built Application"
 
-		msg_info "Running Database Migrations"
-		cd /opt/twenty/packages/twenty-server
-		set -a && source /opt/twenty/.env && set +a
-		$STD npx ts-node ./scripts/setup-db.ts
-		$STD npx -y typeorm migration:run -d dist/database/typeorm/core/core.datasource
-		msg_ok "Ran Database Migrations"
+    msg_info "Running Database Migrations"
+    cd /opt/twenty/packages/twenty-server
+    set -a && source /opt/twenty/.env && set +a
+    $STD npx ts-node ./scripts/setup-db.ts
+    $STD npx -y typeorm migration:run -d dist/database/typeorm/core/core.datasource
+    msg_ok "Ran Database Migrations"
 
-		msg_info "Starting Services"
-		systemctl start twenty-server twenty-worker
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start twenty-server twenty-worker
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

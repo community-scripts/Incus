@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,53 +26,53 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/yamtrack ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/yamtrack ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "yamtrack" "FuzzyGrim/Yamtrack"; then
-		msg_info "Stopping Services"
-		systemctl stop yamtrack yamtrack-celery
-		msg_ok "Stopped Services"
+  if check_for_gh_release "yamtrack" "FuzzyGrim/Yamtrack"; then
+    msg_info "Stopping Services"
+    systemctl stop yamtrack yamtrack-celery
+    msg_ok "Stopped Services"
 
-		create_backup /opt/yamtrack/src/.env
+    create_backup /opt/yamtrack/src/.env
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "yamtrack" "FuzzyGrim/Yamtrack" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "yamtrack" "FuzzyGrim/Yamtrack" "tarball"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Installing Python Dependencies"
-		cd /opt/yamtrack
-		$STD uv sync --locked
-		msg_ok "Installed Python Dependencies"
+    msg_info "Installing Python Dependencies"
+    cd /opt/yamtrack
+    $STD uv sync --locked
+    msg_ok "Installed Python Dependencies"
 
-		msg_info "Updating Yamtrack"
-		cd /opt/yamtrack/src
-		$STD /opt/yamtrack/.venv/bin/python manage.py migrate
-		$STD /opt/yamtrack/.venv/bin/python manage.py collectstatic --noinput
-		msg_ok "Updated Yamtrack"
+    msg_info "Updating Yamtrack"
+    cd /opt/yamtrack/src
+    $STD /opt/yamtrack/.venv/bin/python manage.py migrate
+    $STD /opt/yamtrack/.venv/bin/python manage.py collectstatic --noinput
+    msg_ok "Updated Yamtrack"
 
-		msg_info "Updating Nginx Configuration"
-		cp /opt/yamtrack/nginx.conf /etc/nginx/nginx.conf
-		sed -i 's|user abc;|user www-data;|' /etc/nginx/nginx.conf
-		sed -i 's|pid /tmp/nginx.pid;|pid /run/nginx.pid;|' /etc/nginx/nginx.conf
-		sed -i 's|/yamtrack/staticfiles/|/opt/yamtrack/src/staticfiles/|' /etc/nginx/nginx.conf
-		sed -i 's|error_log /dev/stderr|error_log /var/log/nginx/error.log|' /etc/nginx/nginx.conf
-		sed -i 's|access_log /dev/stdout|access_log /var/log/nginx/access.log|' /etc/nginx/nginx.conf
-		$STD systemctl reload nginx
-		msg_ok "Updated Nginx Configuration"
+    msg_info "Updating Nginx Configuration"
+    cp /opt/yamtrack/nginx.conf /etc/nginx/nginx.conf
+    sed -i 's|user abc;|user www-data;|' /etc/nginx/nginx.conf
+    sed -i 's|pid /tmp/nginx.pid;|pid /run/nginx.pid;|' /etc/nginx/nginx.conf
+    sed -i 's|/yamtrack/staticfiles/|/opt/yamtrack/src/staticfiles/|' /etc/nginx/nginx.conf
+    sed -i 's|error_log /dev/stderr|error_log /var/log/nginx/error.log|' /etc/nginx/nginx.conf
+    sed -i 's|access_log /dev/stdout|access_log /var/log/nginx/access.log|' /etc/nginx/nginx.conf
+    $STD systemctl reload nginx
+    msg_ok "Updated Nginx Configuration"
 
-		msg_info "Starting Services"
-		systemctl start yamtrack yamtrack-celery
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start yamtrack yamtrack-celery
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

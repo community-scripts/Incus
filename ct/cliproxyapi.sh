@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 
@@ -23,32 +26,32 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/cliproxyapi ]]; then
-		msg_error "No CLIProxyAPI Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/cliproxyapi ]]; then
+    msg_error "No CLIProxyAPI Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "cliproxyapi" "router-for-me/CLIProxyAPI"; then
-		msg_info "Stopping CLIProxyAPI"
-		systemctl stop cliproxyapi
-		msg_ok "Stopped CLIProxyAPI"
+  if check_for_gh_release "cliproxyapi" "router-for-me/CLIProxyAPI"; then
+    msg_info "Stopping CLIProxyAPI"
+    systemctl stop cliproxyapi
+    msg_ok "Stopped CLIProxyAPI"
 
-		create_backup /opt/cliproxyapi/config.yaml
+    create_backup /opt/cliproxyapi/config.yaml
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "cliproxyapi" "router-for-me/CLIProxyAPI" "prebuild" "latest" "/opt/cliproxyapi" "CLIProxyAPI_*_linux_$(arch_resolve "amd64" "aarch64").tar.gz"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "cliproxyapi" "router-for-me/CLIProxyAPI" "prebuild" "latest" "/opt/cliproxyapi" "CLIProxyAPI_*_linux_$(arch_resolve "amd64" "aarch64").tar.gz"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Starting CLIProxyAPI"
-		systemctl start cliproxyapi
-		msg_ok "Started CLIProxyAPI"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting CLIProxyAPI"
+    systemctl start cliproxyapi
+    msg_ok "Started CLIProxyAPI"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

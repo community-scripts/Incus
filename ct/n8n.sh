@@ -22,35 +22,35 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /etc/systemd/system/n8n.service ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /etc/systemd/system/n8n.service ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	ensure_dependencies build-essential python3-setuptools graphicsmagick
-	NODE_VERSION="24" setup_nodejs
+  ensure_dependencies build-essential python3-setuptools graphicsmagick
+  NODE_VERSION="24" setup_nodejs
 
-	msg_info "Updating n8n"
-	if [ ! -f /opt/n8n.env ]; then
-		sed -i 's|^Environment="N8N_SECURE_COOKIE=false"$|EnvironmentFile=/opt/n8n.env|' /etc/systemd/system/n8n.service
-		mkdir -p /opt
-		cat <<EOF >/opt/n8n.env
+  msg_info "Updating n8n"
+  if [ ! -f /opt/n8n.env ]; then
+    sed -i 's|^Environment="N8N_SECURE_COOKIE=false"$|EnvironmentFile=/opt/n8n.env|' /etc/systemd/system/n8n.service
+    mkdir -p /opt
+    cat <<EOF >/opt/n8n.env
 N8N_SECURE_COOKIE=false
 N8N_PORT=5678
 N8N_PROTOCOL=http
 N8N_HOST=$LOCAL_IP
 EOF
-		systemctl daemon-reload
-	fi
+    systemctl daemon-reload
+  fi
 
-	$STD npm install -g n8n@latest
-	systemctl restart n8n
-	msg_ok "Updated n8n"
-	msg_ok "Updated successfully!"
-	exit
+  $STD npm install -g n8n@latest
+  systemctl restart n8n
+  msg_ok "Updated n8n"
+  msg_ok "Updated successfully!"
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,42 +25,42 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/paperless-gpt ]]; then
-		msg_error "No Paperless-GPT installation found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/paperless-gpt ]]; then
+    msg_error "No Paperless-GPT installation found!"
+    exit
+  fi
 
-	if check_for_gh_release "paperless-gpt" "icereed/paperless-gpt"; then
-		msg_info "Stopping Service"
-		systemctl stop paperless-gpt
-		msg_ok "Service Stopped"
+  if check_for_gh_release "paperless-gpt" "icereed/paperless-gpt"; then
+    msg_info "Stopping Service"
+    systemctl stop paperless-gpt
+    msg_ok "Service Stopped"
 
-		if should_update_tool "node" "24"; then
-			NODE_VERSION="24" setup_nodejs
-		fi
+    if should_update_tool "node" "24"; then
+      NODE_VERSION="24" setup_nodejs
+    fi
 
-		fetch_and_deploy_gh_release "paperless-gpt" "icereed/paperless-gpt" "tarball"
+    fetch_and_deploy_gh_release "paperless-gpt" "icereed/paperless-gpt" "tarball"
 
-		msg_info "Updating Paperless-GPT"
-		cd /opt/paperless-gpt/web-app
-		$STD npm install
-		$STD npm run build
-		cd /opt/paperless-gpt
-		go mod download
-		export CC=musl-gcc
-		CGO_ENABLED=1 go build -tags musl -o /dev/null github.com/mattn/go-sqlite3
-		CGO_ENABLED=1 go build -tags musl -o paperless-gpt .
-		msg_ok "Updated Paperless-GPT"
+    msg_info "Updating Paperless-GPT"
+    cd /opt/paperless-gpt/web-app
+    $STD npm install
+    $STD npm run build
+    cd /opt/paperless-gpt
+    go mod download
+    export CC=musl-gcc
+    CGO_ENABLED=1 go build -tags musl -o /dev/null github.com/mattn/go-sqlite3
+    CGO_ENABLED=1 go build -tags musl -o paperless-gpt .
+    msg_ok "Updated Paperless-GPT"
 
-		msg_info "Starting Service"
-		systemctl start paperless-gpt
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start paperless-gpt
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

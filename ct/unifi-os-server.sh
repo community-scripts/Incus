@@ -24,15 +24,15 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -f /usr/local/sbin/unifi-os-server.bin && ! -d /data/unifi ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
-	msg_custom "🚀" "${GN}" "The app offers a built-in updater. Please use it."
-	exit
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -f /usr/local/sbin/unifi-os-server.bin && ! -d /data/unifi ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
+  msg_custom "🚀" "${GN}" "The app offers a built-in updater. Please use it."
+  exit
 }
 
 start

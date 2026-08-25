@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,49 +25,49 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/shlink ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/shlink ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "shlink" "shlinkio/shlink"; then
-		msg_info "Stopping Service"
-		systemctl stop shlink
-		msg_ok "Stopped Service"
+  if check_for_gh_release "shlink" "shlinkio/shlink"; then
+    msg_info "Stopping Service"
+    systemctl stop shlink
+    msg_ok "Stopped Service"
 
-		create_backup /opt/shlink/.env /opt/shlink/data
+    create_backup /opt/shlink/.env /opt/shlink/data
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "shlink" "shlinkio/shlink" "prebuild" "latest" "/opt/shlink" "shlink*_php8.5_dist.zip"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "shlink" "shlinkio/shlink" "prebuild" "latest" "/opt/shlink" "shlink*_php8.5_dist.zip"
 
-		restore_backup
+    restore_backup
 
-		msg_info "Updating Application"
-		cd /opt/shlink
-		$STD php ./vendor/bin/rr get --no-interaction --location bin/
-		chmod +x bin/rr
-		set -a
-		source /opt/shlink/.env
-		set +a
-		$STD php vendor/bin/shlink-installer init --no-interaction --clear-db-cache --skip-download-geolite
-		msg_ok "Updated Application"
+    msg_info "Updating Application"
+    cd /opt/shlink
+    $STD php ./vendor/bin/rr get --no-interaction --location bin/
+    chmod +x bin/rr
+    set -a
+    source /opt/shlink/.env
+    set +a
+    $STD php vendor/bin/shlink-installer init --no-interaction --clear-db-cache --skip-download-geolite
+    msg_ok "Updated Application"
 
-		msg_info "Starting Service"
-		systemctl start shlink
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
+    msg_info "Starting Service"
+    systemctl start shlink
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
 
-	if [[ -d /opt/shlink-web-client ]]; then
-		if check_for_gh_release "shlink-web-client" "shlinkio/shlink-web-client"; then
-			CLEAN_INSTALL=1 fetch_and_deploy_gh_release "shlink-web-client" "shlinkio/shlink-web-client" "prebuild" "latest" "/opt/shlink-web-client" "shlink-web-client_*_dist.zip"
-			msg_ok "Updated Web Client"
-		fi
-	fi
-	exit
+  if [[ -d /opt/shlink-web-client ]]; then
+    if check_for_gh_release "shlink-web-client" "shlinkio/shlink-web-client"; then
+      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "shlink-web-client" "shlinkio/shlink-web-client" "prebuild" "latest" "/opt/shlink-web-client" "shlink-web-client_*_dist.zip"
+      msg_ok "Updated Web Client"
+    fi
+  fi
+  exit
 }
 
 start

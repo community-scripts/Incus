@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,45 +25,45 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/outline ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/outline ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	NODE_VERSION="26" NODE_MODULE="corepack" setup_nodejs
+  NODE_VERSION="26" NODE_MODULE="corepack" setup_nodejs
 
-	if check_for_gh_release "outline" "outline/outline"; then
-		msg_info "Stopping Services"
-		systemctl stop outline
-		msg_ok "Services Stopped"
+  if check_for_gh_release "outline" "outline/outline"; then
+    msg_info "Stopping Services"
+    systemctl stop outline
+    msg_ok "Services Stopped"
 
-		msg_info "Creating backup"
-		cp /opt/outline/.env /opt
-		msg_ok "Backup created"
+    msg_info "Creating backup"
+    cp /opt/outline/.env /opt
+    msg_ok "Backup created"
 
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "outline" "outline/outline" "tarball"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "outline" "outline/outline" "tarball"
 
-		msg_info "Updating Outline"
-		cd /opt/outline
-		mv /opt/.env /opt/outline
-		export NODE_ENV=development
-		export NODE_OPTIONS="--max-old-space-size=3584"
-		export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+    msg_info "Updating Outline"
+    cd /opt/outline
+    mv /opt/.env /opt/outline
+    export NODE_ENV=development
+    export NODE_OPTIONS="--max-old-space-size=3584"
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-		$STD yarn install --immutable
-		export NODE_ENV=production
-		$STD yarn build
-		msg_ok "Updated Outline"
+    $STD yarn install --immutable
+    export NODE_ENV=production
+    $STD yarn build
+    msg_ok "Updated Outline"
 
-		msg_info "Starting Services"
-		systemctl start outline
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start outline
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,54 +25,54 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d "/opt/guardian" ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d "/opt/guardian" ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "guardian" "HydroshieldMKII/Guardian"; then
-		msg_info "Stopping Services"
-		systemctl stop guardian-backend guardian-frontend
-		msg_ok "Stopped Services"
+  if check_for_gh_release "guardian" "HydroshieldMKII/Guardian"; then
+    msg_info "Stopping Services"
+    systemctl stop guardian-backend guardian-frontend
+    msg_ok "Stopped Services"
 
-		if [[ -f "/opt/guardian/backend/plex-guard.db" ]]; then
-			msg_info "Backing up Database"
-			cp "/opt/guardian/backend/plex-guard.db" "/tmp/plex-guard.db.backup"
-			msg_ok "Backed up Database"
-		fi
+    if [[ -f "/opt/guardian/backend/plex-guard.db" ]]; then
+      msg_info "Backing up Database"
+      cp "/opt/guardian/backend/plex-guard.db" "/tmp/plex-guard.db.backup"
+      msg_ok "Backed up Database"
+    fi
 
-		[[ -f "/opt/guardian/.env" ]] && cp "/opt/guardian/.env" "/opt"
-		CLEAN_INSTALL=1 fetch_and_deploy_gh_release "guardian" "HydroshieldMKII/Guardian" "tarball" "latest" "/opt/guardian"
-		[[ -f "/opt/.env" ]] && mv "/opt/.env" "/opt/guardian"
+    [[ -f "/opt/guardian/.env" ]] && cp "/opt/guardian/.env" "/opt"
+    CLEAN_INSTALL=1 fetch_and_deploy_gh_release "guardian" "HydroshieldMKII/Guardian" "tarball" "latest" "/opt/guardian"
+    [[ -f "/opt/.env" ]] && mv "/opt/.env" "/opt/guardian"
 
-		if [[ -f "/tmp/plex-guard.db.backup" ]]; then
-			msg_info "Restoring Database"
-			cp "/tmp/plex-guard.db.backup" "/opt/guardian/backend/plex-guard.db"
-			rm "/tmp/plex-guard.db.backup"
-			msg_ok "Restored Database"
-		fi
+    if [[ -f "/tmp/plex-guard.db.backup" ]]; then
+      msg_info "Restoring Database"
+      cp "/tmp/plex-guard.db.backup" "/opt/guardian/backend/plex-guard.db"
+      rm "/tmp/plex-guard.db.backup"
+      msg_ok "Restored Database"
+    fi
 
-		msg_info "Updating Guardian"
-		cd /opt/guardian/backend
-		$STD npm ci
-		$STD npm run build
+    msg_info "Updating Guardian"
+    cd /opt/guardian/backend
+    $STD npm ci
+    $STD npm run build
 
-		cd /opt/guardian/frontend
-		$STD npm ci
-		export DEPLOYMENT_MODE=standalone
-		$STD npm run build
-		msg_ok "Updated Guardian"
+    cd /opt/guardian/frontend
+    $STD npm ci
+    export DEPLOYMENT_MODE=standalone
+    $STD npm run build
+    msg_ok "Updated Guardian"
 
-		msg_info "Starting Services"
-		systemctl start guardian-backend guardian-frontend
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start guardian-backend guardian-frontend
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start

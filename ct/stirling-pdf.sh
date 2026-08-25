@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 tteck
@@ -22,61 +25,61 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/Stirling-PDF ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/Stirling-PDF ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	if check_for_gh_release "stirling-pdf" "Stirling-Tools/Stirling-PDF"; then
-		if [[ ! -f /etc/systemd/system/unoserver.service ]]; then
-			msg_custom "⚠️ " "\e[33m" "Legacy installation detected – please recreate the container using the latest install script."
-			exit 0
-		fi
+  if check_for_gh_release "stirling-pdf" "Stirling-Tools/Stirling-PDF"; then
+    if [[ ! -f /etc/systemd/system/unoserver.service ]]; then
+      msg_custom "⚠️ " "\e[33m" "Legacy installation detected – please recreate the container using the latest install script."
+      exit 0
+    fi
 
-		PYTHON_VERSION="3.12" setup_uv
-		JAVA_VERSION="25" setup_java
+    PYTHON_VERSION="3.12" setup_uv
+    JAVA_VERSION="25" setup_java
 
-		msg_info "Patching Native Libraries for LXC Compatibility"
-		ensure_dependencies patchelf
-		find /usr/lib -name "libicudata.so.*" -exec patchelf --clear-execstack {} \; || true
-		msg_ok "Patched Native Libraries"
+    msg_info "Patching Native Libraries for LXC Compatibility"
+    ensure_dependencies patchelf
+    find /usr/lib -name "libicudata.so.*" -exec patchelf --clear-execstack {} \; || true
+    msg_ok "Patched Native Libraries"
 
-		if [[ -f /etc/systemd/system/libreoffice-listener.service ]]; then
-			msg_info "Removing Conflicting LibreOffice Listener"
-			systemctl disable -q --now libreoffice-listener
-			rm -f /etc/systemd/system/libreoffice-listener.service
-			sed -i '/^Requires=libreoffice-listener.service$/d' /etc/systemd/system/stirlingpdf.service /etc/systemd/system/unoserver.service
-			sed -i 's/^After=syslog.target network.target libreoffice-listener.service$/After=syslog.target network.target unoserver.service/' /etc/systemd/system/stirlingpdf.service
-			sed -i 's/^After=libreoffice-listener.service$/After=network.target/' /etc/systemd/system/unoserver.service
-			systemctl daemon-reload
-			systemctl reset-failed libreoffice-listener.service 2>/dev/null || true
-			msg_ok "Removed Conflicting LibreOffice Listener"
-		fi
+    if [[ -f /etc/systemd/system/libreoffice-listener.service ]]; then
+      msg_info "Removing Conflicting LibreOffice Listener"
+      systemctl disable -q --now libreoffice-listener
+      rm -f /etc/systemd/system/libreoffice-listener.service
+      sed -i '/^Requires=libreoffice-listener.service$/d' /etc/systemd/system/stirlingpdf.service /etc/systemd/system/unoserver.service
+      sed -i 's/^After=syslog.target network.target libreoffice-listener.service$/After=syslog.target network.target unoserver.service/' /etc/systemd/system/stirlingpdf.service
+      sed -i 's/^After=libreoffice-listener.service$/After=network.target/' /etc/systemd/system/unoserver.service
+      systemctl daemon-reload
+      systemctl reset-failed libreoffice-listener.service 2>/dev/null || true
+      msg_ok "Removed Conflicting LibreOffice Listener"
+    fi
 
-		msg_info "Stopping Services"
-		systemctl stop stirlingpdf unoserver
-		msg_ok "Stopped Services"
+    msg_info "Stopping Services"
+    systemctl stop stirlingpdf unoserver
+    msg_ok "Stopped Services"
 
-		if [[ -f ~/.Stirling-PDF-login ]]; then
-			USE_ORIGINAL_FILENAME=true fetch_and_deploy_gh_release "stirling-pdf" "Stirling-Tools/Stirling-PDF" "singlefile" "latest" "/opt/Stirling-PDF" "Stirling-PDF-with-login.jar"
-			mv /opt/Stirling-PDF/Stirling-PDF-with-login.jar /opt/Stirling-PDF/Stirling-PDF.jar
-		else
-			USE_ORIGINAL_FILENAME=true fetch_and_deploy_gh_release "stirling-pdf" "Stirling-Tools/Stirling-PDF" "singlefile" "latest" "/opt/Stirling-PDF" "Stirling-PDF.jar"
-		fi
+    if [[ -f ~/.Stirling-PDF-login ]]; then
+      USE_ORIGINAL_FILENAME=true fetch_and_deploy_gh_release "stirling-pdf" "Stirling-Tools/Stirling-PDF" "singlefile" "latest" "/opt/Stirling-PDF" "Stirling-PDF-with-login.jar"
+      mv /opt/Stirling-PDF/Stirling-PDF-with-login.jar /opt/Stirling-PDF/Stirling-PDF.jar
+    else
+      USE_ORIGINAL_FILENAME=true fetch_and_deploy_gh_release "stirling-pdf" "Stirling-Tools/Stirling-PDF" "singlefile" "latest" "/opt/Stirling-PDF" "Stirling-PDF.jar"
+    fi
 
-		msg_info "Refreshing Font Cache"
-		$STD fc-cache -fv
-		msg_ok "Font Cache Updated"
+    msg_info "Refreshing Font Cache"
+    $STD fc-cache -fv
+    msg_ok "Font Cache Updated"
 
-		msg_info "Starting Services"
-		systemctl start unoserver stirlingpdf
-		msg_ok "Started Services"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Services"
+    systemctl start unoserver stirlingpdf
+    msg_ok "Started Services"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 start
 build_container

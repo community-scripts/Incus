@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,42 +25,42 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
-	if [[ ! -d /opt/LanguageTool ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  header_info
+  check_container_storage
+  check_container_resources
+  if [[ ! -d /opt/LanguageTool ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	RELEASE=$(curl -fsSL https://languagetool.org/download/ | grep -oP 'LanguageTool-\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=\.zip)' | sort -V | tail -n1)
-	if [[ "${RELEASE}" != "$(cat ~/.languagetool 2>/dev/null)" ]] || [[ ! -f ~/.languagetool ]]; then
-		msg_info "Stopping Service"
-		systemctl stop language-tool
-		msg_ok "Stopped Service"
+  RELEASE=$(curl -fsSL https://languagetool.org/download/ | grep -oP 'LanguageTool-\K[0-9]+\.[0-9]+(\.[0-9]+)?(?=\.zip)' | sort -V | tail -n1)
+  if [[ "${RELEASE}" != "$(cat ~/.languagetool 2>/dev/null)" ]] || [[ ! -f ~/.languagetool ]]; then
+    msg_info "Stopping Service"
+    systemctl stop language-tool
+    msg_ok "Stopped Service"
 
-		msg_info "Creating Backup"
-		cp /opt/LanguageTool/server.properties /opt/server.properties
-		msg_ok "Created Backup"
+    msg_info "Creating Backup"
+    cp /opt/LanguageTool/server.properties /opt/server.properties
+    msg_ok "Created Backup"
 
-		msg_info "Updating LanguageTool"
-		rm -rf /opt/LanguageTool
-		download_file "https://languagetool.org/download/LanguageTool-stable.zip" /tmp/LanguageTool-stable.zip
-		unzip -q /tmp/LanguageTool-stable.zip -d /opt
-		mv /opt/LanguageTool-*/ /opt/LanguageTool/
-		mv /opt/server.properties /opt/LanguageTool/server.properties
-		rm -f /tmp/LanguageTool-stable.zip
-		echo "${RELEASE}" >~/.languagetool
-		msg_ok "Updated LanguageTool"
+    msg_info "Updating LanguageTool"
+    rm -rf /opt/LanguageTool
+    download_file "https://languagetool.org/download/LanguageTool-stable.zip" /tmp/LanguageTool-stable.zip
+    unzip -q /tmp/LanguageTool-stable.zip -d /opt
+    mv /opt/LanguageTool-*/ /opt/LanguageTool/
+    mv /opt/server.properties /opt/LanguageTool/server.properties
+    rm -f /tmp/LanguageTool-stable.zip
+    echo "${RELEASE}" >~/.languagetool
+    msg_ok "Updated LanguageTool"
 
-		msg_info "Starting Service"
-		systemctl start language-tool
-		msg_ok "Started Service"
-		msg_ok "Updated successfuly!"
-	else
-		msg_ok "No update required. ${APP} is already at v${RELEASE}"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start language-tool
+    msg_ok "Started Service"
+    msg_ok "Updated successfuly!"
+  else
+    msg_ok "No update required. ${APP} is already at v${RELEASE}"
+  fi
+  exit
 }
 
 start

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Engine comes from community-scripts/core; this repo only ships the scripts.
+# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
+# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -22,65 +25,65 @@ color
 catch_errors
 
 function update_script() {
-	header_info
-	check_container_storage
-	check_container_resources
+  header_info
+  check_container_storage
+  check_container_resources
 
-	if [[ ! -d /opt/pocket-id ]]; then
-		msg_error "No ${APP} Installation Found!"
-		exit
-	fi
+  if [[ ! -d /opt/pocket-id ]]; then
+    msg_error "No ${APP} Installation Found!"
+    exit
+  fi
 
-	# Mandatory as of v2.x.x
-	ENCRYPTION_KEY=$(openssl rand -base64 32)
-	if ! grep -q '^ENCRYPTION_KEY=' /opt/pocket-id/.env; then
-		echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >>/opt/pocket-id/.env
-	fi
+  # Mandatory as of v2.x.x
+  ENCRYPTION_KEY=$(openssl rand -base64 32)
+  if ! grep -q '^ENCRYPTION_KEY=' /opt/pocket-id/.env; then
+    echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >> /opt/pocket-id/.env
+  fi
 
-	if check_for_gh_release "pocket-id" "pocket-id/pocket-id"; then
-		if [ "$(printf '%s\n%s' "$(cat ~/.pocket-id 2>/dev/null || echo 0.0.0)" "1.0.0" | sort -V | head -n1)" = "$(cat ~/.pocket-id 2>/dev/null || echo 0.0.0)" ] &&
-			[ "$(cat ~/.pocket-id 2>/dev/null || echo 0.0.0)" != "1.0.0" ]; then
-			msg_info "Migrating ${APP}"
-			systemctl -q disable --now pocketid-backend pocketid-frontend caddy
-			mv /etc/caddy/Caddyfile ~/Caddyfile.bak
-			$STD apt remove --purge caddy nodejs -y
-			$STD apt autoremove -y
-			rm /etc/apt/{keyrings/nodesource.gpg,sources.list.d/nodesource.list}
-			rm -r /usr/local/go
-			cp -r /opt/pocket-id/backend/data /opt/data
-			cp /opt/pocket-id/backend/.env /opt/env
-			sed -i -e 's/PUBLIC_//g' \
-				-e '/^SQLITE_DB_PATH/d' \
-				-e '/^POSTGRES/s/^/# /' \
-				-e '/^UPLOAD_PATH/d' \
-				-e 's/8080/1411/' /opt/env
-			rm -r /opt/pocket-id
-			rm /etc/systemd/system/pocketid-frontend.service
-			BACKEND="/etc/systemd/system/pocketid-backend.service"
-			sed -i -e 's/Backend/Service/' \
-				-e 's/\/backend\|-backend//g' "$BACKEND"
-			mv "$BACKEND" ${BACKEND//-backend/}
-			systemctl daemon-reload
-			systemctl -q enable pocketid
-			mkdir /opt/pocket-id
-			mv /opt/data /opt/pocket-id
-			msg_ok "Migration complete. The reverse proxy port has been changed to 1411."
-		else
-			msg_info "Stopping Service"
-			systemctl stop pocketid
-			msg_ok "Stopped Service"
-			cp /opt/pocket-id/.env /opt/env
-		fi
+  if check_for_gh_release "pocket-id" "pocket-id/pocket-id"; then
+    if [ "$(printf '%s\n%s' "$(cat ~/.pocket-id 2>/dev/null || echo 0.0.0)" "1.0.0" | sort -V | head -n1)" = "$(cat ~/.pocket-id 2>/dev/null || echo 0.0.0)" ] &&
+      [ "$(cat ~/.pocket-id 2>/dev/null || echo 0.0.0)" != "1.0.0" ]; then
+      msg_info "Migrating ${APP}"
+      systemctl -q disable --now pocketid-backend pocketid-frontend caddy
+      mv /etc/caddy/Caddyfile ~/Caddyfile.bak
+      $STD apt remove --purge caddy nodejs -y
+      $STD apt autoremove -y
+      rm /etc/apt/{keyrings/nodesource.gpg,sources.list.d/nodesource.list}
+      rm -r /usr/local/go
+      cp -r /opt/pocket-id/backend/data /opt/data
+      cp /opt/pocket-id/backend/.env /opt/env
+      sed -i -e 's/PUBLIC_//g' \
+        -e '/^SQLITE_DB_PATH/d' \
+        -e '/^POSTGRES/s/^/# /' \
+        -e '/^UPLOAD_PATH/d' \
+        -e 's/8080/1411/' /opt/env
+      rm -r /opt/pocket-id
+      rm /etc/systemd/system/pocketid-frontend.service
+      BACKEND="/etc/systemd/system/pocketid-backend.service"
+      sed -i -e 's/Backend/Service/' \
+        -e 's/\/backend\|-backend//g' "$BACKEND"
+      mv "$BACKEND" ${BACKEND//-backend/}
+      systemctl daemon-reload
+      systemctl -q enable pocketid
+      mkdir /opt/pocket-id
+      mv /opt/data /opt/pocket-id
+      msg_ok "Migration complete. The reverse proxy port has been changed to 1411."
+    else
+      msg_info "Stopping Service"
+      systemctl stop pocketid
+      msg_ok "Stopped Service"
+      cp /opt/pocket-id/.env /opt/env
+    fi
 
-		fetch_and_deploy_gh_release "pocket-id" "pocket-id/pocket-id" "singlefile" "latest" "/opt/pocket-id/" "pocket-id_linux_$(arch_resolve)"
-		mv /opt/env /opt/pocket-id/.env
+    fetch_and_deploy_gh_release "pocket-id" "pocket-id/pocket-id" "singlefile" "latest" "/opt/pocket-id/" "pocket-id_linux_$(arch_resolve)"
+    mv /opt/env /opt/pocket-id/.env
 
-		msg_info "Starting Service"
-		systemctl start pocketid
-		msg_ok "Started Service"
-		msg_ok "Updated successfully!"
-	fi
-	exit
+    msg_info "Starting Service"
+    systemctl start pocketid
+    msg_ok "Started Service"
+    msg_ok "Updated successfully!"
+  fi
+  exit
 }
 
 start
