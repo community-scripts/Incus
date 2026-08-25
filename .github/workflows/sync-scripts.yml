@@ -20,6 +20,10 @@ on:
         description: "ProxmoxVE ref to sync from"
         required: false
         default: "main"
+  # Fired by community-scripts/ProxmoxVE on every ct/ or install/ change so the
+  # mirror tracks upstream within minutes instead of waiting for the daily cron.
+  repository_dispatch:
+    types: [proxmoxve-scripts-changed]
 
 permissions:
   contents: write
@@ -118,6 +122,7 @@ jobs:
           exit $fail
 
       - name: Open a pull request
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
           branch: sync/proxmoxve-scripts
@@ -138,6 +143,27 @@ jobs:
             Application fixes belong upstream — anything committed here by hand is
             overwritten by the next run.
           delete-branch: true
+
+      # A sync PR only ever mirrors upstream, so it is approved and merged
+      # automatically. A separate app identity does the approval because a PR
+      # cannot be approved by the identity that opened it.
+      - name: Generate token for approve + merge
+        id: merge-token
+        if: steps.cpr.outputs.pull-request-number
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID_APPROVE_AND_MERGE }}
+          private-key: ${{ secrets.APP_KEY_APPROVE_AND_MERGE }}
+
+      - name: Approve and merge the sync PR
+        if: steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ steps.merge-token.outputs.token }}
+          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          set -euo pipefail
+          gh pr review "$PR_NUMBER" --approve
+          gh pr merge "$PR_NUMBER" --squash --admin --delete-branch
 
       - name: Ask core to regenerate headers
         if: success()

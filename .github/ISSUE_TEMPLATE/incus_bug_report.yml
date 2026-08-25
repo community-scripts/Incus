@@ -1,0 +1,149 @@
+name: "🐧 Incus-specific Issue Report"
+description: Report an issue that only happens on Incus. For general script bugs, use the ProxmoxVE repo (see the other option in the chooser).
+labels: ["bug", "incus"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ **IMPORTANT - READ FIRST**
+        - 🧭 **Is this really Incus-specific?** These scripts are mirrored 1:1 from [community-scripts/ProxmoxVE](https://github.com/community-scripts/ProxmoxVE). If the script fails the same way it would on Proxmox (install logic, app configuration, upstream package errors), please report it **upstream in ProxmoxVE** instead — fixes there flow back here automatically. Use this template **only** for problems that are unique to running the script under Incus (e.g. Incus container/VM behaviour, `incus` CLI, storage/network, image differences).
+        - 🔍 **Search first:** Check the [closed issues](https://github.com/community-scripts/incus/issues?q=is%3Aissue+is%3Aclosed) before opening a new one.
+        - 🔎 If you hit `[ERROR] in line 23: exit code *: while executing command "$@" > /dev/null 2>&1`, rerun the script in verbose mode before submitting.
+
+        Thank you for taking the time to report an issue! Please provide as much detail as possible.
+
+  - type: input
+    id: guidelines
+    attributes:
+      label: ✅ Have you read and understood the above guidelines?
+      placeholder: "yes"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: incus_specific
+    attributes:
+      label: 🧭 Why is this Incus-specific?
+      description: "If the same failure would occur on Proxmox, please report it upstream in ProxmoxVE instead."
+      options:
+        - ""
+        - "It fails only on Incus and works (or would work) on Proxmox"
+        - "It relates to the Incus CLI / storage / network / image"
+        - "I'm not sure (this issue may be moved upstream)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: verbose_run
+    attributes:
+      label: 🔎 Did you run the script with verbose mode enabled?
+      description: "Required for debugging any script issue. A verbose log is mandatory."
+      options:
+        - ""
+        - "Yes, verbose mode was enabled and the output is included below"
+        - "No (this issue will likely be closed automatically)"
+    validations:
+      required: true
+
+  - type: input
+    id: script_name
+    attributes:
+      label: 📜 What is the name of the script you are using?
+      placeholder: "e.g., NextcloudPi, Zigbee2MQTT"
+    validations:
+      required: true
+
+  - type: input
+    id: script_command
+    attributes:
+      label: 📂 What was the exact command used to execute the script?
+      placeholder: "e.g., bash -c \"$(curl -fsSL https://raw.githubusercontent.com/community-scripts/incus/main/ct/zigbee2mqtt.sh)\""
+    validations:
+      required: true
+
+  - type: dropdown
+    id: instance_type
+    attributes:
+      label: 📦 Incus instance type
+      options:
+        - ""
+        - Container
+        - Virtual Machine
+    validations:
+      required: true
+
+  - type: checkboxes
+    validations:
+      required: true
+    attributes:
+      label: ⚙️ What settings are you using?
+      options:
+        - label: Default Settings
+        - label: Advanced Settings
+
+  - type: markdown
+    attributes:
+      value: "💡 **Tip:** If you are using Advanced Settings, please test with Default Settings before submitting an issue."
+
+  - type: dropdown
+    id: linux_distribution
+    attributes:
+      label: 🖥️ Which Linux distribution is the instance running?
+      options:
+        -
+        - Alpine
+        - Debian 11
+        - Debian 12
+        - Debian 13
+        - Ubuntu 22.04
+        - Ubuntu 24.04
+        - Ubuntu 24.10
+    validations:
+      required: true
+
+  - type: input
+    id: incus_version
+    attributes:
+      label: 📈 Which Incus version are you on?
+      placeholder: "run `incus --version` on your host"
+    validations:
+      required: true
+
+  - type: input
+    id: host_os
+    attributes:
+      label: 🧱 Which OS/distribution is the Incus host running?
+      placeholder: "e.g., Debian 12, Ubuntu 24.04, Arch"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue_description
+    attributes:
+      label: 📝 Provide a clear and concise description of the issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: 🔄 Steps to reproduce the issue.
+      placeholder: "e.g., Step 1: ..., Step 2: ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_output
+    attributes:
+      label: ❌ Paste the full error output (if available).
+      placeholder: "Include any relevant logs or error messages."
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: 🖼️ Additional context (optional).
+      placeholder: "Include screenshots, code blocks (use triple backticks ```), or any other relevant information."
+    validations:
+      required: false
