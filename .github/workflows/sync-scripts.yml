@@ -69,8 +69,8 @@ jobs:
           _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
           source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")'''
 
-          # Upstream uses several spellings: raw.githubusercontent or the Gitea
-          # mirror, curl -fsSL or curl -s.
+          # Upstream uses several spellings of the same line, curl -fsSL or curl -s,
+          # so match the host loosely rather than pinning raw.githubusercontent.
           pat = re.compile(r'source <\(curl -[a-zA-Z]* ?https?://[^)]*/misc/build\.func\)')
 
           # Upstream is migrating to core, so a growing number of scripts already
