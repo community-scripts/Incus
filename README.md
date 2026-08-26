@@ -6,10 +6,10 @@
   The same application scripts as Proxmox VE, running on the Incus backend</p>
 
   <p>
-    <a href="https://community-scripts.org"><img src="https://img.shields.io/badge/Website-community--scripts.org-4c9b3f?style=flat-square" /></a>
-    <a href="https://discord.gg/3AnUqsXnmK"><img src="https://img.shields.io/badge/Discord-Join_us-7289da?style=flat-square&logo=discord&logoColor=white" /></a>
-    <a href="https://github.com/community-scripts/Incus/stargazers"><img src="https://img.shields.io/github/stars/community-scripts/Incus?style=flat-square&label=Stars&color=f5a623" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" /></a>
+    <a href="https://community-scripts.org"><img src="https://img.shields.io/badge/Website-community--scripts.org-4c9b3f?style=flat-square" alt="Website" /></a>
+    <a href="https://discord.gg/3AnUqsXnmK"><img src="https://img.shields.io/badge/Discord-Join_us-7289da?style=flat-square&logo=discord&logoColor=white" alt="Discord" /></a>
+    <a href="https://github.com/community-scripts/Incus/stargazers"><img src="https://img.shields.io/github/stars/community-scripts/Incus?style=flat-square&label=Stars&color=f5a623" alt="Stars" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" /></a>
   </p>
 </div>
 
@@ -17,19 +17,18 @@
 
 ## What is this?
 
-**Community scripts for Incus hosts.** If you run Incus, this is the repository
-you point your install commands at — you should never have to paste a URL with
+**Community scripts for Incus hosts.** If you run Incus, point your install
+commands at this repository — you should never have to paste a URL with
 `ProxmoxVE` in it.
 
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/community-scripts/Incus/main/ct/debian.sh)"
-```
+A script only describes *what* to install. Creating the container is the job of
+the shared engine in [core](https://github.com/community-scripts/core), which
+detects an Incus host and drives the `incus` CLI. Ready-made commands for every
+application are on [community-scripts.org](https://community-scripts.org).
 
-Run that in your Incus host shell. The script picks up the shared engine from
-[core](https://github.com/community-scripts/core), which detects that it is on
-an Incus host and creates the container with the `incus` CLI.
+---
 
-### Built on Incus
+## Built on Incus
 
 [Incus](https://github.com/lxc/incus) is a system container and virtual machine
 manager from the [LinuxContainers](https://linuxcontainers.org/) project. Every
@@ -49,51 +48,19 @@ LinuxContainers or the Incus maintainers.
 
 ---
 
-## This is a mirror, not a fork
-
-The application scripts are **platform-agnostic**. A `ct/` script describes what
-to install, not how to create a container — that part lives in the engine, which
-has one backend per platform. So the scripts here are the same files as in
-[ProxmoxVE](https://github.com/community-scripts/ProxmoxVE), with one difference:
-the bootstrap line loads the engine from core instead of ProxmoxVE's own `misc/`.
-
-```
-ProxmoxVE/ct/debian.sh   →  source .../ProxmoxVE/main/misc/build.func   (monolith, PVE only)
-Incus/ct/debian.sh       →  source .../core/main/core/build.func      (detects the host)
-```
-
-They are kept in sync automatically — see [`.github/workflows/sync-scripts.yml`](.github/workflows/sync-scripts.yml).
-
-**Do not fix application bugs here.** A fix made in this repository is overwritten
-by the next sync. Send it to ProxmoxVE (or ProxmoxVED for new scripts) and it
-arrives here on its own.
-
----
-
 ## Layout
 
 | Folder | Contents | Source |
 | ------ | -------- | ------ |
-| `ct/` | 565 application scripts | mirrored from ProxmoxVE |
-| `install/` | 552 in-container install scripts | mirrored from ProxmoxVE |
-| `vm/` | 14 virtual machine scripts | maintained here — Incus VMs, not a mirror |
-| — | ASCII banners | served from [core](https://github.com/community-scripts/core), generated for all repos at once |
-| `tools/incus/` | Incus host management | planned, currently empty |
-| `json/` | Incus-only metadata | planned, currently empty |
+| `ct/` | Application scripts | mirrored from [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) |
+| `install/` | In-container install scripts | mirrored from ProxmoxVE |
+| `vm/` | Virtual machine scripts | maintained here |
+| `tools/incus/` | Incus host management | maintained here |
+| `json/` | Incus-only metadata | maintained here |
 
-Folder names deliberately match ProxmoxVE. The engine resolves
-`install/<app>-install.sh` by that exact path, so renaming it would mean making
-the engine's paths platform-dependent — new divergence for a cosmetic gain.
-
-### What is not here, and why
-
-| Not mirrored | Reason |
-| ------------ | ------ |
-| ProxmoxVE's `vm/` | Those scripts call `qm` and `pvesm` directly and are not portable. Incus VMs are built through `incus launch --vm` instead, so `vm/` here is written for this repository rather than mirrored. |
-| `turnkey/` | TurnKey Linux templates are a Proxmox VE feature. |
-| `tools/pve/` | Host management through `pve*` binaries. The Incus counterpart is `tools/incus/`. |
-| `misc/` | The old in-repo engine. It lives in [core](https://github.com/community-scripts/core) now. |
-| `ct/headers/` | Headers are generated artifacts derived from each script's `APP=` line, and identical on both platforms. core generates them once for every script repo. |
+ASCII banners are not in this repository. They are generated from each script's
+`APP=` line into [core](https://github.com/community-scripts/core), which serves
+them to every script repo at once.
 
 ---
 
@@ -121,7 +88,7 @@ for storage pools, networking, GPU passthrough and the update path.
 | [core](https://github.com/community-scripts/core) | The engine — one codebase, one backend per platform |
 | [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) | Canonical application scripts, plus `tools/pve/`, `vm/`, `turnkey/` |
 | [ProxmoxVED](https://github.com/community-scripts/ProxmoxVED) | Where new scripts are tested first |
-| **Incus** (this repo) | The same scripts, pointed at core, plus Incus host tooling |
+| **Incus** (this repo) | The same scripts, pointed at core, plus Incus VMs and host tooling |
 
 ---
 
@@ -154,13 +121,13 @@ Put core elsewhere with `COMMUNITY_SCRIPTS_CORE_DIR`.
 | Fix an application script | [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) — fixes made here are overwritten by the sync |
 | Add a new application script | [ProxmoxVED](https://github.com/community-scripts/ProxmoxVED) |
 | Change how containers are built | [core](https://github.com/community-scripts/core) |
-| Add or fix an Incus VM script | Here, in `vm/` — these are not mirrored |
+| Add or fix an Incus VM script | Here, in `vm/` |
 | Add Incus host tooling | Here, in `tools/incus/` |
 | Report an Incus-specific bug | [Issues](https://github.com/community-scripts/Incus/issues) — say whether it also reproduces on Proxmox VE |
 | Ask a question | [Discord](https://discord.gg/3AnUqsXnmK) |
 
 A bug that reproduces on both platforms is an application or engine bug, not an
-Incus one. Only the Incus backend, `vm/` and `tools/incus/` are maintained here.
+Incus one.
 
 ---
 
