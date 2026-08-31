@@ -164,8 +164,8 @@ jobs:
         if: steps.cpr.outputs.pull-request-number
         uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ secrets.APP_ID_APPROVE_AND_MERGE }}
-          private-key: ${{ secrets.APP_KEY_APPROVE_AND_MERGE }}
+          app-id: ${{ vars.GHAPP_MERGEBOT_ID }}
+          private-key: ${{ secrets.GHAPP_MERGEBOT_PRIVATE_KEY }}
 
       - name: Approve and merge the sync PR
         if: steps.cpr.outputs.pull-request-number
@@ -181,12 +181,12 @@ jobs:
         if: success()
         continue-on-error: true
         env:
-          TOKEN: ${{ secrets.CORE_DISPATCH_TOKEN }}
+          TOKEN: ${{ secrets.GH_CROSS_REPO_TOKEN }}
         run: |
           # Optional: core polls every 6h anyway. With a token set, a new
           # script gets its header in seconds instead of hours.
           if [ -z "$TOKEN" ]; then
-            echo "CORE_DISPATCH_TOKEN not set - core picks this up on its next poll"
+            echo "GH_CROSS_REPO_TOKEN not set - core picks this up on its next poll"
             exit 0
           fi
           curl -fsS -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/community-scripts/core/dispatches -d '{"event_type":"scripts-changed"}'
