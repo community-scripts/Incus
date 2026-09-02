@@ -38,10 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Incus
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout ProxmoxVE
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: community-scripts/ProxmoxVE
           ref: ${{ github.event.inputs.ref || 'main' }}
