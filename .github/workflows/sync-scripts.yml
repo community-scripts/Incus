@@ -168,6 +168,7 @@ jobs:
           private-key: ${{ secrets.GHAPP_MERGEBOT_PRIVATE_KEY }}
 
       - name: Approve and merge the sync PR
+        id: merge
         if: steps.cpr.outputs.pull-request-number
         env:
           GH_TOKEN: ${{ steps.merge-token.outputs.token }}
@@ -175,10 +176,21 @@ jobs:
         run: |
           set -euo pipefail
           gh pr review "$PR_NUMBER" --approve
-          gh pr merge "$PR_NUMBER" --squash --admin --delete-branch
+
+          # --admin bypasses branch protection but not rulesets: a ruleset only
+          # yields to actors on its own bypass list. Losing the merge is not
+          # worth failing the run over -- the PR is open and approved, and a
+          # human can finish it in one click.
+          if gh pr merge "$PR_NUMBER" --squash --admin --delete-branch; then
+            echo "merged=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "merged=false" >>"$GITHUB_OUTPUT"
+            echo "::warning::PR #${PR_NUMBER} is approved but was not merged automatically."
+            echo "::warning::If this says 'Repository rule violations found', add the merge-bot app to the bypass list of the ruleset protecting main."
+          fi
 
       - name: Ask core to regenerate headers
-        if: success()
+        if: steps.merge.outputs.merged == 'true'
         continue-on-error: true
         env:
           TOKEN: ${{ secrets.GH_CROSS_REPO_TOKEN }}
