@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 _CS_DEFAULT_URL="https://raw.githubusercontent.com/community-scripts/Incus/main"
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -40,8 +37,7 @@ function update_script() {
     systemctl stop calibre-web
     msg_ok "Stopped Service"
 
-    create_backup /opt/calibre-web/app.db \
-      /opt/calibre-web/data
+    create_backup /opt/calibre-web/data
 
     CLEAN_INSTALL=1 fetch_and_deploy_gh_release "Calibre-Web" "janeczku/calibre-web" "prebuild" "latest" "/opt/calibre-web" "calibreweb*.tar.gz"
     setup_uv
@@ -53,10 +49,25 @@ function update_script() {
     $STD uv pip install --python /opt/calibre-web/.venv/bin/python --no-cache-dir .
     msg_ok "Installed Dependencies"
 
-    sed -i 's|^ExecStart=.*|ExecStart=/opt/calibre-web/.venv/bin/cps|' /etc/systemd/system/calibre-web.service
+    sed -i 's|^ExecStart=.*|ExecStart=/opt/calibre-web/.venv/bin/cps -p /opt/calibre-web/data/app.db|' /etc/systemd/system/calibre-web.service
+    if ! grep -q '^Environment=HOME=' /etc/systemd/system/calibre-web.service; then
+      sed -i '/^ExecStart=/i Environment=HOME=/opt/calibre-web/data' /etc/systemd/system/calibre-web.service
+    fi
     $STD systemctl daemon-reload
 
     restore_backup
+
+    mkdir -p /opt/calibre-web-library
+    if [[ -f /opt/calibre-web/data/metadata.db && ! -f /opt/calibre-web-library/metadata.db ]]; then
+      msg_info "Migrating Calibre Library to its own directory"
+      find /opt/calibre-web/data -mindepth 1 -maxdepth 1 ! -name app.db ! -name .calibre-web -exec mv -t /opt/calibre-web-library -- {} +
+      msg_ok "Migrated Calibre Library"
+    fi
+    if [[ ! -f /opt/calibre-web-library/metadata.db ]]; then
+      msg_info "Creating Empty Calibre Library"
+      $STD calibredb list --with-library /opt/calibre-web-library
+      msg_ok "Created Empty Calibre Library"
+    fi
 
     msg_info "Starting Service"
     systemctl start calibre-web

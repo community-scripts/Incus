@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 _CS_DEFAULT_URL="https://raw.githubusercontent.com/community-scripts/Incus/main"
-# Engine comes from community-scripts/core; this repo only ships the scripts.
-# A local core checkout wins (COMMUNITY_SCRIPTS_CORE_DIR, else a sibling ../core),
-# so a fork or branch of core can be tested without editing this file.
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2021-2026 community-scripts ORG
@@ -66,6 +63,11 @@ function update_script() {
     msg_ok "Rebuilt Frontend"
 
     restore_backup
+
+    if ! grep -q -- '--loop asyncio' /etc/systemd/system/bambuddy.service; then
+      sed -i 's|^ExecStart=.*|ExecStart=/opt/bambuddy/.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --loop asyncio|' /etc/systemd/system/bambuddy.service
+      systemctl daemon-reload
+    fi
 
     msg_info "Starting Service"
     systemctl start bambuddy
