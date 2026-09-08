@@ -29,7 +29,9 @@ var_disk="${var_disk:-20G}"
 # /cloud variant automatically when cloud-init is enabled.
 # amd64 only: the images: remote ships no aarch64 VM build of AlmaLinux.
 var_image="${var_image:-images:almalinux/10}"
-var_bridge="${var_bridge:-incusbr0}"
+# Left empty on purpose: the engine picks this host's LAN bridge over the
+# NATed incusbr0, and asks when more than one is plausible.
+var_bridge="${var_bridge:-}"
 
 load_functions
 header_info

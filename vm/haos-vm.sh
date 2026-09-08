@@ -36,7 +36,9 @@ var_ram="${var_ram:-4096}"
 # The published image is 32 GiB. Incus refuses a root disk smaller than the
 # image it is created from, so this is a floor, not just a default.
 var_disk="${var_disk:-32G}"
-var_bridge="${var_bridge:-incusbr0}"
+# Left empty on purpose: the engine picks this host's LAN bridge over the
+# NATed incusbr0, and asks when more than one is plausible.
+var_bridge="${var_bridge:-}"
 
 load_functions
 header_info

@@ -35,7 +35,9 @@ var_version="${var_version:-latest}"
 var_cpu="${var_cpu:-2}"
 var_ram="${var_ram:-4096}"
 var_disk="${var_disk:-32G}"
-var_bridge="${var_bridge:-incusbr0}"
+# Left empty on purpose: the engine picks this host's LAN bridge over the
+# NATed incusbr0, and asks when more than one is plausible.
+var_bridge="${var_bridge:-}"
 
 URL="https://download.umbrel.com/release/latest/umbrelos-amd64.img.xz"
 

@@ -34,7 +34,9 @@ var_disk="${var_disk:-40G}"
 # Plain images:gentoo/systemd has no cloud-init. incus_vm_create switches to the
 # /cloud variant automatically when cloud-init is enabled.
 var_image="${var_image:-images:gentoo/systemd}"
-var_bridge="${var_bridge:-incusbr0}"
+# Left empty on purpose: the engine picks this host's LAN bridge over the
+# NATed incusbr0, and asks when more than one is plausible.
+var_bridge="${var_bridge:-}"
 
 load_functions
 header_info
