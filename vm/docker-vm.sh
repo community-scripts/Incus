@@ -193,8 +193,6 @@ function advanced_settings() {
 }
 
 function start() {
-  vm_confirm_new_vm "New VM" "This will create a new ${APP} VM. Proceed?" || exit_script
-
   # Asked before the settings mode split rather than inside advanced_settings:
   # it decides which Debian variant gets downloaded, so a default-settings run
   # has to answer it too.
@@ -207,6 +205,7 @@ function start() {
   if vm_choose_settings_mode; then
     default_settings
   else
+    vm_prompt_cloud_init_advanced
     advanced_settings
   fi
 }

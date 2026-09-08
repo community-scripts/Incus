@@ -140,7 +140,6 @@ function advanced_settings() {
 }
 
 function start() {
-  vm_confirm_new_vm "New VM" "This will create a new ${APP} VM. Proceed?" || exit_script
   if vm_choose_settings_mode; then
     default_settings
   else
