@@ -228,6 +228,9 @@ msg_ok "Completed successfully!"
 echo -e "\n${CREATING}${GN}${APP} ${BRANCH} VM is ready.${CL}"
 if [[ -n "${VM_IP:-}" ]]; then
   echo -e "${TAB}${GATEWAY}${BGN}Address: ${VM_IP}${CL}"
+  echo -e "${TAB}${GATEWAY}${BGN}Web UI:  ${CL}http://${VM_IP}:8123"
+else
+  echo -e "${TAB}${GATEWAY}${BGN}Address: ${CL}not known yet - run: incus list ${HN}"
+  echo -e "${TAB}${GATEWAY}${BGN}Web UI:  ${CL}port 8123 on that address"
 fi
 echo -e "${TAB}${GATEWAY}${BGN}Console: ${CL}incus console ${HN}"
-echo -e "${TAB}${GATEWAY}${BGN}Web UI:  ${CL}http://<vm-address>:8123"
