@@ -170,6 +170,7 @@ command -v xz >/dev/null 2>&1 || fatal "xz is required to unpack the Umbrel OS i
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
+msg_info "Retrieving the ${APP} disk image"
 msg_ok "${CL}${BL}${URL}${CL}"
 CACHE_FILE="$(vm_image_cache_path "$URL")"
 vm_fetch_image "$URL" "$CACHE_FILE" --cache --verify-xz --min-bytes $((5 * 1024 * 1024)) || exit 115

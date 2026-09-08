@@ -194,6 +194,7 @@ start
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
+msg_info "Retrieving the ${APP} CHR disk image"
 msg_ok "${CL}${BL}${URL}${CL}"
 # A mirror serving an error page returns 200, so size decides whether this is an
 # image. Anything real here is far above 5 MB.

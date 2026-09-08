@@ -214,6 +214,7 @@ function start() {
 start
 
 URL="$(docker_image_url)"
+msg_info "Retrieving the ${OS_DISPLAY} cloud image"
 msg_ok "${CL}${BL}${URL}${CL}"
 CACHE_FILE="$(vm_image_cache_path "$URL")"
 vm_fetch_image "$URL" "$CACHE_FILE" --cache --min-bytes $((100 * 1024 * 1024)) || exit 115
