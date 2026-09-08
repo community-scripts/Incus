@@ -28,7 +28,31 @@ fi
 
 if ! dpkg -l | grep -q 'libssl1.1'; then
   msg_info "Installing libssl (if needed)"
-  curl_download "/tmp/libssl.deb" "https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u8_$(arch_resolve).deb"
+  # libssl1.1 is bullseye's last build, and the pinned filename rotted twice over:
+  # the point release moves on its own schedule, and bullseye left
+  # security.debian.org when its LTS ended. Take the newest build from whichever
+  # pool still carries one instead of hardcoding a name.
+  LIBSSL_ARCH=$(arch_resolve)
+  LIBSSL_URL=""
+  LIBSSL_DEB=""
+  for POOL in \
+    "https://security.debian.org/debian-security/pool/updates/main/o/openssl" \
+    "https://archive.debian.org/debian-security/pool/updates/main/o/openssl" \
+    "https://archive.debian.org/debian/pool/main/o/openssl"; do
+    FOUND=$(curl -fsSL "$POOL/" | grep -oE "libssl1\.1_[^\"<>]+_${LIBSSL_ARCH}\.deb" | sort -V | tail -n1 || true)
+    [[ -z "$FOUND" ]] && continue
+    # Newest across every pool, not the first hit: the security archive still
+    # only carries buster, whose 1.1.1n is older than bullseye's 1.1.1w.
+    if [[ -z "$LIBSSL_DEB" || "$(printf '%s\n%s\n' "$LIBSSL_DEB" "$FOUND" | sort -V | tail -n1)" == "$FOUND" ]]; then
+      LIBSSL_DEB="$FOUND"
+      LIBSSL_URL="$POOL/$FOUND"
+    fi
+  done
+  if [[ -z "$LIBSSL_URL" ]]; then
+    msg_error "No libssl1.1 package for ${LIBSSL_ARCH} found in any Debian pool"
+    exit 1
+  fi
+  curl_download "/tmp/libssl.deb" "$LIBSSL_URL"
   $STD dpkg -i /tmp/libssl.deb
   rm -f /tmp/libssl.deb
   msg_ok "Installed libssl1.1"
