@@ -39,12 +39,10 @@ var_bridge="${var_bridge:-}"
 
 load_functions
 header_info
-check_root
-pve_check
-arch_check
-# Before any prompting: without KVM this host cannot run a VM at all, and
-# answering a dozen questions first only wastes the user's time.
-kvm_check
+# check_root, arch_check, pve_check, ssh_check and kvm_check in one call.
+# kvm_check runs before any prompting: without KVM this host cannot run a VM at
+# all, and answering a dozen questions first only wastes the user's time.
+vm_preflight
 
 case "$(uname -m)" in
 x86_64 | amd64) IMG_ARCH="amd64" ;;
@@ -144,6 +142,11 @@ function default_settings() {
 }
 
 function advanced_settings() {
+  # The rest of the Cloud-Init questions. The first one is asked before the
+  # settings-mode fork below, so this is where the follow-ups land; it is a
+  # no-op when Cloud-Init is off and it only ever runs once.
+  vm_prompt_cloud_init_advanced
+
   # Identity and sizing
   vm_prompt_hostname "docker"
   vm_prompt_description
@@ -194,25 +197,16 @@ function advanced_settings() {
   vm_confirm_advanced_settings "Ready to create ${APP} VM on ${OS_DISPLAY}?" || advanced_settings
 }
 
-function start() {
-  # Asked before the settings mode split rather than inside advanced_settings:
-  # it decides which Debian variant gets downloaded, so a default-settings run
-  # has to answer it too.
-  vm_prompt_cloud_init "root"
-  if [[ "$OS_TYPE" == "ubuntu" && "${USE_CLOUD_INIT:-no}" != "yes" ]]; then
-    USE_CLOUD_INIT="yes"
-    msg_warn "Ubuntu cloud images configure their network from cloud-init only - enabling it"
-  fi
+# Asked before the settings mode split rather than inside advanced_settings:
+# it decides which Debian variant gets downloaded, so a default-settings run
+# has to answer it too.
+vm_prompt_cloud_init "root"
+if [[ "$OS_TYPE" == "ubuntu" && "${USE_CLOUD_INIT:-no}" != "yes" ]]; then
+  USE_CLOUD_INIT="yes"
+  msg_warn "Ubuntu cloud images configure their network from cloud-init only - enabling it"
+fi
 
-  if vm_choose_settings_mode; then
-    default_settings
-  else
-    vm_prompt_cloud_init_advanced
-    advanced_settings
-  fi
-}
-
-start
+vm_start_script
 
 URL="$(docker_image_url)"
 msg_info "Retrieving the ${OS_DISPLAY} cloud image"

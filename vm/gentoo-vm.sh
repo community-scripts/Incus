@@ -40,12 +40,10 @@ var_bridge="${var_bridge:-}"
 
 load_functions
 header_info
-check_root
-pve_check
-arch_check
-# Before any prompting: without KVM this host cannot run a VM at all, and
-# answering a dozen questions first only wastes the user's time.
-kvm_check
+# check_root, arch_check, pve_check, ssh_check and kvm_check in one call.
+# kvm_check runs before any prompting: without KVM this host cannot run a VM at
+# all, and answering a dozen questions first only wastes the user's time.
+vm_preflight
 
 function default_settings() {
   HN="${var_hostname:-gentoo}"
@@ -147,15 +145,7 @@ function advanced_settings() {
   vm_confirm_advanced_settings "Ready to create ${APP} VM?" || advanced_settings
 }
 
-function start() {
-  if vm_choose_settings_mode; then
-    default_settings
-  else
-    advanced_settings
-  fi
-}
-
-start
+vm_start_script
 incus_vm_create "$var_image" "$HN" "$DISK_SIZE"
 
 msg_ok "Completed successfully!"
