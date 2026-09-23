@@ -105,6 +105,7 @@ EOF
     libraries=("libjxl" "jpegli" "libheif" "libraw" "imagemagick" "libvips")
     cd "$BASE_DIR"
     msg_warn "Checking for updates to custom image-processing libraries (recompile time: 2-15min per library)"
+    ensure_dependencies liblcms2-dev libjpeg62-turbo-dev libspng-dev libexif-dev
     $STD git pull
     for library in "${libraries[@]}"; do
       compile_"$library"
@@ -191,6 +192,8 @@ EOF
     $STD pnpm --filter immich --prod --no-optional deploy "$APP_DIR"
     export SHARP_FORCE_GLOBAL_LIBVIPS=true
     $STD pnpm --dir "$APP_DIR/node_modules/sharp" exec npm run build
+
+    ln -sfn "$GEO_DIR" "$APP_DIR/geodata"
 
     # Patch helmet.json: disable upgrade-insecure-requests for HTTP access
     if [[ -f "$APP_DIR/helmet.json" ]]; then
