@@ -325,7 +325,7 @@ EOF
     [[ ! -f "$GEO_DIR/countryInfo.txt" ]] && curl_with_retry "https://download.geonames.org/export/dump/countryInfo.txt" "countryInfo.txt"
     ln -s "${UPLOAD_DIR:-/opt/immich/upload}" "$APP_DIR"/upload
     ln -s "${UPLOAD_DIR:-/opt/immich/upload}" "$ML_DIR"/upload
-    ln -s "$GEO_DIR" "$APP_DIR"
+    ln -sfn "$GEO_DIR" "$APP_DIR/geodata"
     [[ ! -f /usr/bin/immich ]] && ln -sf "$APP_DIR"/cli/bin/immich /usr/bin/immich
     [[ ! -f /usr/bin/immich-admin ]] && ln -sf "$APP_DIR"/bin/immich-admin /usr/bin/immich-admin
 
