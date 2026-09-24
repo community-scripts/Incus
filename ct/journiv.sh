@@ -45,6 +45,17 @@ function update_script() {
     $STD uv sync --locked --no-editable --no-install-project
     msg_ok "Updated Python Environment"
 
+    NODE_VERSION="24" setup_nodejs
+    msg_info "Building Frontend"
+    cd /opt/journiv/frontend
+    $STD npm ci
+    $STD npm run build
+    cd /opt/journiv
+    msg_ok "Built Frontend"
+
+    grep -q '^ALLOW_INSECURE_COOKIE_AUTH_OVER_HTTP=' /opt/journiv.env ||
+      echo 'ALLOW_INSECURE_COOKIE_AUTH_OVER_HTTP=true' >>/opt/journiv.env
+
     msg_info "Running Database Migrations"
     set -a
     source /opt/journiv.env
