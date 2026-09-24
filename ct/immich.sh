@@ -193,8 +193,6 @@ EOF
     export SHARP_FORCE_GLOBAL_LIBVIPS=true
     $STD pnpm --dir "$APP_DIR/node_modules/sharp" exec npm run build
 
-    ln -sfn "$GEO_DIR" "$APP_DIR/geodata"
-
     # Patch helmet.json: disable upgrade-insecure-requests for HTTP access
     if [[ -f "$APP_DIR/helmet.json" ]]; then
       jq '.contentSecurityPolicy.directives["upgrade-insecure-requests"] = null' "$APP_DIR/helmet.json" >"$APP_DIR/helmet.json.tmp" && mv "$APP_DIR/helmet.json.tmp" "$APP_DIR/helmet.json"
