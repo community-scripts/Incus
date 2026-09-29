@@ -44,7 +44,7 @@ $STD rabbitmqctl set_permissions -p plane plane ".*" ".*" ".*"
 msg_ok "Configured RabbitMQ"
 
 fetch_and_deploy_gh_release "silo" "pgsty/silo" "prebuild" "latest" "/opt/silo" "silo_*_linux_$(arch_resolve).tar.gz"
-fetch_and_deploy_gh_release "mcli" "pgsty/mc" "prebuild" "latest" "/opt/mcli" "mcli_*_linux_$(arch_resolve).tar.gz"
+fetch_and_deploy_gh_release "silo_mcli" "pgsty/mc" "prebuild" "latest" "/opt/mcli" "mcli_*_linux_$(arch_resolve).tar.gz"
 
 msg_info "Configuring Silo"
 mkdir -p /opt/minio/data
