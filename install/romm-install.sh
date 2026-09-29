@@ -167,6 +167,7 @@ echo "__version__ = \"$(cat ~/.romm)\"" >/opt/romm/backend/__version__.py
 
 msg_info "Creating environment file"
 sed -i 's/^supervised no/supervised systemd/' /etc/redis/redis.conf
+echo 'save 3600 1' >>/etc/redis/redis.conf
 systemctl restart redis-server
 systemctl enable -q --now redis-server
 AUTH_SECRET_KEY=$(openssl rand -hex 32)
