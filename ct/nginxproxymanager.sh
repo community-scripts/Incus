@@ -217,6 +217,7 @@ EOF
     $STD yarn install --network-timeout 600000
     $STD yarn locale-compile
     $STD yarn build
+    $STD yarn cache clean
     cp -r /opt/nginxproxymanager/frontend/dist/* /app/frontend
     cp -r /opt/nginxproxymanager/frontend/public/images/* /app/frontend/images
     msg_ok "Built Frontend"
@@ -242,6 +243,7 @@ EOF
     sed -i 's/"client": "sqlite3"/"client": "better-sqlite3"/' /app/config/production.json
     cd /app
     $STD yarn install --network-timeout 600000
+    $STD yarn cache clean
     msg_ok "Initialized Backend"
 
     msg_info "Starting Services"
