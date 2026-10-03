@@ -34,7 +34,7 @@ function update_script() {
   if check_for_gh_release "beszel" "henrygd/beszel"; then
     msg_info "Stopping Service"
     systemctl stop beszel-hub
-    msg_info "Stopped Service"
+    msg_ok "Stopped Service"
 
     msg_info "Updating Beszel"
     $STD /opt/beszel/beszel update
