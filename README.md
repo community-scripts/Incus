@@ -87,7 +87,7 @@ for storage pools, networking, GPU passthrough and the update path.
 | ---------- | -------- |
 | [core](https://github.com/community-scripts/core) | The engine — one codebase, one backend per platform |
 | [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) | Canonical application scripts, plus `tools/pve/`, `vm/`, `turnkey/` |
-| [ProxmoxVED](https://github.com/community-scripts/ProxmoxVED) | Where new scripts are tested first |
+| [DevScripts](https://github.com/community-scripts/DevScripts) | Where new scripts are tested first |
 | **Incus** (this repo) | The same scripts, pointed at core, plus Incus VMs and host tooling |
 
 ---
@@ -119,7 +119,7 @@ Put core elsewhere with `COMMUNITY_SCRIPTS_CORE_DIR`.
 | I want to… | Go here |
 | ---------- | ------- |
 | Fix an application script | [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) — fixes made here are overwritten by the sync |
-| Add a new application script | [ProxmoxVED](https://github.com/community-scripts/ProxmoxVED) |
+| Add a new application script | [DevScripts](https://github.com/community-scripts/DevScripts) |
 | Change how containers are built | [core](https://github.com/community-scripts/core) |
 | Add or fix an Incus VM script | Here, in `vm/` |
 | Add Incus host tooling | Here, in `tools/incus/` |
