@@ -1,5 +1,6 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/community-scripts/core/main/images/logo-81x112.png" height="112px" alt="Community Scripts Logo" />
+  <a href="docs/images/community-scripts.svg"><img src="docs/images/community-scripts.png" width="112" height="112" alt="Community Scripts — Incus logo" /></a>
+  <!-- Editable CS Amber artwork: docs/images/community-scripts.svg; PNG export: 512 × 512. -->
 
   <h1>Community Scripts — Incus</h1>
   <p><strong>One-command installations for containers on an Incus host</strong><br/>
