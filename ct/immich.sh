@@ -78,7 +78,7 @@ EOF
   BASE_DIR=${STAGING_DIR}/base-images
   SOURCE_DIR=${STAGING_DIR}/image-source
   cd /tmp
-  RELEASE="v3.3.0"
+  RELEASE="v3.3.1"
   if [[ -f ~/.intel_version ]]; then
     INTEL_SRC="https://raw.githubusercontent.com/immich-app/immich/${RELEASE}/machine-learning"
     curl -fsSL "${INTEL_SRC}/scripts/install-intel-runtime.sh" -o ./intel-runtime 2>/dev/null ||
@@ -113,6 +113,19 @@ EOF
       compile_"$library"
     done
     msg_ok "Image-processing libraries up to date"
+  fi
+
+  # 3.3.0 reads geodata/countryInfo.txt; the update before #17823 saved it into app/ instead.
+  if [[ -d /opt/immich/geodata && ! -s /opt/immich/geodata/countryInfo.txt ]]; then
+    msg_info "Restoring geodata/countryInfo.txt"
+    if [[ -s /opt/immich/app/countryInfo.txt ]]; then
+      mv /opt/immich/app/countryInfo.txt /opt/immich/geodata/countryInfo.txt
+    else
+      curl_with_retry "https://download.geonames.org/export/dump/countryInfo.txt" /opt/immich/geodata/countryInfo.txt
+    fi
+    chown immich:immich /opt/immich/geodata/countryInfo.txt
+    systemctl restart immich-web
+    msg_ok "Restored geodata/countryInfo.txt"
   fi
 
   if check_for_gh_release "Immich" "immich-app/immich" "${RELEASE}" "each release is tested individually before the version is updated. Please do not open issues for this"; then
@@ -490,8 +503,7 @@ function compile_jpegli() {
 function compile_libheif() {
   SOURCE=${SOURCE_DIR}/libheif
   ensure_dependencies libaom-dev
-  LIBHEIF_REVISION="ac1cb05c39008f01525c991ff8b88f84ddf70fd2"
-  # : "${LIBHEIF_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/libheif.json)}"
+  LIBHEIF_REVISION="$(jq -cr '.revision' "$BASE_DIR"/server/sources/libheif.json)"
   if [[ "${update:-}" ]] || [[ "$LIBHEIF_REVISION" != "$(grep 'libheif' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling libheif"
     [[ -d "$SOURCE" ]] && rm -rf "$SOURCE"
