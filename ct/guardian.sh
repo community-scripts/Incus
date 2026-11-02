@@ -54,6 +54,8 @@ function update_script() {
       msg_ok "Restored Database"
     fi
 
+    NODE_VERSION="26" setup_nodejs
+
     msg_info "Updating Guardian"
     cd /opt/guardian/backend
     $STD npm ci
