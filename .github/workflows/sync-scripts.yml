@@ -38,10 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Incus
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Checkout ProxmoxVE
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: community-scripts/ProxmoxVE
           ref: ${{ github.event.inputs.ref || 'main' }}
@@ -134,7 +134,7 @@ jobs:
 
       - name: Open a pull request
         id: cpr
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: sync/proxmoxve-scripts
           title: "Sync scripts from ProxmoxVE"
