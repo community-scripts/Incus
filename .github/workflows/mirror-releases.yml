@@ -1,0 +1,52 @@
+name: Mirror releases from ProxmoxVE
+
+# ProxmoxVE cuts a release of the previous day's changelog at 00:01 UTC. The
+# scripts here are a copy of its ct/ and install/, so the same notes apply.
+
+on:
+  schedule:
+    - cron: "20 0 * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release to mirror (YYYY-MM-DD, default: yesterday)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-releases
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.repository == 'community-scripts/Incus'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_INPUT: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          tag="${TAG_INPUT:-$(date -u --date=yesterday +%Y-%m-%d)}"
+          if [[ ! "$tag" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "::error::'$tag' is not a YYYY-MM-DD release tag"
+            exit 1
+          fi
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists here"
+            exit 0
+          fi
+          if ! body="$(gh release view "$tag" -R community-scripts/ProxmoxVE --json body --jq .body 2>/dev/null)"; then
+            echo "ProxmoxVE has no release $tag"
+            exit 0
+          fi
+          {
+            echo "> Mirrored from [ProxmoxVE ${tag}](https://github.com/community-scripts/ProxmoxVE/releases/tag/${tag}). This repository carries its \`ct/\` and \`install/\` scripts; entries about VMs, turnkey and Proxmox host tools do not apply to Incus."
+            echo
+            printf '%s\n' "$body"
+          } >notes.md
+          gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" -t "$tag" -F notes.md
