@@ -5,7 +5,7 @@ name: Sync scripts from ProxmoxVE
 # which must load the engine from core (ProxmoxVE's own misc/build.func is a
 # monolith with no Incus backend, so an unmodified copy would not run here).
 #
-# Only ct/ and install/ are mirrored. vm/ calls qm and pvesm directly, turnkey/
+# Only ct/, install/ and CHANGELOG.md are mirrored. vm/ calls qm and pvesm directly, turnkey/
 # is a Proxmox feature, and tools/pve/ is Proxmox host management -- none of
 # them are portable. Headers are excluded: they are generated into core, which
 # serves them to every script repo. tools/incus/ and json/ are maintained in
@@ -53,6 +53,7 @@ jobs:
           rm -rf ct install
           cp -r .upstream/ct ct
           cp -r .upstream/install install
+          cp .upstream/CHANGELOG.md CHANGELOG.md
           # Headers live in core, generated for every script repo at once.
           rm -rf ct/headers
           rm -rf .upstream
@@ -139,12 +140,12 @@ jobs:
           branch: sync/proxmoxve-scripts
           title: "Sync scripts from ProxmoxVE"
           commit-message: |
-            Sync ct/ and install/ from ProxmoxVE
+            Sync ct/, install/ and CHANGELOG.md from ProxmoxVE
 
             Mirrored automatically. The bootstrap line is rewritten to load the
             engine from core, which is the only difference to upstream.
           body: |
-            Automated mirror of `ct/` and `install/` from
+            Automated mirror of `ct/`, `install/` and `CHANGELOG.md` from
             [ProxmoxVE](https://github.com/community-scripts/ProxmoxVE).
 
             The only change applied on top is the bootstrap line, which loads the
