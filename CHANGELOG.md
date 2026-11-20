@@ -590,6 +590,7 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - #### 🐞 Bug Fixes
 
+    - NPMplus: hand Docker the usable DNS servers when resolv.conf has a zone ID [@MickLesk](https://github.com/MickLesk) ([#18860](https://github.com/community-scripts/ProxmoxVE/pull/18860))
     - Nginx Proxy Manager: fetch the nginx HTTP/2 patches from the GitHub API [@MickLesk](https://github.com/MickLesk) ([#18855](https://github.com/community-scripts/ProxmoxVE/pull/18855))
     - deCONZ: fetch libssl1.1 over HTTPS on arm64 [@MickLesk](https://github.com/MickLesk) ([#18798](https://github.com/community-scripts/ProxmoxVE/pull/18798))
 
@@ -608,6 +609,16 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - core: Keep the root filesystem lookup a soft failure [@MickLesk](https://github.com/MickLesk) ([core#280](https://github.com/community-scripts/core/pull/280))
 - fix: vm - name why an image step failed and open one message for the disk import [@MickLesk](https://github.com/MickLesk) ([core#279](https://github.com/community-scripts/core/pull/279))
+
+### 🧰 Tools
+
+  - #### 🔧 Refactor
+
+    - Report an interrupted update-apps backup as cancelled, not failed [@MickLesk](https://github.com/MickLesk) ([#18867](https://github.com/community-scripts/ProxmoxVE/pull/18867))
+    - FSTrim: skip a container that will not start instead of ending fstrim [@MickLesk](https://github.com/MickLesk) ([#18864](https://github.com/community-scripts/ProxmoxVE/pull/18864))
+    - Say which containers update-lxcs failed on and why [@MickLesk](https://github.com/MickLesk) ([#18863](https://github.com/community-scripts/ProxmoxVE/pull/18863))
+    - clean-lxc: say which containers clean-lxcs failed on and why [@MickLesk](https://github.com/MickLesk) ([#18862](https://github.com/community-scripts/ProxmoxVE/pull/18862))
+    - LXC-Executer: run the execute command once per container and keep going on failure [@MickLesk](https://github.com/MickLesk) ([#18861](https://github.com/community-scripts/ProxmoxVE/pull/18861))
 
 ## 2026-11-19
 
