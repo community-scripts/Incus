@@ -590,6 +590,7 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - #### 🐞 Bug Fixes
 
+    - Nginx Proxy Manager: fetch the nginx HTTP/2 patches from the GitHub API [@MickLesk](https://github.com/MickLesk) ([#18855](https://github.com/community-scripts/ProxmoxVE/pull/18855))
     - deCONZ: fetch libssl1.1 over HTTPS on arm64 [@MickLesk](https://github.com/MickLesk) ([#18798](https://github.com/community-scripts/ProxmoxVE/pull/18798))
 
   - #### ✨ New Features
@@ -598,6 +599,7 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - #### 🔧 Refactor
 
+    - Plane: install the API from uv.lock, v1.5.0 dropped the requirements files [@MickLesk](https://github.com/MickLesk) ([#18856](https://github.com/community-scripts/ProxmoxVE/pull/18856))
     - Pi.Alert: install the crontab after the first scans [@MickLesk](https://github.com/MickLesk) ([#18858](https://github.com/community-scripts/ProxmoxVE/pull/18858))
 
 ### 💾 Core
