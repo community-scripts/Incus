@@ -584,6 +584,18 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
 </details>
 
+## 2026-11-21
+
+### 🚀 Updated Scripts
+
+  - #### 🔧 Refactor
+
+    - HAOS VM: fall back to Home Assistant's own hosts for version and image [@MickLesk](https://github.com/MickLesk) ([#18900](https://github.com/community-scripts/ProxmoxVE/pull/18900))
+
+### 💾 Core
+
+  - Tell a dead connection from a non-JSON answer in forge API calls [@MickLesk](https://github.com/MickLesk) ([core#285](https://github.com/community-scripts/core/pull/285))
+
 ## 2026-11-20
 
 ### 🆕 New Scripts
