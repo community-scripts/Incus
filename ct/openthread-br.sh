@@ -35,6 +35,8 @@ function update_script() {
   fi
 
   if check_for_gh_release "openthread-br" "openthread/ot-br-posix"; then
+    setup_nodejs
+
     msg_info "Stopping Services"
     systemctl stop otbr-web
     systemctl stop otbr-agent

@@ -35,6 +35,8 @@ function update_script() {
   ensure_dependencies git
 
   if check_for_gh_release "grist" "gristlabs/grist-core"; then
+    NODE_VERSION="22" NODE_MODULE="yarn@latest" setup_nodejs
+
     msg_info "Stopping Service"
     systemctl stop grist
     msg_ok "Stopped Service"
