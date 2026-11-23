@@ -591,7 +591,9 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
 ### 🆕 New Scripts
 
-  - NoteMark [@MickLesk](https://github.com/MickLesk) ([#18920](https://github.com/community-scripts/ProxmoxVE/pull/18920))
+  - Subwave [@MickLesk](https://github.com/MickLesk) ([#18929](https://github.com/community-scripts/ProxmoxVE/pull/18929))
+- Gopeed [@MickLesk](https://github.com/MickLesk) ([#18921](https://github.com/community-scripts/ProxmoxVE/pull/18921))
+- NoteMark [@MickLesk](https://github.com/MickLesk) ([#18920](https://github.com/community-scripts/ProxmoxVE/pull/18920))
 - Bytechef [@MickLesk](https://github.com/MickLesk) ([#18919](https://github.com/community-scripts/ProxmoxVE/pull/18919))
 - Lidify [@angusmaul](https://github.com/angusmaul) ([#18918](https://github.com/community-scripts/ProxmoxVE/pull/18918))
 - Ideon [@MickLesk](https://github.com/MickLesk) ([#18915](https://github.com/community-scripts/ProxmoxVE/pull/18915))
@@ -613,7 +615,9 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
 ### 💾 Core
 
-  - Reload systemd units after a .deb install [@MickLesk](https://github.com/MickLesk) ([core#291](https://github.com/community-scripts/core/pull/291))
+  - incus: install what a Proxmox template ships into Incus containers too [@MickLesk](https://github.com/MickLesk) ([core#293](https://github.com/community-scripts/core/pull/293))
+- pve/incus: give ct scripts host-side helpers that work on both backends  [@MickLesk](https://github.com/MickLesk) ([core#294](https://github.com/community-scripts/core/pull/294))
+- Reload systemd units after a .deb install [@MickLesk](https://github.com/MickLesk) ([core#291](https://github.com/community-scripts/core/pull/291))
 - Read github.com when the update check hits the API rate limit [@MickLesk](https://github.com/MickLesk) ([core#292](https://github.com/community-scripts/core/pull/292))
 - Resume a VM image download that broke off [@MickLesk](https://github.com/MickLesk) ([core#290](https://github.com/community-scripts/core/pull/290))
 
