@@ -44,10 +44,10 @@ header_info
 # all, and answering a dozen questions first only wastes the user's time.
 vm_preflight
 
-case "$(uname -m)" in
+case "$(_cs_host_arch)" in
 x86_64 | amd64) IMG_ARCH="amd64" ;;
 aarch64 | arm64) IMG_ARCH="arm64" ;;
-*) fatal "No cloud image is published for $(uname -m)" ;;
+*) fatal "No cloud image is published for $(_cs_host_arch)" ;;
 esac
 
 if [[ "${VM_UNATTENDED:-0}" == "1" ]]; then
