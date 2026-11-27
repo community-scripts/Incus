@@ -48,9 +48,9 @@ header_info
 # all, and answering a dozen questions first only wastes the user's time.
 vm_preflight
 
-case "$(uname -m)" in
+case "$(_cs_host_arch)" in
 x86_64 | amd64) ;;
-*) fatal "Umbrel OS is published for amd64 only - this host is $(uname -m)" ;;
+*) fatal "Umbrel OS is published for amd64 only - the Incus server is $(_cs_host_arch)" ;;
 esac
 
 function default_settings() {
