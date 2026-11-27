@@ -595,13 +595,19 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
 ### 🚀 Updated Scripts
 
+  - #### 🐞 Bug Fixes
+
+    - mealie: bump Python from 3.12 to 3.14 [@github-actions[bot]](https://github.com/github-actions[bot]) ([#19106](https://github.com/community-scripts/ProxmoxVE/pull/19106))
+
   - #### ✨ New Features
 
     - Gramps Web: install AI chat dependencies [@owenvoke](https://github.com/owenvoke) ([#19092](https://github.com/community-scripts/ProxmoxVE/pull/19092))
 
 ### 💾 Core
 
-  - incus: check an imported VM image on the target remote  [@MickLesk](https://github.com/MickLesk) ([core#309](https://github.com/community-scripts/core/pull/309))
+  - Incus: offer the LAN network IncusOS gives instances, and rank NAT last [@MickLesk](https://github.com/MickLesk) ([core#313](https://github.com/community-scripts/core/pull/313))
+- core: wait for the package lists lock instead of taking it for a bad mirror [@MickLesk](https://github.com/MickLesk) ([core#304](https://github.com/community-scripts/core/pull/304))
+- incus: check an imported VM image on the target remote  [@MickLesk](https://github.com/MickLesk) ([core#309](https://github.com/community-scripts/core/pull/309))
 - Offer no DNS retry to a container without a connection out [@MickLesk](https://github.com/MickLesk) ([core#310](https://github.com/community-scripts/core/pull/310))
 - Refuse a static address without a gateway before pct create [@MickLesk](https://github.com/MickLesk) ([core#312](https://github.com/community-scripts/core/pull/312))
 - Protect a container once its install succeeded, not at creation [@MickLesk](https://github.com/MickLesk) ([core#311](https://github.com/community-scripts/core/pull/311))
