@@ -22,9 +22,12 @@ source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_
 # Pi; an ARM64 Incus host is just an Incus host, so the only thing left that
 # differs is which artifact to download.
 #
-# HAOS is an appliance with a read-only OS partition and ships no incus-agent,
-# and one cannot be added. `incus exec` will not work and `incus list` shows no
-# address - use the console, or look the lease up on your DHCP server.
+# HAOS is an appliance with a read-only OS partition. Its amd64 image starts
+# the agent Incus serves (through the LXD agent loader it ships) about half a
+# minute after boot; the arm64 builds up to 18.x ship no agent, so there
+# `incus exec` fails and `incus list` shows no address on a LAN bridge.
+# `incus stop` cannot shut HAOS 18 down on either: the amd64 kernel installs no
+# handler for the ACPI power button, the arm64 build ignores a short press.
 # ==============================================================================
 
 APP="Home Assistant OS"
@@ -189,8 +192,8 @@ function advanced_settings() {
 }
 
 vm_start_script
-# Not offered by the wizard: HAOS cannot run cloud-init or the incus-agent,
-# so both would be configuration that never takes effect.
+# Not offered by the wizard: HAOS runs no cloud-init, and its agent loader
+# reads the config share, never the agent ISO.
 USE_CLOUD_INIT="no"
 AGENT_DISK="no"
 
@@ -211,8 +214,9 @@ msg_info "Decompressing $(basename "$CACHE_FILE")"
 xz -dc "$CACHE_FILE" >"$IMAGE_FILE"
 msg_ok "Decompressed $(basename "$IMAGE_FILE")"
 
-# The default is three minutes of waiting for an agent this guest will never run.
-VM_AGENT_TIMEOUT="${VM_AGENT_TIMEOUT:-15}"
+# Only the arm64 build has no agent to wait for. On amd64 the wait is what
+# finds the address of a VM on a LAN bridge, where Incus runs no DHCP.
+[[ "$HAOS_ARTIFACT" == haos_ova-* ]] || VM_AGENT_TIMEOUT="${VM_AGENT_TIMEOUT:-15}"
 incus_vm_create "$IMAGE_FILE" "$HN" "$DISK_SIZE"
 
 msg_ok "Completed successfully!"
@@ -225,3 +229,8 @@ else
   echo -e "${TAB}${GATEWAY}${BGN}Web UI:  ${CL}port 8123 on that address"
 fi
 echo -e "${TAB}${GATEWAY}${BGN}Console: ${CL}incus console ${HN}"
+if incus exec "$HN" -- true >/dev/null 2>&1; then
+  msg_custom "💡" "${YW}" "incus stop and restart do not reach HAOS 18 - use: incus exec ${HN} -- systemctl poweroff (or reboot)"
+else
+  msg_custom "💡" "${YW}" "incus stop and restart do not reach HAOS 18 - shut it down in Home Assistant: Settings > System, power menu at the top right"
+fi
