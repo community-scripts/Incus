@@ -76,7 +76,7 @@ else
 fi
 var_version="$BRANCH"
 
-case "$(uname -m)" in
+case "$(_cs_host_arch)" in
 aarch64 | arm64) HAOS_ARTIFACT="haos_generic-aarch64-${BRANCH}.qcow2.xz" ;;
 *) HAOS_ARTIFACT="haos_ova-${BRANCH}.qcow2.xz" ;;
 esac

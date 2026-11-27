@@ -51,9 +51,9 @@ header_info
 # all, and answering a dozen questions first only wastes the user's time.
 vm_preflight
 
-case "$(uname -m)" in
+case "$(_cs_host_arch)" in
 x86_64 | amd64) ;;
-*) fatal "The RouterOS CHR image is x86_64 only - this host is $(uname -m)" ;;
+*) fatal "The RouterOS CHR image is x86_64 only - this host is $(_cs_host_arch)" ;;
 esac
 
 # The stable release feed. Deliberately not the changelog page the Proxmox
