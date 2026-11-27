@@ -587,6 +587,25 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
 </details>
 
+## 2026-11-27
+
+### 💾 Core
+
+  - Protect a container once its install succeeded, not at creation [@MickLesk](https://github.com/MickLesk) ([core#311](https://github.com/community-scripts/core/pull/311))
+- Refuse a static address without a gateway before pct create [@MickLesk](https://github.com/MickLesk) ([core#312](https://github.com/community-scripts/core/pull/312))
+- Offer no DNS retry to a container without a connection out [@MickLesk](https://github.com/MickLesk) ([core#310](https://github.com/community-scripts/core/pull/310))
+- incus: check an imported VM image on the target remote  [@MickLesk](https://github.com/MickLesk) ([core#309](https://github.com/community-scripts/core/pull/309))
+
+### 🧰 Tools
+
+  - #### 🔧 Refactor
+
+    - update-apps: say what tar or zstd said when a backup fails [@MickLesk](https://github.com/MickLesk) ([#19066](https://github.com/community-scripts/ProxmoxVE/pull/19066))
+
+### 📚 Documentation
+
+  - github: add a weekly PHP version drift check [@MickLesk](https://github.com/MickLesk) ([#19094](https://github.com/community-scripts/ProxmoxVE/pull/19094))
+
 ## 2026-11-26
 
 ### 🆕 New Scripts
@@ -598,11 +617,19 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - #### 🐞 Bug Fixes
 
+    - LibreChat: rebuild the RAG API venv on update, keep uploads [@MickLesk](https://github.com/MickLesk) ([#19056](https://github.com/community-scripts/ProxmoxVE/pull/19056))
     - Cloudflare-DDNS: give the Go build 1 GB [@MickLesk](https://github.com/MickLesk) ([#19059](https://github.com/community-scripts/ProxmoxVE/pull/19059))
     - Vane: skip the CUDA binaries of onnxruntime-node [@MickLesk](https://github.com/MickLesk) ([#19060](https://github.com/community-scripts/ProxmoxVE/pull/19060))
     - UniFi OS Server: retry the installer download [@MickLesk](https://github.com/MickLesk) ([#19062](https://github.com/community-scripts/ProxmoxVE/pull/19062))
     - Umami: pin pnpm from engines.pnpm on install, set APP_SECRET [@MickLesk](https://github.com/MickLesk) ([#19057](https://github.com/community-scripts/ProxmoxVE/pull/19057))
     - FreshRSS: fix automatic feeds update [@CrazyWolf13](https://github.com/CrazyWolf13) ([#19044](https://github.com/community-scripts/ProxmoxVE/pull/19044))
+
+### 💾 Core
+
+  - Incus: read architecture, GPUs and pool space from the target remote [@MickLesk](https://github.com/MickLesk) ([core#308](https://github.com/community-scripts/core/pull/308))
+- Incus: pick the VM storage pool from the host instead of assuming 'default' [@MickLesk](https://github.com/MickLesk) ([core#307](https://github.com/community-scripts/core/pull/307))
+- core: say what the container reaches when its base packages fail [@MickLesk](https://github.com/MickLesk) ([core#305](https://github.com/community-scripts/core/pull/305))
+- Incus: check VM support on the target remote instead of local /dev/kvm [@MickLesk](https://github.com/MickLesk) ([core#306](https://github.com/community-scripts/core/pull/306))
 
 ### 🧰 Tools
 
